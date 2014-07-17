@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwmovie", "lwmovie\lwmovie.vcxproj", "{4D50A48B-D801-4AE7-B4D5-922D461C8354}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwmux", "lwmux\lwmux.vcxproj", "{641DD910-7E8F-4287-B0B2-C5F36AEBDC32}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mp2dec2", "..\mp2dec2\mp2dec2\mp2dec2.vcxproj", "{C20D80EA-B440-485B-B555-26401FE7A054}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D50A48B-D801-4AE7-B4D5-922D461C8354}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4D50A48B-D801-4AE7-B4D5-922D461C8354}.Debug|Win32.Build.0 = Debug|Win32
+		{4D50A48B-D801-4AE7-B4D5-922D461C8354}.Release|Win32.ActiveCfg = Release|Win32
+		{4D50A48B-D801-4AE7-B4D5-922D461C8354}.Release|Win32.Build.0 = Release|Win32
+		{641DD910-7E8F-4287-B0B2-C5F36AEBDC32}.Debug|Win32.ActiveCfg = Debug|Win32
+		{641DD910-7E8F-4287-B0B2-C5F36AEBDC32}.Debug|Win32.Build.0 = Debug|Win32
+		{641DD910-7E8F-4287-B0B2-C5F36AEBDC32}.Release|Win32.ActiveCfg = Release|Win32
+		{641DD910-7E8F-4287-B0B2-C5F36AEBDC32}.Release|Win32.Build.0 = Release|Win32
+		{C20D80EA-B440-485B-B555-26401FE7A054}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C20D80EA-B440-485B-B555-26401FE7A054}.Debug|Win32.Build.0 = Debug|Win32
+		{C20D80EA-B440-485B-B555-26401FE7A054}.Release|Win32.ActiveCfg = Release|Win32
+		{C20D80EA-B440-485B-B555-26401FE7A054}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
