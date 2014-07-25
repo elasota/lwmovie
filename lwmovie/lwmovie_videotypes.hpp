@@ -5,7 +5,10 @@
 #include "lwmovie_external_types.h"
 #include "lwmovie_bitstream.hpp"
 #include "lwmovie_constants.hpp"
+#include "lwmovie_profile.hpp"
 
+struct lwmIVideoReconstructor;
+class lwmCProfileTagSet;
 
 namespace lwmovie
 {
@@ -193,6 +196,8 @@ namespace lwmovie
 		{
 			this->zero_block_flag = zero_block_flag;
 		}
+
+		void IDCT(lwmDCTBLOCK *dctBlock) const;
 	};
 
 	enum lwmEReconSlot
@@ -210,13 +215,14 @@ namespace lwmovie
 	public:
 		lwmDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight);
 		bool Digest(const mpegSequence *sequenceData, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon);
+		inline lwmCProfileTagSet *GetProfileTags() { return &m_profileTags; }
 
 	private:
 		bool ParseSliceHeader(lwmCBitstream *bitstream);
-		lwmovie::constants::lwmEParseState ParseMacroBlock(lwmCBitstream *bitstream, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon);
+		lwmovie::constants::lwmEParseState ParseMacroBlock(lwmCBitstream *bitstream, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 		void ComputeForwVector(lwmSInt32 *recon_right_for_ptr, lwmSInt32 *recon_down_for_ptr);
 		void ComputeBackVector(lwmSInt32 *recon_right_back_ptr, lwmSInt32 *recon_down_back_ptr);
-		bool ParseReconBlock(lwmCBitstream *bitstream, lwmSInt32 n, lwmIM1VReconstructor *recon);
+		bool ParseReconBlock(lwmCBitstream *bitstream, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 		void DecodeDCTCoeffFirst(lwmCBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 		void DecodeDCTCoeffNext(lwmCBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 		void DecodeDCTCoeff(lwmCBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel);
@@ -229,7 +235,7 @@ namespace lwmovie
 		lwmSInt32 DecodeMotionVectors(lwmCBitstream *bitstream);
 		lwmUInt8 DecodeCBP(lwmCBitstream *bitstream);
 
-		//lwmCBitstream		m_bitstream;
+		lwmCProfileTagSet	m_profileTags;
 		lwmUInt32			m_mb_width;
 		lwmUInt32			m_mb_height;
 		mpegSlice			m_slice;
@@ -245,16 +251,55 @@ namespace lwmovie
 		void SignalIOFailure();
 		void ReportError(const char *str);
 		
-		lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool useThreadedDeslicer);
+		lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, const lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
+		~lwmVidStream();
 
-		bool DigestStreamParameters(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon);
-		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon, lwmUInt32 *outResult);
+		bool DigestStreamParameters(const void *bytes, lwmUInt32 packetSize);
+		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, lwmUInt32 *outResult);
+		void SetReconstructor(lwmIVideoReconstructor *recon);
+		void Participate();
+		void WaitForDigestFinish();
+
+		void FlushProfileTags(lwmCProfileTagSet *tagSet);
 
 		bool CreatedOK() const;
 		
 		static void SkipExtraBitInfo(lwmCBitstream *m_bitstream);
 
 	private:
+		struct SDeslicerJobStackNode
+		{
+			lwmAtomicInt			m_accessFlag;
+			lwmDeslicerJob			m_deslicerJob;
+			lwmUInt32				m_dataSize;
+			SDeslicerJobStackNode	*m_next;
+			lwmIM1VReconstructor	*m_recon;
+			bool					m_memPooled;
+
+			lwmUInt8				m_dataBytes[1];
+
+			SDeslicerJobStackNode(lwmUInt32 mbWidth, lwmUInt32 mbHeight);
+		};
+
+		struct SDeslicerMemoryPool
+		{
+			void					*memBytes;
+			lwmUInt32				memCapacity;
+			lwmUInt32				memRemaining;
+			lwmUInt32				nextCapacity;
+
+			SDeslicerMemoryPool(const lwmSAllocator *alloc, lwmUInt32 initialCapacity);
+
+			void *Alloc(lwmUInt32 size);
+			void Reset(const lwmSAllocator *alloc);
+			void Destroy(const lwmSAllocator *alloc);
+		};
+
+		SDeslicerJobStackNode * volatile m_deslicerJobStack;
+		SDeslicerMemoryPool m_deslicerMemPool;
+		const lwmSWorkNotifier *m_workNotifier;
+		lwmMovieState *m_movieState;
+
 		lwmUInt32 m_h_size;						/* Horiz. size in pixels.     */
 		lwmUInt32 m_v_size;						/* Vert. size in pixels.      */
 		lwmUInt8 m_aspect_ratio_code;			/* Code for aspect ratio.     */
@@ -278,12 +323,15 @@ namespace lwmovie
 		lwmSAllocator		m_alloc;
 		lwmDeslicerJob		m_stDeslicerJob;
 
+		lwmIM1VReconstructor	*m_recon;
+
 		bool m_createdOk;
 		bool m_eof;
 		bool m_useThreadedDeslicer;
 
 	private:
-
+		void DispatchDeslicerJob(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon);
+		void DestroyDeslicerJobs();
 		void FinishPicture();
 		void OutputFinishedFrame();
 
@@ -295,9 +343,6 @@ namespace lwmovie
 		bool SetupPictImages(lwmUInt32 w, lwmUInt32 h);
 		void ComputeForwVector(lwmSInt32 *recon_right_for, lwmSInt32 *recon_down_for);
 		void ComputeBackVector(lwmSInt32 *recon_right_for, lwmSInt32 *recon_down_for);
-
-		void ReconIMBlock( int bnum );
-		void ReconPMBlock(int bnum, lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool zflag);
 	};
 }
 

@@ -18,31 +18,31 @@ namespace lwmovie
 		lwmCM1VSoftwareReconstructor();
 		~lwmCM1VSoftwareReconstructor();
 
-		bool Initialize(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, const lwmSWorkNotifier *workNotifier);
+		bool Initialize(const lwmSAllocator *alloc, lwmMovieState *movieState);
 
 		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 address);
 
 		virtual void SetMBlockInfo(lwmSInt32 mbAddress, bool skipped, bool mb_motion_forw, bool mb_motion_back, lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool full_pel_forw, lwmSInt32 recon_right_back, lwmSInt32 recon_down_back, bool full_pel_back);
 		virtual void SetBlockInfo(lwmSInt32 sbAddress, bool zero_block_flag);
-		virtual void CommitZero();
-		virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
-		virtual void CommitFull();
+		virtual void CommitZero(lwmSInt32 sbAddress);
+		virtual void CommitSparse(lwmSInt32 sbAddress, lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
+		virtual void CommitFull(lwmSInt32 sbAddress);
 		virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
 		virtual void WaitForFinish();
 
 		virtual void Participate();
+		virtual void SetWorkNotifier(const lwmSWorkNotifier *workNotifier);
 		virtual void GetChannel(lwmUInt32 channelNum, const lwmUInt8 **outPChannel, lwmUInt32 *outStride);
 		virtual void StartNewFrame(lwmUInt32 currentTarget, lwmUInt32 futureTarget, lwmUInt32 pastTarget);
+
+		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
 
 		lwmReconMBlock *m_mblocks;
 		lwmBlockInfo *m_blocks;
 		lwmDCTBLOCK *m_dctBlocks;
 		lwmAtomicInt *m_rowCommitCounts;
 		lwmAtomicInt *m_workRowUsers;
-
-		const lwmBlockInfo *m_activeBlock;
-		const lwmReconMBlock *m_activeMBlock;
-		lwmDCTBLOCK *m_activeDCTBlock;
+		lwmCProfileTagSet *m_workRowProfileTags;
 
 		lwmUInt32 m_yuvFrameSize;
 		lwmUInt32 m_yStride;
@@ -60,22 +60,25 @@ namespace lwmovie
 		
 		lwmUInt32 m_mbWidth;
 		lwmUInt32 m_mbHeight;
-
-		lwmUInt8 m_sparseBlockData[sizeof(lwmDCTBLOCK) * 64 + 15];
-		lwmDCTBLOCK *m_sparseBlocks;
 		
-		lwmSWorkNotifier m_workNotifier;
+		lwmSWorkNotifier m_stWorkNotifier;
+		const lwmSWorkNotifier *m_workNotifier;
+
+		lwmMovieState *m_movieState;
 
 	private:
 		static void PutDCTBlock(const lwmDCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
-		void ReconstructRow(const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, const lwmDCTBLOCK *dctBlocks, lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
-			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv, lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv);
-		void ReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, const lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, bool halfRes, lwmLargeUInt stride);
-		static void ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, const lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride);
-		static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, const lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride);
+		void ReconstructRow(const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks, lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
+			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv, lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv, lwmCProfileTagSet *profileTags);
+		void ReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
+			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, bool halfRes, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
+		static void ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
+			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
+		static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
+			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
+
+		static void STWNJoinFunc(void *opaque);
+		static void STWNNotifyAvailableFunc(void *opaque);
 	};
 }
 

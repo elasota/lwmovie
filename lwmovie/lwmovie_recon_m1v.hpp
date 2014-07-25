@@ -14,9 +14,9 @@ namespace lwmovie
 			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool full_pel_forw,
 			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back, bool full_pel_back) = 0;
 		virtual void SetBlockInfo(lwmSInt32 sbAddress, bool zero_block_flag) = 0;
-		virtual void CommitZero() = 0;
-		virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff) = 0;
-		virtual void CommitFull() = 0;
+		virtual void CommitZero(lwmSInt32 address) = 0;
+		virtual void CommitSparse(lwmSInt32 address, lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff) = 0;
+		virtual void CommitFull(lwmSInt32 address) = 0;
 		virtual void MarkRowFinished(lwmSInt32 firstMBAddress) = 0;
 		virtual void WaitForFinish() = 0;
 

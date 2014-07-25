@@ -3,6 +3,27 @@
 
 #include "lwmovie_types.hpp"
 
+#define LWMOVIE_DEEP_PROFILE
+
+class lwmCProfileTagSet;
+
+enum lwmEProfileTag
+{
+	lwmEPROFILETAG_Deslice,
+	lwmEPROFILETAG_ReconRow,
+	lwmEPROFILETAG_Motion,
+	lwmEPROFILETAG_IDCTSparse,
+	lwmEPROFILETAG_IDCTFull,
+	lwmEPROFILETAG_ParseBlock,
+	lwmEPROFILETAG_ParseCoeffs,
+	lwmEPROFILETAG_ParseCoeffsTest,
+	lwmEPROFILETAG_ParseCoeffsIntra,
+	lwmEPROFILETAG_ParseCoeffsInter,
+	lwmEPROFILETAG_ParseCoeffsCommit,
+
+	lwmEPROFILETAG_Count,
+};
+
 class lwmCProfileTag
 {
 public:
@@ -10,6 +31,8 @@ public:
 
 	void AddTime(lwmUInt32 t);
 	double GetTotalTime() const;
+	lwmUInt32 GetRawTime() const;
+	void Reset();
 private:
 	lwmUInt32 m_time;
 };
@@ -17,7 +40,7 @@ private:
 class lwmCAutoProfile
 {
 public:
-	explicit lwmCAutoProfile(lwmCProfileTag &tag);
+	lwmCAutoProfile(lwmCProfileTagSet *tagSet, lwmEProfileTag profileTagIndex);
 	~lwmCAutoProfile();
 
 private:
@@ -25,17 +48,23 @@ private:
 	lwmUInt32 m_baseTime;
 };
 
-extern lwmCProfileTag g_ptDeslice;
-extern lwmCProfileTag g_ptReconRow;
-extern lwmCProfileTag g_ptMotion;
-extern lwmCProfileTag g_ptIDCTSparse;
-extern lwmCProfileTag g_ptIDCTFull;
-extern lwmCProfileTag g_ptParseBlock;
-extern lwmCProfileTag g_ptParseCoeffs;
-extern lwmCProfileTag g_ptParseCoeffsTest;
-extern lwmCProfileTag g_ptParseCoeffsIntra;
-extern lwmCProfileTag g_ptParseCoeffsInter;
-extern lwmCProfileTag g_ptParseCoeffsCommit;
+
+class lwmCProfileTagSet
+{
+private:
+	lwmCProfileTag m_profileTags[lwmEPROFILETAG_Count];
+
+public:
+	inline lwmCProfileTag *GetTag(lwmEProfileTag tag)
+	{
+		return m_profileTags + tag;
+	}
+
+	void FlushTo(lwmCProfileTagSet *otherTagSet);
+};
+
+
+#include "lwmovie_profile_win32.inl"
 
 #endif
 

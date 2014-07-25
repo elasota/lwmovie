@@ -3,7 +3,7 @@
 
 #include "lwmovie_types.hpp"
 
-struct lwmIVideoReconstructor;
+struct lwmMovieState;
 
 struct lwmSAllocator
 {
@@ -15,8 +15,7 @@ struct lwmSAllocator
 struct lwmSWorkNotifier
 {
 	void *opaque;
-	void (*notifyAvailable)(void *opaque, lwmIVideoReconstructor *reconstructor);
-	void (*notifyFinished)(void *opaque, lwmIVideoReconstructor *reconstructor);
+	void (*notifyAvailable)(void *opaque);
 	void (*join)(void *opaque);
 };
 

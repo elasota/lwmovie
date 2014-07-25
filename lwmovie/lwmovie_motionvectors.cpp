@@ -144,3 +144,8 @@ void lwmovie::lwmDeslicerJob::ComputeBackVector( lwmSInt32 *recon_right_back_ptr
 				m_mblock.motion_h_back_code, m_mblock.motion_v_back_code,
 				m_mblock.motion_h_back_r, m_mblock.motion_v_back_r);
 }
+
+lwmovie::lwmVidStream::SDeslicerJobStackNode::SDeslicerJobStackNode(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
+	: m_deslicerJob(mbWidth, mbHeight)
+{
+}
