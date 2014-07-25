@@ -93,9 +93,11 @@ static void ExtractMotionLumaMergedAvg(lwmUInt8 *outBlock, const lwmUInt8 *inBas
 	}
 }
 
-static void ExtractMotionLuma(lwmUInt8 *outBlock, const lwmUInt8 *inBlock, lwmSInt32 right, lwmSInt32 down, lwmLargeUInt stride)
+static void ExtractMotionLuma(lwmUInt8 *outBlock, const lwmUInt8 *inBlock, lwmSInt32 right, lwmSInt32 down, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
 {
-	lwmCAutoProfile _(g_ptMotion);
+#ifdef LWMOVIE_DEEP_PROFILE
+	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_Motion);
+#endif
 
 	const lwmUInt8 *rowScanBase = inBlock + (right >> 1) + (down >> 1) * static_cast<lwmLargeSInt>(stride);
 
@@ -293,7 +295,7 @@ static void ApplyLumaDCTHigh(lwmUInt8 *c, const lwmUInt8 *motion, const lwmovie:
 	}
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, const lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride)
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
 {
 	lwmUInt8 bytes[16+256+256];
 
@@ -323,9 +325,11 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 			// Apply DCT
 			if(!block[0].zero_block_flag)
 			{
+				block[0].IDCT(dctBlock);
 				if(!block[1].zero_block_flag)
 				{
 					// 0+1
+					block[1].IDCT(dctBlock + 1);
 					SetLumaDCTPaired(c, dctBlock, stride);
 				}
 				else
@@ -339,6 +343,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				if(!block[1].zero_block_flag)
 				{
 					// 1 only
+					block[1].IDCT(dctBlock + 1);
 					SetLumaDCTHigh(c, dctBlock, stride);
 				}
 				else
@@ -352,9 +357,11 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 
 			if(!block[2].zero_block_flag)
 			{
+				block[2].IDCT(dctBlock + 2);
 				if(!block[3].zero_block_flag)
 				{
 					// 2+3
+					block[3].IDCT(dctBlock + 3);
 					SetLumaDCTPaired(c2, dctBlock + 2, stride);
 				}
 				else
@@ -368,6 +375,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				if(!block[3].zero_block_flag)
 				{
 					// 3 only
+					block[3].IDCT(dctBlock + 3);
 					SetLumaDCTHigh(c2, dctBlock + 2, stride);
 				}
 				else
@@ -384,16 +392,16 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 	{
 		if(mblock->mb_motion_forw)
 		{
-			ExtractMotionLuma(motion, f, reconRightFor, reconDownFor, stride);
+			ExtractMotionLuma(motion, f, reconRightFor, reconDownFor, stride, profileTags);
 			if(mblock->mb_motion_back)
 			{
-				ExtractMotionLuma(mergeMotion, p, reconRightBack, reconDownBack, stride);
+				ExtractMotionLuma(mergeMotion, p, reconRightBack, reconDownBack, stride, profileTags);
 				MergeLumaMotion(motion, mergeMotion);
 			}
 		}
 		else //if(mblock->mb_motion_back)
 		{
-			ExtractMotionLuma(motion, p, reconRightBack, reconDownBack, stride);
+			ExtractMotionLuma(motion, p, reconRightBack, reconDownBack, stride, profileTags);
 		}
 
 		if(mblock->skipped)
@@ -407,9 +415,11 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 			// Apply DCT
 			if(!block[0].zero_block_flag)
 			{
+				block[0].IDCT(dctBlock);
 				if(!block[1].zero_block_flag)
 				{
 					// 0+1
+					block[1].IDCT(dctBlock +1);
 					ApplyLumaDCTPaired(c, motion, dctBlock, stride);
 				}
 				else
@@ -423,6 +433,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				if(!block[1].zero_block_flag)
 				{
 					// 1 only
+					block[1].IDCT(dctBlock + 1);
 					ApplyLumaDCTHigh(c, motion, dctBlock, stride);
 				}
 				else
@@ -436,9 +447,11 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 
 			if(!block[2].zero_block_flag)
 			{
+				block[2].IDCT(dctBlock + 2);
 				if(!block[3].zero_block_flag)
 				{
 					// 2+3
+					block[3].IDCT(dctBlock + 3);
 					ApplyLumaDCTPaired(c2, motion + 128, dctBlock + 2, stride);
 				}
 				else
@@ -452,6 +465,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				if(!block[3].zero_block_flag)
 				{
 					// 3 only
+					block[3].IDCT(dctBlock + 3);
 					ApplyLumaDCTHigh(c2, motion + 128, dctBlock + 2, stride);
 				}
 				else
@@ -537,9 +551,11 @@ static inline __m128i ReadChromaRowTpl(const lwmUInt8 *base)
 }
 
 template<int rightSub, int downSub>
-static inline void ExtractMotionChromaTpl(lwmUInt8 *outBlock, const lwmUInt8 *inBase, lwmLargeUInt stride)
+static inline void ExtractMotionChromaTpl(lwmUInt8 *outBlock, const lwmUInt8 *inBase, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
 {
-	lwmCAutoProfile _(g_ptMotion);
+#ifdef LWMOVIE_DEEP_PROFILE
+	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_Motion);
+#endif
 
 	if(downSub == 0)
 	{
@@ -575,23 +591,23 @@ static inline void ExtractMotionChromaTpl(lwmUInt8 *outBlock, const lwmUInt8 *in
 	}
 }
 
-static void ExtractMotionChroma(lwmUInt8 *outBlock, const lwmUInt8 *inBlock, lwmSInt32 right, lwmSInt32 down, lwmLargeUInt stride)
+static void ExtractMotionChroma(lwmUInt8 *outBlock, const lwmUInt8 *inBlock, lwmSInt32 right, lwmSInt32 down, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
 {
 	const lwmUInt8 *rowScanBase = inBlock + (right >> 1) + (down >> 1) * static_cast<lwmLargeSInt>(stride);
 
 	switch( ((down & 0x1) << 1) | (right & 0x1) )
 	{
 	case 0:
-		ExtractMotionChromaTpl<0, 0>(outBlock, rowScanBase, stride);
+		ExtractMotionChromaTpl<0, 0>(outBlock, rowScanBase, stride, profileTags);
 		break;
 	case 1:
-		ExtractMotionChromaTpl<1, 0>(outBlock, rowScanBase, stride);
+		ExtractMotionChromaTpl<1, 0>(outBlock, rowScanBase, stride, profileTags);
 		break;
 	case 2:
-		ExtractMotionChromaTpl<0, 1>(outBlock, rowScanBase, stride);
+		ExtractMotionChromaTpl<0, 1>(outBlock, rowScanBase, stride, profileTags);
 		break;
 	case 3:
-		ExtractMotionChromaTpl<1, 1>(outBlock, rowScanBase, stride);
+		ExtractMotionChromaTpl<1, 1>(outBlock, rowScanBase, stride, profileTags);
 		break;
 	};
 }
@@ -663,7 +679,7 @@ static void ApplyChromaDCT(lwmUInt8 *c, const lwmUInt8 *motion, const lwmovie::l
 }
 
 
-void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, const lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride)
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
 {
 	lwmUInt8 bytes[16+64+64];
 
@@ -697,7 +713,10 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 		{
 			// Apply DCT
 			if(!block->zero_block_flag)
+			{
+				block->IDCT(dctBlock);
 				SetChromaDCT(c, dctBlock, stride);
+			}
 			else
 				ZeroChromaBlock(c, stride);
 		}
@@ -708,16 +727,16 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 	{
 		if(mblock->mb_motion_forw)
 		{
-			ExtractMotionChroma(motion, f, reconRightFor, reconDownFor, stride);
+			ExtractMotionChroma(motion, f, reconRightFor, reconDownFor, stride, profileTags);
 			if(mblock->mb_motion_back)
 			{
-				ExtractMotionChroma(mergeMotion, p, reconRightBack, reconDownBack, stride);
+				ExtractMotionChroma(mergeMotion, p, reconRightBack, reconDownBack, stride, profileTags);
 				MergeChromaMotion(motion, mergeMotion);
 			}
 		}
 		else //if(mblock->mb_motion_back)
 		{
-			ExtractMotionChroma(motion, p, reconRightBack, reconDownBack, stride);
+			ExtractMotionChroma(motion, p, reconRightBack, reconDownBack, stride, profileTags);
 		}
 
 		if(mblock->skipped)
@@ -729,13 +748,27 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 		{
 			// Apply DCT
 			if(!block->zero_block_flag)
+			{
+				block->IDCT(dctBlock);
 				ApplyChromaDCT(c, motion, dctBlock, stride);
+			}
 			else
 				CopyChromaBlock(c, motion, stride);
 		}
 
 		// End of motion + DCT
 	}
+}
+
+
+
+void lwmovie::lwmCM1VSoftwareReconstructor::STWNJoinFunc(void *opaque)
+{
+}
+
+void lwmovie::lwmCM1VSoftwareReconstructor::STWNNotifyAvailableFunc(void *opaque)
+{
+	static_cast<lwmCM1VSoftwareReconstructor*>(opaque)->Participate();
 }
 
 void lwmovie::lwmDCTBLOCK::FastZeroFill()
@@ -749,3 +782,30 @@ void lwmovie::lwmDCTBLOCK::FastZeroFill()
 		coeffs += 8;
 	}
 }
+
+void j_rev_dct_sse2( lwmSInt16 data[64] );
+void j_rev_dct_sse2_sparseDC( lwmSInt16 data[64], lwmSInt16 value );
+void j_rev_dct_sse2_sparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value );
+
+void lwmovie::lwmBlockInfo::IDCT(lwmDCTBLOCK *block) const
+{
+	if(true) return;
+	if(needs_idct)
+	{
+		if(sparse_idct)
+		{
+			if(sparse_idct_index == 0)
+				j_rev_dct_sse2_sparseDC(block->data, sparse_idct_coef);
+			else
+				j_rev_dct_sse2_sparseAC(block->data, sparse_idct_index, sparse_idct_coef);
+		}
+		else
+			j_rev_dct_sse2(block->data);
+	}
+	else
+	{
+		block->FastZeroFill();
+	}
+}
+
+

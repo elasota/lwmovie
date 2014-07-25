@@ -49,19 +49,21 @@
 #include "lwmovie_recon_m1v.hpp"
 #include "lwmovie_profile.hpp"
 
-bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt32 n, lwmIM1VReconstructor *recon)
+bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
 {
-	lwmCAutoProfile _(g_ptParseCoeffs);
-	lwmCAutoProfile _3(g_ptParseCoeffsTest);
+#ifdef LWMOVIE_DEEP_PROFILE
+	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffs);
+#endif
 	int coeffCount = 0;
 	lwmFastSInt16 firstCoeff = 0;
 	lwmFastUInt8 firstCoeffPos = 0;
 
-	lwmDCTBLOCK *recondata = recon->StartReconBlock(n + m_mblock.mb_address * 6);
+	lwmSInt32 blockAddress = n + m_mblock.mb_address * 6;
+	lwmDCTBLOCK *recondata = recon->StartReconBlock(blockAddress);
 
 	if(m_mblock.mb_intra)
 	{
-		lwmCAutoProfile _(g_ptParseCoeffsIntra);
+		//lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffsIntra);
 		lwmFastSInt16 coeff;
 		if (n < 4)
 		{
@@ -253,7 +255,9 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 	}
 	else
 	{
-		lwmCAutoProfile _(g_ptParseCoeffsInter);
+#ifdef LWMOVIE_DEEP_PROFILE
+		//lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffsInter);
+#endif
 
 		/* non-intra-coded macroblock */
 		const lwmUInt8 *niqmatrix = m_sequence->m_non_intra_quant_matrix;
@@ -324,12 +328,15 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 		} /* end if (vid_stream->picture.code_type != 4) */
 	}
 
-	lwmCAutoProfile _2(g_ptParseCoeffsCommit);
+#ifdef LWMOVIE_DEEP_PROFILE
+	//lwmCAutoProfile _2(profileTags, lwmEPROFILETAG_ParseCoeffsCommit);
+	//lwmCAutoProfile _3(profileTags, lwmEPROFILETAG_ParseCoeffsTest);
+#endif
 
 	if(coeffCount == 0)
 	{
 		// Sparse IDCT, as zero
-		recon->CommitZero();
+		recon->CommitZero(blockAddress);
 	}
 	else if(coeffCount == 1)
 	{
@@ -342,12 +349,12 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
             58, 59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63
         };
 
-		recon->CommitSparse(zigzagOrder[firstCoeffPos], firstCoeff);
+		recon->CommitSparse(blockAddress, zigzagOrder[firstCoeffPos], firstCoeff);
 	}
 	else
 	{
 		// Full IDCT
-		recon->CommitFull();
+		recon->CommitFull(blockAddress);
 	}
 
 	return true;

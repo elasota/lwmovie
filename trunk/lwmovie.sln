@@ -5,7 +5,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwmovie", "lwmovie\lwmovie.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwmux", "lwmux\lwmux.vcxproj", "{641DD910-7E8F-4287-B0B2-C5F36AEBDC32}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mp2dec2", "..\mp2dec2\mp2dec2\mp2dec2.vcxproj", "{C20D80EA-B440-485B-B555-26401FE7A054}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mp2dec2", "mp2dec2\mp2dec2.vcxproj", "{C20D80EA-B440-485B-B555-26401FE7A054}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

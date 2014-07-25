@@ -26,6 +26,29 @@ static lwmLargeUInt MyRead(void *f, void *buf, lwmLargeUInt nBytes)
 	return fread(buf, 1, nBytes, static_cast<FILE *>(f));
 }
 
+VOID NTAPI MyVideoDigestWorkCallback(PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_WORK work)
+{
+	lwmMovieState *movieState = static_cast<lwmMovieState *>(context);
+	lwmVideoDigestParticipate(movieState);
+}
+
+VOID NTAPI MyVideoReconWorkCallback(PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_WORK work)
+{
+	lwmIVideoReconstructor *recon = static_cast<lwmIVideoReconstructor *>(context);
+	lwmVideoReconParticipate(recon);
+}
+
+void MyJoin(void *opaque)
+{
+	WaitForThreadpoolWorkCallbacks(static_cast<PTP_WORK>(opaque), FALSE);
+}
+
+void MyNotifyAvailable(void *opaque)
+{
+	SubmitThreadpoolWork(static_cast<PTP_WORK>(opaque));
+}
+
+
 int main(int argc, const char **argv)
 {
 	lwmSAllocator alloc;
@@ -34,6 +57,15 @@ int main(int argc, const char **argv)
 	alloc.freeFunc = MyFree;
 
 	lwmMovieState *movieState = lwmInitialize(&alloc);
+
+	PTP_WORK digestWork = CreateThreadpoolWork(MyVideoDigestWorkCallback, movieState, NULL);
+
+	lwmSWorkNotifier digestNotifier;
+	digestNotifier.join = MyJoin;
+	digestNotifier.notifyAvailable = MyNotifyAvailable;
+	digestNotifier.opaque = digestWork;
+
+	//lwmSetVideoDigestWorkNotifier(movieState, &digestNotifier);
 
 	FILE *f = fopen("D:\\vids\\output_mux.lwmv", "rb");
 
@@ -44,6 +76,7 @@ int main(int argc, const char **argv)
 	lwmUInt64 frameTimeTotal = 0;
 	
 	lwmUInt32 width, height, ppsNum, ppsDenom;
+	lwmCProfileTagSet tagSet;
 
 	while(true)
 	{
@@ -72,8 +105,17 @@ int main(int argc, const char **argv)
 				{
 					lwmUInt32 reconType;
 					lwmGetVideoParameters(movieState, &width, &height, &ppsNum, &ppsDenom, &reconType);
-					lwmCreateSoftwareVideoReconstructor(&alloc, width, height, reconType, NULL, &videoRecon);
+					lwmCreateSoftwareVideoReconstructor(movieState, &alloc, reconType, &videoRecon);
 					lwmSetVideoReconstructor(movieState, videoRecon);
+					
+					PTP_WORK videoReconWork = CreateThreadpoolWork(MyVideoReconWorkCallback, videoRecon, NULL);
+
+					lwmSWorkNotifier videoReconNotifier;
+					videoReconNotifier.join = MyJoin;
+					videoReconNotifier.notifyAvailable = MyNotifyAvailable;
+					videoReconNotifier.opaque = videoReconWork;
+
+					//lwmSetVideoReconWorkNotifier(videoRecon, &videoReconNotifier);
 				}
 				break;
 			case lwmDIGEST_VideoSync:
@@ -99,9 +141,13 @@ int main(int argc, const char **argv)
 					lwmReconGetChannel(videoRecon, 1, &uBuffer, &uStride);
 					lwmReconGetChannel(videoRecon, 2, &vBuffer, &vStride);
 
+					lwmFlushProfileTags(movieState, &tagSet);
+
+					numFrames++;
+
 					if(numFrames % 100 == 0)
 						printf("%i...\n", numFrames);
-					if(numFrames < 300)
+					if(numFrames < 0)
 					{
 						sprintf(outPath, "D:\\vids\\frames\\frame%4i.raw", numFrames++);
 						FILE *frameF = fopen(outPath, "wb");
@@ -144,18 +190,21 @@ int main(int argc, const char **argv)
 			};
 		}
 	}
+done:
+
+
 	printf("Profile results:\n");
-	printf("Deslice: %f\n", g_ptDeslice.GetTotalTime() * 1000.0);
-	printf("    ParseBlock: %f\n", g_ptParseBlock.GetTotalTime() * 1000.0);
-	printf("        ParseCoeffs: %f\n", g_ptParseCoeffs.GetTotalTime() * 1000.0);
-	printf("            ParseCoeffsTest: %f\n", g_ptParseCoeffsTest.GetTotalTime() * 1000.0);
-	printf("            ParseCoeffsIntra: %f\n", g_ptParseCoeffsIntra.GetTotalTime() * 1000.0);
-	printf("            ParseCoeffsInter: %f\n", g_ptParseCoeffsInter.GetTotalTime() * 1000.0);
-	printf("            ParseCoeffsCommit: %f\n", g_ptParseCoeffsCommit.GetTotalTime() * 1000.0);
-	printf("                IDCT Sparse: %f\n", g_ptIDCTSparse.GetTotalTime() * 1000.0);
-	printf("                IDCT Full: %f\n", g_ptIDCTFull.GetTotalTime() * 1000.0);
-	printf("        ReconRow: %f\n", g_ptReconRow.GetTotalTime() * 1000.0);
-	printf("            Motion: %f\n", g_ptMotion.GetTotalTime() * 1000.0);
+	printf("Deslice: %f\n", tagSet.GetTag(lwmEPROFILETAG_Deslice)->GetTotalTime() * 1000.0);
+	printf("    ParseBlock: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseBlock)->GetTotalTime() * 1000.0);
+	printf("        ParseCoeffs: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseCoeffs)->GetTotalTime() * 1000.0);
+	printf("            ParseCoeffsTest: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseCoeffsTest)->GetTotalTime() * 1000.0);
+	printf("            ParseCoeffsIntra: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseCoeffsIntra)->GetTotalTime() * 1000.0);
+	printf("            ParseCoeffsInter: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseCoeffsInter)->GetTotalTime() * 1000.0);
+	printf("            ParseCoeffsCommit: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseCoeffsCommit)->GetTotalTime() * 1000.0);
+	printf("                IDCT Sparse: %f\n", tagSet.GetTag(lwmEPROFILETAG_IDCTSparse)->GetTotalTime() * 1000.0);
+	printf("                IDCT Full: %f\n", tagSet.GetTag(lwmEPROFILETAG_IDCTFull)->GetTotalTime() * 1000.0);
+	printf("        ReconRow: %f\n", tagSet.GetTag(lwmEPROFILETAG_ReconRow)->GetTotalTime() * 1000.0);
+	printf("            Motion: %f\n", tagSet.GetTag(lwmEPROFILETAG_Motion)->GetTotalTime() * 1000.0);
 
 	printf("Done\n");
 	return 0;

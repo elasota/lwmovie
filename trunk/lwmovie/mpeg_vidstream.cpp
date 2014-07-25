@@ -70,6 +70,7 @@ THE SOFTWARE.
 #include "lwmovie_constants.hpp"
 #include "lwmovie_demux.hpp"
 #include "lwmovie_recon_m1v.hpp"
+#include "lwmovie_atomicint.hpp"
 
 lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParseSeqHead_MPEG(lwmCBitstream *bitstream)
 {
@@ -238,10 +239,15 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 	return constants::PARSE_OK;
 }
 
-lwmovie::lwmVidStream::lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool useThreadedDeslicer)
+lwmovie::lwmVidStream::lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, const lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
 	: m_stDeslicerJob((width + 15) / 16, (height + 15) / 16)
+	, m_deslicerMemPool(alloc, useThreadedDeslicer ? 150000 : 0)
 {
 	m_alloc = *alloc;
+
+	m_deslicerJobStack = NULL;
+	m_movieState = movieState;
+	m_workNotifier = workNotifier;
 
 	/* Copy default intra matrix. */
 	for(int i = 0; i < 64; i++)
@@ -261,6 +267,12 @@ lwmovie::lwmVidStream::lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width,
 	m_current = m_past = m_future = lwmRECONSLOT_Unassigned;
 
 	m_useThreadedDeslicer = useThreadedDeslicer;
+}
+
+lwmovie::lwmVidStream::~lwmVidStream()
+{
+	WaitForDigestFinish();
+	m_deslicerMemPool.Destroy(&m_alloc);
 }
 
 void lwmovie::lwmVidStream::SkipExtraBitInfo(lwmCBitstream *bitstream)
@@ -288,10 +300,8 @@ void lwmovie::lwmVidStream::SkipExtraBitInfo(lwmCBitstream *bitstream)
 	}
 }
 
-bool lwmovie::lwmVidStream::DigestStreamParameters(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon)
+bool lwmovie::lwmVidStream::DigestStreamParameters(const void *bytes, lwmUInt32 packetSize)
 {
-	recon->WaitForFinish();
-
 	lwmCBitstream bitstream;
 	bitstream.Initialize(bytes, packetSize);
 	if(ParseSeqHead_MPEG(&bitstream) != constants::PARSE_OK)
@@ -300,7 +310,73 @@ bool lwmovie::lwmVidStream::DigestStreamParameters(const void *bytes, lwmUInt32 
 	return true;
 }
 
-bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon, lwmUInt32 *outResult)
+void lwmovie::lwmVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon)
+{
+	// TODO: Overflow check
+	bool pooled = true;
+	lwmUInt32 stackNodeSize = sizeof(SDeslicerJobStackNode) + packetSize - 1;
+	// TODO: SIMD align
+	stackNodeSize += 15;
+	stackNodeSize &= ~(static_cast<lwmUInt32>(15));
+
+	void *memBuf = m_deslicerMemPool.Alloc(stackNodeSize);
+	if(!memBuf)
+	{
+		pooled = false;
+		memBuf = m_alloc.allocFunc(m_alloc.opaque, stackNodeSize);
+	}
+	
+	if(memBuf == NULL)
+	{
+		m_stDeslicerJob.Digest(&m_sequence, &m_picture, bytes, packetSize, recon);
+		return;
+	}
+
+	SDeslicerJobStackNode *deslicerStackNode = static_cast<SDeslicerJobStackNode*>(memBuf);
+
+	new (deslicerStackNode) SDeslicerJobStackNode(m_mb_width, m_mb_height);
+	deslicerStackNode->m_accessFlag = 0;
+	memcpy(deslicerStackNode->m_dataBytes, bytes, packetSize);
+	deslicerStackNode->m_dataSize = packetSize;
+	deslicerStackNode->m_recon = recon;
+	deslicerStackNode->m_memPooled = pooled;
+
+	// Insert into the job stack
+	while(true)
+	{
+		SDeslicerJobStackNode *stackHead = m_deslicerJobStack;
+		deslicerStackNode->m_next = stackHead;
+		if(lwmAtomicCompareAndSwap(reinterpret_cast<void *volatile *>(&m_deslicerJobStack), deslicerStackNode, stackHead) == stackHead)
+			break;
+	}
+
+	if(m_workNotifier)
+		m_workNotifier->notifyAvailable(m_workNotifier->opaque);
+}
+
+void lwmovie::lwmVidStream::DestroyDeslicerJobs()
+{
+	SDeslicerJobStackNode *jobNode = m_deslicerJobStack;
+	m_deslicerJobStack = NULL;
+	while(jobNode)
+	{
+		SDeslicerJobStackNode *nextNode = jobNode->m_next;
+		jobNode->m_deslicerJob.GetProfileTags()->FlushTo(m_stDeslicerJob.GetProfileTags());
+		if(!jobNode->m_memPooled)
+		{
+			jobNode->~SDeslicerJobStackNode();
+			m_alloc.freeFunc(m_alloc.opaque, jobNode);
+		}
+		else
+			jobNode->~SDeslicerJobStackNode();
+
+		jobNode = nextNode;
+	}
+
+	m_deslicerMemPool.Reset(&m_alloc);
+}
+
+bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, lwmUInt32 *outResult)
 {
 	if(packetSize < 1)
 		return false;
@@ -309,7 +385,8 @@ bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packet
 
 	if (packetTypeCode == constants::MPEG_PICTURE_START_CODE)
 	{
-		recon->WaitForFinish();
+		WaitForDigestFinish();
+		m_recon->WaitForFinish();
 
 		lwmCBitstream bitstream;
 		bitstream.Initialize(bytes, packetSize);
@@ -317,19 +394,56 @@ bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packet
 		if (ParsePicture(&bitstream) != constants::PARSE_OK)
 			return false;
 
-		recon->StartNewFrame(m_current - lwmRECONSLOT_FirstListed, m_future - lwmRECONSLOT_FirstListed, m_past - lwmRECONSLOT_FirstListed);
+		m_recon->StartNewFrame(m_current - lwmRECONSLOT_FirstListed, m_future - lwmRECONSLOT_FirstListed, m_past - lwmRECONSLOT_FirstListed);
 		*outResult = lwmDIGEST_Nothing;
 		return true;
 	}
 
 	if (packetTypeCode >= constants::MPEG_SLICE_MIN_START_CODE && packetTypeCode <= constants::MPEG_SLICE_MAX_START_CODE)
 	{
-		// TODO: Thread deslicer
-		m_stDeslicerJob.Digest(&m_sequence, &m_picture, bytes, packetSize, recon);
+		if(m_workNotifier)
+		{
+			DispatchDeslicerJob(bytes, packetSize, m_recon);
+		}
+		else
+		{
+			m_stDeslicerJob.Digest(&m_sequence, &m_picture, bytes, packetSize, m_recon);
+		}
 		return true;
 	}
 
 	return false;
+}
+
+void lwmovie::lwmVidStream::SetReconstructor(lwmIVideoReconstructor *recon)
+{
+	m_recon = static_cast<lwmIM1VReconstructor*>(recon);
+}
+
+void lwmovie::lwmVidStream::Participate()
+{
+	// Priority 1 is to consume a deslicer job
+	SDeslicerJobStackNode *dsJob = m_deslicerJobStack;
+	while(dsJob)
+	{
+		if(lwmAtomicIncrement(&dsJob->m_accessFlag) == 1)
+		{
+			// Can consume this job
+			dsJob->m_deslicerJob.Digest(&m_sequence, &m_picture, dsJob->m_dataBytes, dsJob->m_dataSize, m_recon);
+			return;
+		}
+		dsJob = dsJob->m_next;
+	}
+
+	// If that fails, then the job must have come from the reconstructor
+	m_recon->Participate();
+}
+
+void lwmovie::lwmVidStream::WaitForDigestFinish()
+{
+	if(m_workNotifier)
+		m_workNotifier->join(m_workNotifier->opaque);
+	DestroyDeslicerJobs();
 }
 
 void lwmovie::lwmVidStream::SignalIOFailure()
@@ -344,97 +458,50 @@ void lwmovie::lwmVidStream::OutputFinishedFrame()
 {
 }
 
-/*
-        void ExecuteDisplay()
-        {
-            if( _skipFrame != 0 )
-            {
-                _skipFrame--;
-                return;
-            }
+lwmovie::lwmVidStream::SDeslicerMemoryPool::SDeslicerMemoryPool(const lwmSAllocator *alloc, lwmUInt32 initialCapacity)
+{
+	memBytes = NULL;
+	memCapacity = 0;
+	memRemaining = 0;
+	nextCapacity = initialCapacity;
 
-            uint frameRateNum = 1;
-            uint frameRateDenom = 1;
-
-            frameRateDenom = 1;
-            switch (picture_rate)
-            {
-                case 1:
-                    frameRateNum = 23976;
-                    frameRateDenom = 1000;
-                    break;
-                case 2:
-                    frameRateNum = 24;
-                    break;
-                case 3:
-                    frameRateNum = 25;
-                    break;
-                case 4:
-                    frameRateNum = 2997;
-                    frameRateDenom = 100;
-                    break;
-                case 5:
-                    frameRateNum = 30;
-                    break;
-                case 6:
-                    frameRateNum = 50;
-                    break;
-                case 7:
-                    frameRateNum = 5994;
-                    frameRateDenom = 100;
-                    break;
-                case 8:
-                    frameRateNum = 60;
-                    break;
-                default:
-                    return; // Forget it
-            }
-            
-            _smpeg.ExecuteDisplay(new ImageInfo(h_size, v_size, mb_width * 16, mb_width * 8, mb_width * 8,
-                current.luminance, current.Cb, current.Cr, frameRateNum, frameRateDenom));
-        }
-
-
-        internal void SetFrameSkip(int numFrames)
-        {
-            _skipFrame = numFrames;
-        }
-    }
-
-
-    public struct ImageInfo
-    {
-        public readonly uint width;
-        public readonly uint height;
-
-        public readonly uint yPitch;
-        public readonly uint cbPitch;
-        public readonly uint crPitch;
-
-        public readonly byte[] yPlane;
-        public readonly byte[] cbPlane;
-        public readonly byte[] crPlane;
-
-        public readonly uint frameRateNum;
-        public readonly uint frameRateDenom;
-
-        public ImageInfo(uint width, uint height, uint yPitch, uint cbPitch, uint crPitch, byte[] yPlane, byte[] cbPlane, byte[] crPlane, uint frameRateNum, uint frameRateDenom)
-        {
-            this.width = width;
-            this.height = height;
-
-            this.yPitch = yPitch;
-            this.cbPitch = cbPitch;
-            this.crPitch = crPitch;
-
-            this.yPlane = yPlane;
-            this.cbPlane = cbPlane;
-            this.crPlane = crPlane;
-
-            this.frameRateNum = frameRateNum;
-            this.frameRateDenom = frameRateDenom;
-        }
-    }
+	Reset(alloc);
 }
 
-	*/
+void *lwmovie::lwmVidStream::SDeslicerMemoryPool::Alloc(lwmUInt32 size)
+{
+	nextCapacity += size;
+	if(memRemaining < size)
+		return NULL;
+	void *outBuf = static_cast<lwmUInt8*>(memBytes) + (memCapacity - memRemaining);
+	memRemaining -= size;
+	return outBuf;
+}
+
+void lwmovie::lwmVidStream::SDeslicerMemoryPool::Reset(const lwmSAllocator *alloc)
+{
+	if(nextCapacity > memCapacity)
+	{
+		if(memBytes)
+			alloc->freeFunc(alloc->opaque, memBytes);
+		memBytes = alloc->allocFunc(alloc->opaque, nextCapacity);
+		if(!memBytes)
+			memCapacity = 0;
+		else
+			memCapacity = nextCapacity;
+	}
+
+	memRemaining = memCapacity;
+	nextCapacity = 0;
+}
+
+void lwmovie::lwmVidStream::SDeslicerMemoryPool::Destroy(const lwmSAllocator *alloc)
+{
+	if(memBytes)
+		alloc->freeFunc(alloc->opaque, memBytes);
+}
+
+void lwmovie::lwmVidStream::FlushProfileTags(lwmCProfileTagSet *tagSet)
+{
+	m_stDeslicerJob.GetProfileTags()->FlushTo(tagSet);
+}

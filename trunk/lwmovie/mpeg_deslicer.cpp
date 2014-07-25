@@ -11,7 +11,9 @@ lwmovie::lwmDeslicerJob::lwmDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
 
 bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon)
 {
-	lwmCAutoProfile _(g_ptDeslice);
+#ifdef LWMOVIE_DEEP_PROFILE
+	lwmCAutoProfile _(&m_profileTags, lwmEPROFILETAG_Deslice);
+#endif
 
 	lwmCBitstream bitstream;
 	bitstream.Initialize(sliceData, sliceSize);
@@ -28,7 +30,7 @@ bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, const mpe
 	while(true)
 	{
 		/* Parse Macroblock. */
-		constants::lwmEParseState parseState = ParseMacroBlock(&bitstream, max_mb_addr, recon);
+		constants::lwmEParseState parseState = ParseMacroBlock(&bitstream, max_mb_addr, recon, &m_profileTags);
 		if(parseState == constants::PARSE_BREAK)
 			break;
 		if(parseState != constants::PARSE_OK)
@@ -112,9 +114,12 @@ bool lwmovie::lwmDeslicerJob::ParseSliceHeader(lwmCBitstream *bitstream)
  *
  *--------------------------------------------------------------
  */
-lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwmCBitstream *bitstream, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon )
+lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwmCBitstream *bitstream, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags )
 {
-	lwmCAutoProfile _(g_ptParseBlock);
+#ifdef LWMOVIE_DEEP_PROFILE
+	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseBlock);
+#endif
+
 	constants::lwmEMBQuantType mb_quant = constants::MB_QUANT_TYPE_FALSE;
 	/* Multiple ops necessary to deal with mb -1... */
 	lwmSInt32 row_end_mb = m_mblock.mb_address + 1;
@@ -371,7 +376,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* If block exists... */
 		if ((m_mblock.mb_intra) || ((m_mblock.cbp & mask) != 0))
 		{
-			if (!ParseReconBlock(bitstream, i, recon))
+			if (!ParseReconBlock(bitstream, i, recon, profileTags))
 				return lwmovie::constants::PARSE_SKIP_TO_START_CODE;
 		}
 		else
