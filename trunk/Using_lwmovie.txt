@@ -1,0 +1,86 @@
+== Encoding videos for lwmovie ==
+Authoring with lwmovie requires three steps:
+1.) Encode the source video and audio using tools of your choice
+2.) Import the source streams into raw lwmovie streams
+3.) Finalize the video, which combines input streams also adds hinting data necessary to decode the video.
+
+--- Importing streams ---
+All importation is done with the "lwmux" utility.
+
+lwmux importm1v <input.m1v> <output> - Imports MPEG-1 video and converts it to an lwmovie video stream.  This does not currently support multiplexed MPEG videos, you must demux the video and convert only the video.
+lwmux importmp2 <input.mp2> <output> - Imports MPEG-1 layer II audio and converts it to an lwmovie audio stream.  This does not currently support multiplexed MPEG videos.
+
+--- Multiplexing lwmovie streams ---
+lwmux finalize <number of audio readahead samples> <audio> <video> <output> - Multiplexes an audio and video stream into a finished lwmovie.  You can enter "-" as the filename for a stream to omit the stream.  This does not currently support extracting streams from already-finalized lwmovies.
+
+
+
+=== Decoding videos with lwmovie ===
+lwmovie depends on the host application to perform timing and IO.  To avoid IO stalls, it instead provides decoding hints that specify how much data needs to be read ahead to avoid falling behind.
+
+The first step to digesting a movie with lwmovie is to create a lwmSAllocator structure and pass it to lwmInitialize.  The allocator should always return blocks allocated on SIMD boundaries and the "opaque" field in the allocator will be passed back to the allocator functions.  lwmInitialize will return a lwmMovieState object if successful.
+
+To digest data, pass a data buffer and the buffer size to lwmFeedData.  lwmFeedData will return a result code and the number of bytes that were digested, which may be zero.
+
+Result codes and expected handling:
+lwmDIGEST_Initialize - Indicates that lwmovie has finished parsing the stream header.  When this is returned, you should create a video reconstructor and assign it to the video using lwmSetVideoReconstructor.  You can also access stream parameters at this point.  No further processing should be performed on the video until a reconstructor is assigned.
+lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation and is awaiting more data.
+lwmDIGEST_Worked - Indicates that lwmovie has performed some internal work even if it hasn't digested any data.
+lwmDIGEST_Error - Indicates that lwmovie has encountered an error.
+lwmDIGEST_VideoSync - Indicates that a new video frame is available.  lwmovie will automatically synchronize the reconstructor when this code is returned.
+lwmDIGEST_AudioSync - Indicates that a new audio frame is available.
+
+=== Accessing video stream information ===
+After lwmDIGEST_Initialize is received, you can access information about the video using lwmGetVideoParameters.  All parameters passed to it are optional, it will return the width and height in pixels, the number of frames per second expressed as a fraction, and the reconstructor type code.
+
+=== Software reconstructors ===
+Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Always pass the reconstructor the reconstructor type code received from lwmGetVideoParameters.
+
+You can assign a work pool notifier to the reconstructor using lwmSetVideoReconWorkNotifier.
+
+To retrieve output from a software reconstructor, wait for a lwmDIGEST_VideoSync result.  The resulting frame can be accessed in one of several ways:
+- lwmReconGetChannel allows you to specify a plane and will return back the address of the plane and the stride in bytes.
+- TODO
+
+=== Audio results ===
+- TODO
+
+
+=== Timing synchronization ===
+When lwmovie returns a synchronization result, you can get the timestamp for the stream that finished.  The timestamp represents the amount of data that the encoder has finished, including the data just processed, in periods.
+- TODO
+
+=== Additional topics ===
+-- Full-range color --
+  lwmovie supports full-range color, but full-range color is non-standard in MPEG-1 and requires tricking the encoder.  You can get around this limit in ffmpeg by converting your movie to rawvideo using -pix_fmt yuvj420p and then encoding it using -pix_fmt yuv420p.
+
+  
+=== Thread pooling ===
+lwmovie supports thread pooling by uwing lwmSWorkNotifier structures.
+
+
+Work notifiers are expected to contain 3 fields:
+- An "opaque" field containing a unique identifier that will be passed back to the other callbacks.
+- A "notifyAvailable" callback that will be passed the "opaque" field when new work is available.  The "notifyAvailable" function should call a participate function appropriate for the type of work assigned to the work notifier exactly once.
+- A "join" callback that will wait for all outstanding work assigned to the notifier to finish.
+
+To assign a work notifier to the video digester, use lwmSetVideoDigestWorkNotifier and participate using lwmVideoDigestParticipate.
+To assign a work notifier to the video reconstructor, use lwmSetVideoReconWorkNotifier and participate using lwmVideoReconParticipate.
+
+
+=== Additional topics ===
+-- Thread safety --
+Allocators passed to lwmovie are not required to be thread-safe, they will only ever be called by the digesting thread.
+
+It is safe to digest multiple lwmovies at the same time in different threads.
+
+Work participation may create jobs for other work notifiers, but will never create jobs for the same notifier.
+
+
+-- Security --
+Currently, lwmovie is NOT expected to be safe when decoding untrusted data.
+- TODO
+
+-- Error recovery --
+Currently, all errors in lwmovie are fatal.
+- TODO

@@ -26,7 +26,7 @@ int main(int argc, const char **argv)
 		lwmOSFile *outFile = lwmOSFile::Open(argv[3], lwmOSFile::FM_Create);
 		ConvertMP2(mp2file, outFile);
 	}
-	else if(!strcmp(argv[1], "mux"))
+	else if(!strcmp(argv[1], "finalize"))
 	{
 		lwmLargeUInt audioReadAhead = static_cast<lwmLargeUInt>(atoi(argv[2]));
 		lwmOSFile *audioFile = lwmOSFile::Open(argv[3], lwmOSFile::FM_Read);
