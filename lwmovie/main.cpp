@@ -65,7 +65,7 @@ int main(int argc, const char **argv)
 	digestNotifier.notifyAvailable = MyNotifyAvailable;
 	digestNotifier.opaque = digestWork;
 
-	//lwmSetVideoDigestWorkNotifier(movieState, &digestNotifier);
+	lwmSetVideoDigestWorkNotifier(movieState, &digestNotifier);
 
 	FILE *f = fopen("D:\\vids\\output_mux.lwmv", "rb");
 
@@ -115,7 +115,7 @@ int main(int argc, const char **argv)
 					videoReconNotifier.notifyAvailable = MyNotifyAvailable;
 					videoReconNotifier.opaque = videoReconWork;
 
-					//lwmSetVideoReconWorkNotifier(videoRecon, &videoReconNotifier);
+					lwmSetVideoReconWorkNotifier(videoRecon, &videoReconNotifier);
 				}
 				break;
 			case lwmDIGEST_VideoSync:
