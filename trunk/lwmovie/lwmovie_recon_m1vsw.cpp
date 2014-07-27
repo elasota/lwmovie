@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2014 Eric Lasota
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <new>
@@ -16,55 +37,51 @@ lwmovie::lwmCM1VSoftwareReconstructor::lwmCM1VSoftwareReconstructor()
 :	m_mblocks(NULL)
 ,	m_blocks(NULL)
 ,	m_dctBlocks(NULL)
-,	m_yuvBuffer(NULL)
 {
 }
 
 lwmovie::lwmCM1VSoftwareReconstructor::~lwmCM1VSoftwareReconstructor()
 {
 	if(m_mblocks)
-		m_alloc.freeFunc(m_alloc.opaque, m_mblocks);
+		m_alloc->freeFunc(m_alloc, m_mblocks);
 	if(m_blocks)
-		m_alloc.freeFunc(m_alloc.opaque, m_blocks);
+		m_alloc->freeFunc(m_alloc, m_blocks);
 	if(m_dctBlocks)
-		m_alloc.freeFunc(m_alloc.opaque, m_dctBlocks);
-	if(m_yuvBuffer)
-		m_alloc.freeFunc(m_alloc.opaque, m_yuvBuffer);
+		m_alloc->freeFunc(m_alloc, m_dctBlocks);
 	if(m_rowCommitCounts)
-		m_alloc.freeFunc(m_alloc.opaque, m_rowCommitCounts);
+		m_alloc->freeFunc(m_alloc, m_rowCommitCounts);
 	if(m_workRowUsers)
-		m_alloc.freeFunc(m_alloc.opaque, m_workRowUsers);
+		m_alloc->freeFunc(m_alloc, m_workRowUsers);
 	if(m_workRowProfileTags)
-		m_alloc.freeFunc(m_alloc.opaque, m_workRowProfileTags);
+		m_alloc->freeFunc(m_alloc, m_workRowProfileTags);
 }
 
-bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(const lwmSAllocator *alloc, lwmMovieState *movieState)
+bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState)
 {
 	lwmUInt32 width, height;
 
-	lwmGetVideoParameters(movieState, &width, &height, NULL, NULL, NULL);
+	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Width, &width);
+	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Height, &height);
 
 	lwmUInt32 mbWidth = (width + 15) / 16;
 	lwmUInt32 mbHeight = (height + 15) / 16;
 	lwmUInt32 numMB = mbWidth * mbHeight;
-	m_alloc = *alloc;
-	
-	m_yStride = PadToSIMD(mbWidth * 16);
-	m_uvStride = PadToSIMD(mbWidth * 8);
+	m_alloc = alloc;
+	m_frameProvider = frameProvider;
 
-	m_yOffset = 0;
-	m_uOffset = mbHeight * 16 * m_yStride;
-	m_vOffset = m_uOffset + (mbHeight * 8 * m_uvStride);
-	m_yuvFrameSize = (m_vOffset + (mbHeight * 8 * m_uvStride));
+	if(!frameProvider->createWorkFramesFunc(frameProvider, 2, 1, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_YUV420P_Planar))
+		return false;
+	m_yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
+	m_uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
+	m_vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
 
-	m_mblocks = static_cast<lwmReconMBlock*>(m_alloc.allocFunc(m_alloc.opaque, sizeof(lwmReconMBlock) * numMB));
-	m_blocks = static_cast<lwmBlockInfo*>(m_alloc.allocFunc(m_alloc.opaque, sizeof(lwmBlockInfo) * numMB * 6));
-	m_dctBlocks = static_cast<lwmDCTBLOCK*>(m_alloc.allocFunc(m_alloc.opaque, sizeof(lwmDCTBLOCK) * numMB * 6));
-	m_yuvBuffer = static_cast<lwmUInt8*>(m_alloc.allocFunc(m_alloc.opaque, m_yuvFrameSize * 3));
-	m_rowCommitCounts = static_cast<lwmAtomicInt*>(m_alloc.allocFunc(m_alloc.opaque, mbHeight * sizeof(lwmAtomicInt)));
-	m_workRowUsers = static_cast<lwmAtomicInt*>(m_alloc.allocFunc(m_alloc.opaque, mbHeight * sizeof(lwmAtomicInt)));
+	m_mblocks = static_cast<lwmReconMBlock*>(m_alloc->allocFunc(m_alloc, sizeof(lwmReconMBlock) * numMB));
+	m_blocks = static_cast<lwmBlockInfo*>(m_alloc->allocFunc(m_alloc, sizeof(lwmBlockInfo) * numMB * 6));
+	m_dctBlocks = static_cast<lwmDCTBLOCK*>(m_alloc->allocFunc(m_alloc, sizeof(lwmDCTBLOCK) * numMB * 6));
+	m_rowCommitCounts = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
+	m_workRowUsers = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
 
-	m_workRowProfileTags = static_cast<lwmCProfileTagSet*>(m_alloc.allocFunc(m_alloc.opaque, mbHeight * sizeof(lwmCProfileTagSet)));
+	m_workRowProfileTags = static_cast<lwmCProfileTagSet*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmCProfileTagSet)));
 	for(lwmUInt32 i=0;i<mbHeight;i++)
 		new (m_workRowProfileTags + i) lwmCProfileTagSet();
 
@@ -74,14 +91,16 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(const lwmSAllocator *allo
 
 	m_movieState = movieState;
 
-	if(!m_mblocks || !m_blocks || !m_dctBlocks || !m_yuvBuffer || !m_rowCommitCounts)
+	if(!m_mblocks || !m_blocks || !m_dctBlocks || !m_rowCommitCounts)
 		return false;
 
-	m_stWorkNotifier.opaque = this;
-	m_stWorkNotifier.join = STWNJoinFunc;
-	m_stWorkNotifier.notifyAvailable = STWNNotifyAvailableFunc;
+	m_stWorkNotifier.joinFunc = STWNJoinFunc;
+	m_stWorkNotifier.notifyAvailableFunc = STWNNotifyAvailableFunc;
+	m_stWorkNotifier.recon = this;
 
 	m_workNotifier = &m_stWorkNotifier;
+
+	m_currentTarget.isOpen = m_pastTarget.isOpen = m_futureTarget.isOpen = false;
 
 	return true;
 }
@@ -137,7 +156,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::CommitFull(lwmSInt32 address)
 
 void lwmovie::lwmCM1VSoftwareReconstructor::WaitForFinish()
 {
-	m_workNotifier->join(m_workNotifier->opaque);
+	m_workNotifier->joinFunc(m_workNotifier);
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
@@ -149,20 +168,22 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
 	lwmUInt32 mbWidth = m_mbWidth;
 	lwmUInt32 mbHeight = m_mbHeight;
 
-	lwmUInt8 *cy = m_currentTarget.base + m_yOffset;
-	lwmUInt8 *cu = m_currentTarget.base + m_uOffset;
-	lwmUInt8 *cv = m_currentTarget.base + m_vOffset;
-	lwmUInt8 *py = m_pastTarget.base + m_yOffset;
-	lwmUInt8 *pu = m_pastTarget.base + m_uOffset;
-	lwmUInt8 *pv = m_pastTarget.base + m_vOffset;
-	lwmUInt8 *fy = m_futureTarget.base + m_yOffset;
-	lwmUInt8 *fu = m_futureTarget.base + m_uOffset;
-	lwmUInt8 *fv = m_futureTarget.base + m_vOffset;
+	lwmUInt8 *cy = m_currentTarget.yPlane;
+	lwmUInt8 *cu = m_currentTarget.uPlane;
+	lwmUInt8 *cv = m_currentTarget.vPlane;
+	lwmUInt8 *py = m_pastTarget.yPlane;
+	lwmUInt8 *pu = m_pastTarget.uPlane;
+	lwmUInt8 *pv = m_pastTarget.vPlane;
+	lwmUInt8 *fy = m_futureTarget.yPlane;
+	lwmUInt8 *fu = m_futureTarget.uPlane;
+	lwmUInt8 *fv = m_futureTarget.vPlane;
 
 	lwmUInt32 rowStrideY = m_yStride;
-	lwmUInt32 rowStrideUV = m_uvStride;
+	lwmUInt32 rowStrideU = m_uStride;
+	lwmUInt32 rowStrideV = m_vStride;
 	lwmUInt32 mbRowStrideY = 16 * m_yStride;
-	lwmUInt32 mbRowStrideUV = 8 * m_uvStride;
+	lwmUInt32 mbRowStrideU = 8 * m_uStride;
+	lwmUInt32 mbRowStrideV = 8 * m_vStride;
 
 	lwmUInt32 row = 0;
 
@@ -183,14 +204,14 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
 	lwmUInt32 mbAddress = row*mbWidth;
 
 	ReconstructRow(m_mblocks + mbAddress, m_blocks + mbAddress*6, m_dctBlocks + mbAddress*6,
-		cy + row*mbRowStrideY, cu + row*mbRowStrideUV, cv + row*mbRowStrideUV,
-		fy + row*mbRowStrideY, fu + row*mbRowStrideUV, fv + row*mbRowStrideUV,
-		py + row*mbRowStrideY, pu + row*mbRowStrideUV, pv + row*mbRowStrideUV,
+		cy + row*mbRowStrideY, cu + row*mbRowStrideU, cv + row*mbRowStrideV,
+		fy + row*mbRowStrideY, fu + row*mbRowStrideU, fv + row*mbRowStrideV,
+		py + row*mbRowStrideY, pu + row*mbRowStrideU, pv + row*mbRowStrideV,
 		m_workRowProfileTags + row
 		);
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::SetWorkNotifier(const lwmSWorkNotifier *workNotifier)
+void lwmovie::lwmCM1VSoftwareReconstructor::SetWorkNotifier(lwmSWorkNotifier *workNotifier)
 {
 	m_workNotifier = workNotifier;
 }
@@ -266,7 +287,8 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(const lwmReconMBlock 
 	lwmUInt32 mbWidth = m_mbWidth;
 
 	lwmUInt32 yStride = m_yStride;
-	lwmUInt32 uvStride = m_uvStride;
+	lwmUInt32 uStride = m_uStride;
+	lwmUInt32 vStride = m_vStride;
 
 	lwmLargeUInt blockOffsets[4];
 	blockOffsets[0] = 0;
@@ -281,8 +303,8 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(const lwmReconMBlock 
 			 block[3].zero_block_flag && block[4].zero_block_flag && block[5].zero_block_flag);
 
 		ReconstructLumaBlocks(mblock, block, dctBlocks, cy, fy, py, yStride, profileTags);
-		ReconstructChromaBlock(mblock, block + 4, dctBlocks + 4, cu, fu, pu, uvStride, profileTags);
-		ReconstructChromaBlock(mblock, block + 5, dctBlocks + 5, cv, fv, pv, uvStride, profileTags);
+		ReconstructChromaBlock(mblock, block + 4, dctBlocks + 4, cu, fu, pu, uStride, profileTags);
+		ReconstructChromaBlock(mblock, block + 5, dctBlocks + 5, cv, fv, pv, vStride, profileTags);
 
 		cy += 16;
 		cu += 8;
@@ -318,38 +340,38 @@ void lwmovie::lwmCM1VSoftwareReconstructor::PutDCTBlock(const lwmDCTBLOCK *dctBl
 	}
 }
 
-
-void lwmovie::lwmCM1VSoftwareReconstructor::GetChannel(lwmUInt32 channelNum, const lwmUInt8 **outPChannel, lwmUInt32 *outStride)
+void lwmovie::lwmCM1VSoftwareReconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB)
 {
-	switch(channelNum)
-	{
-	case 0:
-		*outPChannel = m_currentTarget.base + m_yOffset;
-		*outStride = m_yStride;
-		break;
-	case 1:
-		*outPChannel = m_currentTarget.base + m_uOffset;
-		*outStride = m_uvStride;
-		break;
-	case 2:
-		*outPChannel = m_currentTarget.base + m_vOffset;
-		*outStride = m_uvStride;
-		break;
-	default:
-		*outPChannel = NULL;
-		*outStride = 0;
-		break;
-	}
-}
+	this->CloseFrame();
 
-void lwmovie::lwmCM1VSoftwareReconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past)
-{
 	for(lwmUInt32 i=0;i<m_mbHeight;i++)
 		m_rowCommitCounts[i] = m_workRowUsers[i] = 0;
 
-	m_currentTarget.base = m_yuvBuffer + current * m_yuvFrameSize;
-	m_futureTarget.base = m_yuvBuffer + future * m_yuvFrameSize;
-	m_pastTarget.base = m_yuvBuffer + past * m_yuvFrameSize;
+	m_frameProvider->lockWorkFrameFunc(m_frameProvider, current - 1, currentIsB ? lwmVIDEOLOCK_Write_Only : lwmVIDEOLOCK_Write_ReadLater);
+	m_currentTarget.LoadFromFrameProvider(m_frameProvider, current - 1);
+	if(future)
+	{
+		m_frameProvider->lockWorkFrameFunc(m_frameProvider, future - 1, lwmVIDEOLOCK_Read);
+		m_futureTarget.LoadFromFrameProvider(m_frameProvider, future - 1);
+	}
+	if(past)
+	{
+		m_frameProvider->lockWorkFrameFunc(m_frameProvider, past - 1, lwmVIDEOLOCK_Read);
+		m_pastTarget.LoadFromFrameProvider(m_frameProvider, past - 1);
+	}
+}
+
+void lwmovie::lwmCM1VSoftwareReconstructor::CloseFrame()
+{
+	m_currentTarget.Close(m_frameProvider);
+	m_futureTarget.Close(m_frameProvider);
+	m_pastTarget.Close(m_frameProvider);
+}
+
+void lwmovie::lwmCM1VSoftwareReconstructor::PresentFrame(lwmUInt32 slot)
+{
+	CloseFrame();
+	this->m_outputTarget = slot - 1;
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::MarkRowFinished(lwmSInt32 firstMBAddress)
@@ -358,11 +380,35 @@ void lwmovie::lwmCM1VSoftwareReconstructor::MarkRowFinished(lwmSInt32 firstMBAdd
 
 	// Check commit count, should be zero.  If non-zero, the video is bad and is committing the same row multiple times
 	if(lwmAtomicIncrement(m_rowCommitCounts + row) == 1)
-		m_workNotifier->notifyAvailable(m_workNotifier->opaque);
+		m_workNotifier->notifyAvailableFunc(m_workNotifier);
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::FlushProfileTags(lwmCProfileTagSet *tagSet)
 {
 	for(lwmUInt32 i=0;i<m_mbHeight;i++)
 		m_workRowProfileTags[i].FlushTo(tagSet);
+}
+
+lwmUInt32 lwmovie::lwmCM1VSoftwareReconstructor::GetWorkFrameIndex() const
+{
+	return m_outputTarget;
+}
+
+//////////////////////////////////////////////////////////////////
+void lwmovie::lwmCM1VSoftwareReconstructor::STarget::LoadFromFrameProvider(lwmSVideoFrameProvider *frameProvider, lwmUInt32 frameIndex)
+{
+	this->yPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0));
+	this->uPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1));
+	this->vPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2));
+	this->frameIndex = frameIndex;
+	this->isOpen = true;
+}
+
+void lwmovie::lwmCM1VSoftwareReconstructor::STarget::Close(lwmSVideoFrameProvider *frameProvider)
+{
+	if(this->isOpen)
+	{
+		this->isOpen = false;
+		frameProvider->unlockWorkFrameFunc(frameProvider, this->frameIndex);
+	}
 }
