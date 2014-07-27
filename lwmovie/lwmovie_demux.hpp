@@ -70,12 +70,15 @@ enum
 {
 	lwmSTREAMTYPE_Video,
 	lwmSTREAMTYPE_Audio,
+
+	lwmSTREAMTYPE_Count,
 };
 
 enum
 {
 	lwmSTREAMPARAM_U32_Width,
 	lwmSTREAMPARAM_U32_Height,
+	lwmSTREAMPARAM_U32_SyncPeriod,
 	lwmSTREAMPARAM_U32_PPSNumerator,
 	lwmSTREAMPARAM_U32_PPSDenominator,
 	lwmSTREAMPARAM_U32_ReconType,

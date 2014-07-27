@@ -18,12 +18,15 @@ lwmux finalize <number of audio readahead samples> <audio> <video> <output> - Mu
 === Decoding videos with lwmovie ===
 lwmovie depends on the host application to perform timing and IO.  To avoid IO stalls, it instead provides decoding hints that specify how much data needs to be read ahead to avoid falling behind.
 
-The first step to digesting a movie with lwmovie is to create a lwmSAllocator structure and pass it to lwmInitialize.  The allocator should always return blocks allocated on SIMD boundaries and the "opaque" field in the allocator will be passed back to the allocator functions.  lwmInitialize will return a lwmMovieState object if successful.
+The first step to digesting a movie with lwmovie is to create a lwmSAllocator instance and pass it to lwmCreateMovieState.  The allocator should always return blocks allocated on SIMD boundaries and should not be destroyed until the movie state is destroyed.  The allocator instance passed to functions will always be the one passed back to the callbacks.  lwmCreateMovieState will return a lwmMovieState object if successful.
 
-To digest data, pass a data buffer and the buffer size to lwmFeedData.  lwmFeedData will return a result code and the number of bytes that were digested, which may be zero.
+You can pass a bitmask of user flags to lwmCreateMovieState:
+- lwmUSERFLAG_ThreadedDeslicer - Allows bitstream parsing to be thread pooled, but increases memory consumption.  If you use this, you should set a work notifier using lwmMovieState_SetVideoDigestWorkNotifier and the work notifier should call lwmMovieState_VideoDigestParticipate.
+
+To digest data, pass a data buffer and the buffer size to lwmMovieState_FeedData.  lwmMovieState_FeedData will return a result code and the number of bytes that were digested, which may be zero.
 
 Result codes and expected handling:
-lwmDIGEST_Initialize - Indicates that lwmovie has finished parsing the stream header.  When this is returned, you should create a video reconstructor and assign it to the video using lwmSetVideoReconstructor.  You can also access stream parameters at this point.  No further processing should be performed on the video until a reconstructor is assigned.
+lwmDIGEST_Initialize - Indicates that lwmovie has finished parsing the stream header.  When this is returned, you should create a video reconstructor and assign it to the video using lwmMovieState_SetVideoReconstructor.  You can also access stream parameters at this point.  No further processing should be performed on the video until a reconstructor is assigned.
 lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation and is awaiting more data.
 lwmDIGEST_Worked - Indicates that lwmovie has performed some internal work even if it hasn't digested any data.
 lwmDIGEST_Error - Indicates that lwmovie has encountered an error.
@@ -34,9 +37,13 @@ lwmDIGEST_AudioSync - Indicates that a new audio frame is available.
 After lwmDIGEST_Initialize is received, you can access information about the video using lwmGetVideoParameters.  All parameters passed to it are optional, it will return the width and height in pixels, the number of frames per second expressed as a fraction, and the reconstructor type code.
 
 === Software reconstructors ===
-Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Always pass the reconstructor the reconstructor type code received from lwmGetVideoParameters.
+To use the software reconstructor, you must first create a frame provider.  Frame providers serve work frames to the reconstructor.
 
-You can assign a work pool notifier to the reconstructor using lwmSetVideoReconWorkNotifier.
+System memory frame providers use a provided allocator and store results in main memory.  To create a system memory frame provider, call lwmCreateSystemMemoryFrameProvider.
+
+Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Always pass the reconstructor the reconstructor type code received from lwmGetStreamParameterU32 with lwmSTREAMPARAM_U32_ReconType.
+
+You can optionally assign a work notifier to the reconstructor using lwmVideoRecon_SetWorkNotifier, which should call lwmVideoRecon_Participate.
 
 To retrieve output from a software reconstructor, wait for a lwmDIGEST_VideoSync result.  The resulting frame can be accessed in one of several ways:
 - lwmReconGetChannel allows you to specify a plane and will return back the address of the plane and the stride in bytes.
@@ -47,7 +54,9 @@ To retrieve output from a software reconstructor, wait for a lwmDIGEST_VideoSync
 
 
 === Timing synchronization ===
-When lwmovie returns a synchronization result, you can get the timestamp for the stream that finished.  The timestamp represents the amount of data that the encoder has finished, including the data just processed, in periods.
+When lwmovie returns a synchronization result, you can get the timestamp for the stream that finished using lwmGetStreamParameterU32 and the lwmSTREAMPARAM_U32_SyncPeriod parameter type.  The number of periods per second for a stream can be determined using lwmGetStreamParameterU32 with the lwmSTREAMPARAM_U32_PPSNumerator and lwmSTREAMPARAM_U32_PPSDenominator stream parameter types, which return the numerator and denominator of the periods-per-second fraction, respectively.
+
+The timestamp represents the amount of data that the encoder has finished, including the data just processed, in periods.
 - TODO
 
 === Additional topics ===
@@ -58,23 +67,24 @@ When lwmovie returns a synchronization result, you can get the timestamp for the
 === Thread pooling ===
 lwmovie supports thread pooling by uwing lwmSWorkNotifier structures.
 
-
-Work notifiers are expected to contain 3 fields:
+Work notifiers are expected to contain 2 fields:
 - An "opaque" field containing a unique identifier that will be passed back to the other callbacks.
-- A "notifyAvailable" callback that will be passed the "opaque" field when new work is available.  The "notifyAvailable" function should call a participate function appropriate for the type of work assigned to the work notifier exactly once.
-- A "join" callback that will wait for all outstanding work assigned to the notifier to finish.
+- A "notifyAvailableFunc" callback that will be passed the work notifier instance new work is available.  The function should call a participate function appropriate for the type of work assigned to the work notifier exactly once.
+- A "joinFunc" callback that will wait for all outstanding work assigned to the notifier to finish.
 
 To assign a work notifier to the video digester, use lwmSetVideoDigestWorkNotifier and participate using lwmVideoDigestParticipate.
 To assign a work notifier to the video reconstructor, use lwmSetVideoReconWorkNotifier and participate using lwmVideoReconParticipate.
 
 
+=== Cleaning up ===
+
 === Additional topics ===
 -- Thread safety --
-Allocators passed to lwmovie are not required to be thread-safe, they will only ever be called by the digesting thread.
-
 It is safe to digest multiple lwmovies at the same time in different threads.
 
-Work participation may create jobs for other work notifiers, but will never create jobs for the same notifier.
+Work participation may create jobs for other work notifiers, but will never create jobs for the participating notifier.
+
+Work participation will never call the memory allocator.
 
 
 -- Security --
