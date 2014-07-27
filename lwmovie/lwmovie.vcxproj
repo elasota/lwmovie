@@ -67,11 +67,12 @@
     <ClCompile Include="lwmovie_bitstream.cpp" />
     <ClCompile Include="lwmovie_decodedct.cpp" />
     <ClCompile Include="lwmovie_demux.cpp" />
+    <ClCompile Include="lwmovie_fp.cpp" />
+    <ClCompile Include="lwmovie_fp_systemmem.cpp" />
     <ClCompile Include="lwmovie_idct.cpp" />
     <ClCompile Include="lwmovie_macroblock.cpp" />
     <ClCompile Include="lwmovie_motionvectors.cpp" />
     <ClCompile Include="lwmovie_parseblock.cpp" />
-    <ClCompile Include="lwmovie_pictimage.cpp" />
     <ClCompile Include="lwmovie_constants.cpp" />
     <ClCompile Include="lwmovie_profile.cpp" />
     <ClCompile Include="lwmovie_recon.cpp" />
@@ -91,6 +92,7 @@
     <ClInclude Include="lwmovie_demux.hpp" />
     <ClInclude Include="lwmovie_external_types.h" />
     <ClInclude Include="lwmovie_fillable.hpp" />
+    <ClInclude Include="lwmovie_fp.hpp" />
     <ClInclude Include="lwmovie_package.hpp" />
     <ClInclude Include="lwmovie_packetplan.hpp" />
     <ClInclude Include="lwmovie_profile.hpp" />

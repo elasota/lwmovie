@@ -97,14 +97,14 @@ namespace lwmovie
 		lwmUInt8 *Cr;			/* Cr plane.          */
 		lwmUInt8 *Cb;			/* Cb plane.          */
 
-		lwmSAllocator alloc;
+		lwmSAllocator *alloc;
 
 		bool createdOk;
 		bool m_isReserved;
 
 	public:
 		lwmPictImage();
-		lwmPictImage(const lwmSAllocator *alloc, lwmLargeUInt w, lwmLargeUInt h);
+		lwmPictImage(lwmSAllocator *alloc, lwmLargeUInt w, lwmLargeUInt h);
 		~lwmPictImage();
 
 		lwmUInt8 *GetLuminancePlane() const;
@@ -149,14 +149,6 @@ namespace lwmovie
 		lwmSInt32 recon_down_for_prev;		/* Past down forw. vector.          */
 		lwmSInt32 recon_right_back_prev;	/* Past right back vector.          */
 		lwmSInt32 recon_down_back_prev;		/* Past down back vector.           */
-
-		/*
-		lwmSInt32 recon_right_for;
-		lwmSInt32 recon_down_for;
-		lwmSInt32 recon_right_back;
-		lwmSInt32 recon_down_back;
-		*/
-
 
 		bool bpict_past_forw;				/* Past B frame forw. vector flag.  */
 		bool bpict_past_back;				/* Past B frame back vector flag.   */
@@ -203,9 +195,7 @@ namespace lwmovie
 	enum lwmEReconSlot
 	{
 		lwmRECONSLOT_Unassigned,
-		lwmRECONSLOT_FirstListed,
-
-		lwmRECONSLOT_IP1 = lwmRECONSLOT_FirstListed,
+		lwmRECONSLOT_IP1,
 		lwmRECONSLOT_IP2,
 		lwmRECONSLOT_B,
 	};
@@ -251,7 +241,7 @@ namespace lwmovie
 		void SignalIOFailure();
 		void ReportError(const char *str);
 		
-		lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, const lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
+		lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
 		~lwmVidStream();
 
 		bool DigestStreamParameters(const void *bytes, lwmUInt32 packetSize);
@@ -259,6 +249,7 @@ namespace lwmovie
 		void SetReconstructor(lwmIVideoReconstructor *recon);
 		void Participate();
 		void WaitForDigestFinish();
+		void EmitFrame();
 
 		void FlushProfileTags(lwmCProfileTagSet *tagSet);
 
@@ -288,16 +279,16 @@ namespace lwmovie
 			lwmUInt32				memRemaining;
 			lwmUInt32				nextCapacity;
 
-			SDeslicerMemoryPool(const lwmSAllocator *alloc, lwmUInt32 initialCapacity);
+			SDeslicerMemoryPool(lwmSAllocator *alloc, lwmUInt32 initialCapacity);
 
 			void *Alloc(lwmUInt32 size);
-			void Reset(const lwmSAllocator *alloc);
-			void Destroy(const lwmSAllocator *alloc);
+			void Reset(lwmSAllocator *alloc);
+			void Destroy(lwmSAllocator *alloc);
 		};
 
 		SDeslicerJobStackNode * volatile m_deslicerJobStack;
 		SDeslicerMemoryPool m_deslicerMemPool;
-		const lwmSWorkNotifier *m_workNotifier;
+		lwmSWorkNotifier *m_workNotifier;
 		lwmMovieState *m_movieState;
 
 		lwmUInt32 m_h_size;						/* Horiz. size in pixels.     */
@@ -310,17 +301,16 @@ namespace lwmovie
 		mpegPict m_picture;						/* Current picture.           */
 		mpegSequence m_sequence;				/* Current sequence.          */
 
-		lwmSInt32 m_right_for, m_down_for;		/* From ReconPMBlock, video.c */
-		lwmSInt32 m_right_half_for, m_down_half_for;
-
 		lwmEReconSlot		m_past;				/* Past predictive frame.         */
 		lwmEReconSlot		m_future;			/* Future predictive frame.       */
 		lwmEReconSlot		m_current;			/* Current frame.                 */
 
+		lwmEReconSlot		m_outputSlot;
+
 		lwmUInt32			m_mb_height;		/* Vert. size in mblocks.     */
 		lwmUInt32			m_mb_width;			/* Horiz. size in mblocks.    */
 
-		lwmSAllocator		m_alloc;
+		lwmSAllocator		*m_alloc;
 		lwmDeslicerJob		m_stDeslicerJob;
 
 		lwmIM1VReconstructor	*m_recon;

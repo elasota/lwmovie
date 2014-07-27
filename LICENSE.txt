@@ -1,3 +1,6 @@
+===============================================================================
+lwmovie
+-------------------------------------------------------------------------------
 Copyright (c) 2014 Eric Lasota
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ===============================================================================
+MPEG-1 video decoder contains portions of mpegplay:
+-------------------------------------------------------------------------------
 Copyright (c) 1995 The Regents of the University of California.
 All rights reserved.    
 
@@ -37,7 +42,7 @@ AND FITNESS FOR A PARTICULAR PURPOSE.    THE SOFTWARE PROVIDED HEREUNDER IS
 ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATION TO
 PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
-===============================================================================
+-------------------------------------------------------------------------------
 Portions of this software Copyright (c) 1995 Brown University.
 All rights reserved.
  
@@ -58,6 +63,8 @@ BASIS, AND BROWN UNIVERSITY HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
 SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 ===============================================================================
+mp2dec2 contains portions of Ogg Vorbis:
+-------------------------------------------------------------------------------
 Copyright (c) 2002-2008 Xiph.org Foundation
 
 Redistribution and use in source and binary forms, with or without

@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2014 Eric Lasota
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <stdio.h>
@@ -11,12 +32,12 @@ using namespace lwmovie;
 
 lwmVidStream *vidStream;
 
-static void *MyAlloc(void *opaque, lwmLargeUInt sz)
+static void *MyAlloc(lwmSAllocator *alloc, lwmLargeUInt sz)
 {
 	return _aligned_malloc(sz, 16);
 }
 
-static void MyFree(void *opaque, void *ptr)
+static void MyFree(lwmSAllocator *alloc, void *ptr)
 {
 	_aligned_free(ptr);
 }
@@ -29,45 +50,63 @@ static lwmLargeUInt MyRead(void *f, void *buf, lwmLargeUInt nBytes)
 VOID NTAPI MyVideoDigestWorkCallback(PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_WORK work)
 {
 	lwmMovieState *movieState = static_cast<lwmMovieState *>(context);
-	lwmVideoDigestParticipate(movieState);
+	lwmMovieState_VideoDigestParticipate(movieState);
 }
 
 VOID NTAPI MyVideoReconWorkCallback(PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_WORK work)
 {
 	lwmIVideoReconstructor *recon = static_cast<lwmIVideoReconstructor *>(context);
-	lwmVideoReconParticipate(recon);
+	lwmVideoRecon_Participate(recon);
 }
 
-void MyJoin(void *opaque)
+class CWinThreadPoolWorkNotifier : public lwmSWorkNotifier
 {
-	WaitForThreadpoolWorkCallbacks(static_cast<PTP_WORK>(opaque), FALSE);
-}
+public:
+	CWinThreadPoolWorkNotifier()
+	{
+		this->joinFunc = StaticJoin;
+		this->notifyAvailableFunc = StaticNotifyAvailable;
+	}
 
-void MyNotifyAvailable(void *opaque)
-{
-	SubmitThreadpoolWork(static_cast<PTP_WORK>(opaque));
-}
+	void SetWork(PTP_WORK work)
+	{
+		m_work = work;
+	}
+
+	static void StaticJoin(lwmSWorkNotifier *workNotifier)
+	{
+		WaitForThreadpoolWorkCallbacks(static_cast<CWinThreadPoolWorkNotifier*>(workNotifier)->m_work, FALSE);
+	}
+
+	static void StaticNotifyAvailable(lwmSWorkNotifier *workNotifier)
+	{
+		SubmitThreadpoolWork(static_cast<CWinThreadPoolWorkNotifier*>(workNotifier)->m_work);
+	}
+
+private:
+	PTP_WORK m_work;
+};
 
 
 int main(int argc, const char **argv)
 {
+	if(argc < 2)
+		return -1;
+
 	lwmSAllocator alloc;
-	alloc.opaque = NULL;
 	alloc.allocFunc = MyAlloc;
 	alloc.freeFunc = MyFree;
 
-	lwmMovieState *movieState = lwmInitialize(&alloc);
+	lwmMovieState *movieState = lwmCreateMovieState(&alloc, lwmUSERFLAG_ThreadedDeslicer);
 
 	PTP_WORK digestWork = CreateThreadpoolWork(MyVideoDigestWorkCallback, movieState, NULL);
 
-	lwmSWorkNotifier digestNotifier;
-	digestNotifier.join = MyJoin;
-	digestNotifier.notifyAvailable = MyNotifyAvailable;
-	digestNotifier.opaque = digestWork;
+	CWinThreadPoolWorkNotifier digestNotifier;
+	digestNotifier.SetWork(digestWork);
 
-	lwmSetVideoDigestWorkNotifier(movieState, &digestNotifier);
+	lwmMovieState_SetVideoDigestWorkNotifier(movieState, &digestNotifier);
 
-	FILE *f = fopen("D:\\vids\\output_mux.lwmv", "rb");
+	FILE *f = fopen(argv[1], "rb");
 
 	lwmUInt8 buffer[32768];
 	size_t bufferAvailable;
@@ -75,8 +114,9 @@ int main(int argc, const char **argv)
 	LARGE_INTEGER frameTime;
 	lwmUInt64 frameTimeTotal = 0;
 	
-	lwmUInt32 width, height, ppsNum, ppsDenom;
+	lwmUInt32 width, height;
 	lwmCProfileTagSet tagSet;
+	lwmSVideoFrameProvider *frameProvider;
 
 	while(true)
 	{
@@ -92,7 +132,7 @@ int main(int argc, const char **argv)
 			LARGE_INTEGER perfStart, perfEnd;
 			QueryPerformanceCounter(&perfStart);
 			lwmUInt32 digested;
-			lwmFeedData(movieState, feedBuffer, bufferAvailable, &result, &digested);
+			lwmMovieState_FeedData(movieState, feedBuffer, bufferAvailable, &result, &digested);
 			QueryPerformanceCounter(&perfEnd);
 			bufferAvailable -= digested;
 			feedBuffer += digested;
@@ -104,18 +144,19 @@ int main(int argc, const char **argv)
 			case lwmDIGEST_Initialize:
 				{
 					lwmUInt32 reconType;
-					lwmGetVideoParameters(movieState, &width, &height, &ppsNum, &ppsDenom, &reconType);
-					lwmCreateSoftwareVideoReconstructor(movieState, &alloc, reconType, &videoRecon);
-					lwmSetVideoReconstructor(movieState, videoRecon);
+					lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Width, &width);
+					lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Height, &height);
+					lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_ReconType, &reconType);
+					frameProvider = lwmCreateSystemMemoryFrameProvider(&alloc, movieState);
+					videoRecon = lwmCreateSoftwareVideoReconstructor(movieState, &alloc, reconType, frameProvider);
+					lwmMovieState_SetVideoReconstructor(movieState, videoRecon);
 					
 					PTP_WORK videoReconWork = CreateThreadpoolWork(MyVideoReconWorkCallback, videoRecon, NULL);
 
-					lwmSWorkNotifier videoReconNotifier;
-					videoReconNotifier.join = MyJoin;
-					videoReconNotifier.notifyAvailable = MyNotifyAvailable;
-					videoReconNotifier.opaque = videoReconWork;
+					CWinThreadPoolWorkNotifier videoReconNotifier;
+					videoReconNotifier.SetWork(videoReconWork);
 
-					lwmSetVideoReconWorkNotifier(videoRecon, &videoReconNotifier);
+					lwmVideoRecon_SetWorkNotifier(videoRecon, &videoReconNotifier);
 				}
 				break;
 			case lwmDIGEST_VideoSync:
@@ -137,19 +178,24 @@ int main(int argc, const char **argv)
 					printf("Frame time: %f ms\n", ptDouble * 1000.0 / pfDouble);
 					frameTimeTotal = 0;
 
-					lwmReconGetChannel(videoRecon, 0, &yBuffer, &yStride);
-					lwmReconGetChannel(videoRecon, 1, &uBuffer, &uStride);
-					lwmReconGetChannel(videoRecon, 2, &vBuffer, &vStride);
+					lwmUInt32 frameIndex = lwmVideoRecon_GetWorkFrameIndex(videoRecon);
+					frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
+
+					yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0));
+					uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1));
+					vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2));
+
+					yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
+					uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
+					vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
 
 					lwmFlushProfileTags(movieState, &tagSet);
 
-					numFrames++;
-
 					if(numFrames % 100 == 0)
 						printf("%i...\n", numFrames);
-					if(numFrames < 0)
+					if(numFrames < 100)
 					{
-						sprintf(outPath, "D:\\vids\\frames\\frame%4i.raw", numFrames++);
+						sprintf(outPath, "%s/frame%4i.raw", argv[2], numFrames++);
 						FILE *frameF = fopen(outPath, "wb");
 						for(lwmUInt32 row=0;row<height;row++)
 						{
@@ -173,13 +219,14 @@ int main(int argc, const char **argv)
 								//outPixel[1] = static_cast<lwmUInt8>(g);
 								//outPixel[2] = static_cast<lwmUInt8>(b);
 								outPixel[0] = static_cast<lwmUInt8>(y);
-								outPixel[1] = static_cast<lwmUInt8>(y);
-								outPixel[2] = static_cast<lwmUInt8>(y);
+								outPixel[1] = static_cast<lwmUInt8>(u);
+								outPixel[2] = static_cast<lwmUInt8>(v);
 								fwrite(outPixel, 3, 1, frameF);
 							}
 						}
 						fclose(frameF);
 					}
+					frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
 				}
 				break;
 			default:

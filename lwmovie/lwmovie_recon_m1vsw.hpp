@@ -1,24 +1,41 @@
+/*
+ * Copyright (c) 2014 Eric Lasota
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 #ifndef __LWMOVIE_RECON_M1VSW_HPP__
 #define __LWMOVIE_RECON_M1VSW_HPP__
 
 #include "lwmovie_recon_m1v.hpp"
 
 struct lwmSAllocator;
+struct lwmSVideoFrameProvider;
 
 namespace lwmovie
 {
 	class lwmCM1VSoftwareReconstructor : public lwmIM1VReconstructor
 	{
 	public:
-		struct STarget
-		{
-			lwmUInt8 *base;
-		};
-
 		lwmCM1VSoftwareReconstructor();
 		~lwmCM1VSoftwareReconstructor();
 
-		bool Initialize(const lwmSAllocator *alloc, lwmMovieState *movieState);
+		bool Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState);
 
 		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 address);
 
@@ -29,44 +46,34 @@ namespace lwmovie
 		virtual void CommitFull(lwmSInt32 sbAddress);
 		virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
 		virtual void WaitForFinish();
+		virtual void PresentFrame(lwmUInt32 workFrame);
 
 		virtual void Participate();
-		virtual void SetWorkNotifier(const lwmSWorkNotifier *workNotifier);
-		virtual void GetChannel(lwmUInt32 channelNum, const lwmUInt8 **outPChannel, lwmUInt32 *outStride);
-		virtual void StartNewFrame(lwmUInt32 currentTarget, lwmUInt32 futureTarget, lwmUInt32 pastTarget);
+		virtual void SetWorkNotifier(lwmSWorkNotifier *workNotifier);
+		virtual lwmUInt32 GetWorkFrameIndex() const;
+		virtual void StartNewFrame(lwmUInt32 currentTarget, lwmUInt32 futureTarget, lwmUInt32 pastTarget, bool currentIsB);
+		virtual void CloseFrame();
 
 		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
 
-		lwmReconMBlock *m_mblocks;
-		lwmBlockInfo *m_blocks;
-		lwmDCTBLOCK *m_dctBlocks;
-		lwmAtomicInt *m_rowCommitCounts;
-		lwmAtomicInt *m_workRowUsers;
-		lwmCProfileTagSet *m_workRowProfileTags;
-
-		lwmUInt32 m_yuvFrameSize;
-		lwmUInt32 m_yStride;
-		lwmUInt32 m_uvStride;
-		lwmUInt32 m_yOffset;
-		lwmUInt32 m_uOffset;
-		lwmUInt32 m_vOffset;
-
-		lwmUInt8 *m_yuvBuffer;
-		STarget m_currentTarget;
-		STarget m_pastTarget;
-		STarget m_futureTarget;
-
-		lwmSAllocator m_alloc;
-		
-		lwmUInt32 m_mbWidth;
-		lwmUInt32 m_mbHeight;
-		
-		lwmSWorkNotifier m_stWorkNotifier;
-		const lwmSWorkNotifier *m_workNotifier;
-
-		lwmMovieState *m_movieState;
-
 	private:
+		struct STWorkNotifier : public lwmSWorkNotifier
+		{
+			lwmCM1VSoftwareReconstructor *recon;
+		};
+
+		struct STarget
+		{
+			lwmUInt8 *yPlane;
+			lwmUInt8 *uPlane;
+			lwmUInt8 *vPlane;
+			lwmUInt32 frameIndex;
+			bool isOpen;
+
+			void LoadFromFrameProvider(lwmSVideoFrameProvider *frameProvider, lwmUInt32 frameIndex);
+			void Close(lwmSVideoFrameProvider *frameProvider);
+		};
+
 		static void PutDCTBlock(const lwmDCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
 		void ReconstructRow(const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks, lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
 			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv, lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv, lwmCProfileTagSet *profileTags);
@@ -77,8 +84,36 @@ namespace lwmovie
 		static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
 			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
 
-		static void STWNJoinFunc(void *opaque);
-		static void STWNNotifyAvailableFunc(void *opaque);
+		static void STWNJoinFunc(lwmSWorkNotifier *workNotifier);
+		static void STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier);
+		
+		lwmReconMBlock *m_mblocks;
+		lwmBlockInfo *m_blocks;
+		lwmDCTBLOCK *m_dctBlocks;
+		lwmAtomicInt *m_rowCommitCounts;
+		lwmAtomicInt *m_workRowUsers;
+		lwmCProfileTagSet *m_workRowProfileTags;
+
+		STarget m_currentTarget;
+		STarget m_pastTarget;
+		STarget m_futureTarget;
+
+		lwmUInt32 m_outputTarget;
+
+		lwmUInt32 m_yStride;
+		lwmUInt32 m_uStride;
+		lwmUInt32 m_vStride;
+
+		lwmSAllocator *m_alloc;
+		lwmSVideoFrameProvider *m_frameProvider;
+		
+		lwmUInt32 m_mbWidth;
+		lwmUInt32 m_mbHeight;
+
+		STWorkNotifier m_stWorkNotifier;
+		lwmSWorkNotifier *m_workNotifier;
+
+		lwmMovieState *m_movieState;
 	};
 }
 

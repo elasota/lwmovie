@@ -1,4 +1,25 @@
 /*
+ * Copyright (c) 2014 Eric Lasota
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*
  * Copyright (c) 1995 The Regents of the University of California.
  * All rights reserved.    
  *
@@ -200,21 +221,23 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 	}
 
 	if(m_picture.code_type == constants::MPEG_B_TYPE)
-		m_current = lwmRECONSLOT_B;
+		m_current = m_outputSlot = lwmRECONSLOT_B;
 	else if(m_picture.code_type == constants::MPEG_I_TYPE)
 	{
 		if(m_future == lwmRECONSLOT_Unassigned)
-			m_current = m_future = lwmRECONSLOT_IP1;
+		{
+			m_current = m_future = m_outputSlot = lwmRECONSLOT_IP1;
+		}
 		else if(m_past == lwmRECONSLOT_Unassigned)
 		{
 			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
-			m_current = m_past = slot;
+			m_current = m_past = m_outputSlot = slot;
 		}
 		else
 		{
 			m_future = m_past;
 			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
-			m_current = m_past = slot;
+			m_current = m_past = m_outputSlot = slot;
 		}
 	}
 	else if(m_picture.code_type == constants::MPEG_P_TYPE)
@@ -224,13 +247,13 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 		else if(m_past == lwmRECONSLOT_Unassigned)
 		{
 			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
-			m_current = m_past = slot;
+			m_current = m_past = m_outputSlot = slot;
 		}
 		else
 		{
 			m_future = m_past;
 			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
-			m_current = m_past = slot;
+			m_current = m_past = m_outputSlot = slot;
 		}
 	}
 	else
@@ -239,11 +262,11 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 	return constants::PARSE_OK;
 }
 
-lwmovie::lwmVidStream::lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, const lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
+lwmovie::lwmVidStream::lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
 	: m_stDeslicerJob((width + 15) / 16, (height + 15) / 16)
 	, m_deslicerMemPool(alloc, useThreadedDeslicer ? 150000 : 0)
 {
-	m_alloc = *alloc;
+	m_alloc = alloc;
 
 	m_deslicerJobStack = NULL;
 	m_movieState = movieState;
@@ -264,7 +287,7 @@ lwmovie::lwmVidStream::lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width,
 	m_mb_height = (m_v_size + 15) / 16;
 
 	/* Initialize pointers to image spaces. */
-	m_current = m_past = m_future = lwmRECONSLOT_Unassigned;
+	m_current = m_past = m_future = m_outputSlot = lwmRECONSLOT_Unassigned;
 
 	m_useThreadedDeslicer = useThreadedDeslicer;
 }
@@ -272,7 +295,7 @@ lwmovie::lwmVidStream::lwmVidStream(const lwmSAllocator *alloc, lwmUInt32 width,
 lwmovie::lwmVidStream::~lwmVidStream()
 {
 	WaitForDigestFinish();
-	m_deslicerMemPool.Destroy(&m_alloc);
+	m_deslicerMemPool.Destroy(m_alloc);
 }
 
 void lwmovie::lwmVidStream::SkipExtraBitInfo(lwmCBitstream *bitstream)
@@ -323,7 +346,7 @@ void lwmovie::lwmVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 pac
 	if(!memBuf)
 	{
 		pooled = false;
-		memBuf = m_alloc.allocFunc(m_alloc.opaque, stackNodeSize);
+		memBuf = m_alloc->allocFunc(m_alloc, stackNodeSize);
 	}
 	
 	if(memBuf == NULL)
@@ -351,7 +374,7 @@ void lwmovie::lwmVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 pac
 	}
 
 	if(m_workNotifier)
-		m_workNotifier->notifyAvailable(m_workNotifier->opaque);
+		m_workNotifier->notifyAvailableFunc(m_workNotifier);
 }
 
 void lwmovie::lwmVidStream::DestroyDeslicerJobs()
@@ -365,7 +388,7 @@ void lwmovie::lwmVidStream::DestroyDeslicerJobs()
 		if(!jobNode->m_memPooled)
 		{
 			jobNode->~SDeslicerJobStackNode();
-			m_alloc.freeFunc(m_alloc.opaque, jobNode);
+			m_alloc->freeFunc(m_alloc, jobNode);
 		}
 		else
 			jobNode->~SDeslicerJobStackNode();
@@ -373,7 +396,7 @@ void lwmovie::lwmVidStream::DestroyDeslicerJobs()
 		jobNode = nextNode;
 	}
 
-	m_deslicerMemPool.Reset(&m_alloc);
+	m_deslicerMemPool.Reset(m_alloc);
 }
 
 bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, lwmUInt32 *outResult)
@@ -394,7 +417,7 @@ bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packet
 		if (ParsePicture(&bitstream) != constants::PARSE_OK)
 			return false;
 
-		m_recon->StartNewFrame(m_current - lwmRECONSLOT_FirstListed, m_future - lwmRECONSLOT_FirstListed, m_past - lwmRECONSLOT_FirstListed);
+		m_recon->StartNewFrame(m_current, m_future, m_past, m_picture.code_type == constants::MPEG_B_TYPE);
 		*outResult = lwmDIGEST_Nothing;
 		return true;
 	}
@@ -442,8 +465,16 @@ void lwmovie::lwmVidStream::Participate()
 void lwmovie::lwmVidStream::WaitForDigestFinish()
 {
 	if(m_workNotifier)
-		m_workNotifier->join(m_workNotifier->opaque);
+		m_workNotifier->joinFunc(m_workNotifier);
 	DestroyDeslicerJobs();
+}
+
+void lwmovie::lwmVidStream::EmitFrame()
+{
+	// TODO: Handle bad syncs
+	m_recon->PresentFrame(m_outputSlot);
+	if(m_outputSlot == lwmRECONSLOT_B)
+		m_outputSlot = m_past;
 }
 
 void lwmovie::lwmVidStream::SignalIOFailure()
@@ -458,7 +489,7 @@ void lwmovie::lwmVidStream::OutputFinishedFrame()
 {
 }
 
-lwmovie::lwmVidStream::SDeslicerMemoryPool::SDeslicerMemoryPool(const lwmSAllocator *alloc, lwmUInt32 initialCapacity)
+lwmovie::lwmVidStream::SDeslicerMemoryPool::SDeslicerMemoryPool(lwmSAllocator *alloc, lwmUInt32 initialCapacity)
 {
 	memBytes = NULL;
 	memCapacity = 0;
@@ -478,13 +509,13 @@ void *lwmovie::lwmVidStream::SDeslicerMemoryPool::Alloc(lwmUInt32 size)
 	return outBuf;
 }
 
-void lwmovie::lwmVidStream::SDeslicerMemoryPool::Reset(const lwmSAllocator *alloc)
+void lwmovie::lwmVidStream::SDeslicerMemoryPool::Reset(lwmSAllocator *alloc)
 {
 	if(nextCapacity > memCapacity)
 	{
 		if(memBytes)
-			alloc->freeFunc(alloc->opaque, memBytes);
-		memBytes = alloc->allocFunc(alloc->opaque, nextCapacity);
+			alloc->freeFunc(alloc, memBytes);
+		memBytes = alloc->allocFunc(alloc, nextCapacity);
 		if(!memBytes)
 			memCapacity = 0;
 		else
@@ -495,10 +526,10 @@ void lwmovie::lwmVidStream::SDeslicerMemoryPool::Reset(const lwmSAllocator *allo
 	nextCapacity = 0;
 }
 
-void lwmovie::lwmVidStream::SDeslicerMemoryPool::Destroy(const lwmSAllocator *alloc)
+void lwmovie::lwmVidStream::SDeslicerMemoryPool::Destroy(lwmSAllocator *alloc)
 {
 	if(memBytes)
-		alloc->freeFunc(alloc->opaque, memBytes);
+		alloc->freeFunc(alloc, memBytes);
 }
 
 void lwmovie::lwmVidStream::FlushProfileTags(lwmCProfileTagSet *tagSet)
