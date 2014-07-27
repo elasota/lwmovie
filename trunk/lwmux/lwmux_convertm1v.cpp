@@ -149,10 +149,8 @@ static void ConvertPacket(lwmEPacketType packetType, bool includeCode, videoTagL
 		sizeRemaining -= copyBlockSize;
 	}
 
-	printf("PacketHeader: %i --> %i\n", lwmPlanHandler<lwmPacketHeader>::SIZE + lwmPlanHandler<lwmPacketHeaderFull>::SIZE, globalOther);
 	globalOther += lwmPlanHandler<lwmPacketHeader>::SIZE;
 	globalOther += lwmPlanHandler<lwmPacketHeaderFull>::SIZE;
-	printf("PacketData: %i --> %i\n", packetHeaderFull.packetSize, globalPacket);
 	globalPacket += packetHeaderFull.packetSize;
 }
 
@@ -178,7 +176,6 @@ void EmitFrameSync(lwmOSFile *outFile, lwmUInt32 frameNumber, bool isRandomAcces
 	lwmWritePlanToFile(packetHeaderFull, outFile);
 	outFile->WriteBytes(packetData, sizeof(packetData));
 
-	printf("Sync: %i\n", globalSync);
 	globalSync += 7;
 }
 
@@ -187,8 +184,6 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile)
 	videoTagLink *linkHead = NULL;
 	videoTagLink *linkTail = NULL;
 	lwmUInt8 queue[4];
-	FILE *tagsLog = fopen("D:\\vids\\hst_1.txt", "wb");
-	printf("Scanning tags...\n");
 	mpegFile->ReadBytes(queue, 4);
 	lwmUInt64 readTotal = 0;
 	while(true)
