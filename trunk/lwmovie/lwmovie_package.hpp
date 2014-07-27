@@ -157,7 +157,7 @@ struct lwmVideoSynchronizationPoint
 	};
 
 	lwmUInt32 videoPeriod;	// Time of decoded ready-to-display video
-	lwmUInt8 flags;			// True if the synchronization point is random-access
+	lwmUInt8 flags;
 };
 LWM_DECLARE_PLAN_MEMBER_NONZERO	(0, lwmVideoSynchronizationPoint, lwmUInt32, videoPeriod);
 LWM_DECLARE_PLAN_MEMBER_NONZERO	(1, lwmVideoSynchronizationPoint, lwmUInt8, flags);

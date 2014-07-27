@@ -87,6 +87,8 @@ struct lwmMovieState
 	lwmSAllocator *alloc;
 	lwmUInt32 userFlags;
 
+	lwmUInt32 streamSyncPeriods[lwmSTREAMTYPE_Count];
+
 	lwmSWorkNotifier *videoDigestWorkNotifier;
 	lwmIVideoReconstructor *videoReconstructor;
 	lwmovie::lwmVidStream *m1vDecoder;
@@ -150,13 +152,25 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 			*outResult = lwmDIGEST_Error;
 		break;
 	case lwmEPT_Video_Synchronization:
-		if(movieState->m1vDecoder)
 		{
-			movieState->m1vDecoder->WaitForDigestFinish();
-			movieState->m1vDecoder->EmitFrame();
+			lwmVideoSynchronizationPoint syncPoint;
+			if(packetSize == lwmPlanHandler<lwmVideoSynchronizationPoint>::SIZE && 
+				lwmPlanHandler<lwmVideoSynchronizationPoint>::Read(syncPoint, packetData))
+			{
+				if(movieState->m1vDecoder)
+				{
+					movieState->m1vDecoder->WaitForDigestFinish();
+					movieState->m1vDecoder->EmitFrame();
+				}
+				movieState->videoReconstructor->WaitForFinish();
+				movieState->streamSyncPeriods[lwmSTREAMTYPE_Video] = syncPoint.videoPeriod;
+				*outResult = lwmDIGEST_VideoSync;
+			}
+			else
+			{
+				*outResult = lwmDIGEST_Error;
+			}
 		}
-		movieState->videoReconstructor->WaitForFinish();
-		*outResult = lwmDIGEST_VideoSync;
 		break;
 		/*
 	case lwmEPT_Audio_StreamParameters:
@@ -445,6 +459,9 @@ extern "C" int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieSta
 					};
 				}
 				return 1;
+			case lwmSTREAMPARAM_U32_SyncPeriod:
+				*outValue = movieState->streamSyncPeriods[lwmSTREAMTYPE_Video];
+				return 0;
 			};
 		}
 	case lwmSTREAMTYPE_Audio:
