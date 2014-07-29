@@ -22,6 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 ===============================================================================
+MPEG-1 video decoder IDCT based on libjpeg:
+-------------------------------------------------------------------------------
+Please see README-libjpeg.txt for information.
+
+===============================================================================
 MPEG-1 video decoder contains portions of mpegplay:
 -------------------------------------------------------------------------------
 Copyright (c) 1995 The Regents of the University of California.
