@@ -24,11 +24,15 @@
 
 #include "lwmovie_layer2.hpp"
 
+class lwmSimdSInt32;
+
 namespace lwmovie
 {
 	namespace xmath
 	{
 		lwmSInt64 EMul(lwmSInt32 ls, lwmSInt32 rs);
+		lwmSInt32 EMulHigh(lwmSInt32 ls, lwmSInt32 rs);
+		lwmSimdSInt32 EMulHigh(const lwmSimdSInt32 &ls, const lwmSimdSInt32 &rs);
 	}
 }
 
@@ -37,6 +41,11 @@ namespace lwmovie
 
 #pragma intrinsic(__emul)
 #pragma warning(disable:4293)   // Negative shifts
+
+inline lwmSInt32 lwmovie::xmath::EMulHigh(lwmSInt32 ls, lwmSInt32 rs)
+{
+	return static_cast<lwmSInt32>(__emul(ls, rs) >> 32);
+}
 
 inline lwmSInt64 lwmovie::xmath::EMul(lwmSInt32 ls, lwmSInt32 rs)
 {

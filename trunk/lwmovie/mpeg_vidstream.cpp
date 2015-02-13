@@ -384,7 +384,9 @@ void lwmovie::lwmVidStream::DestroyDeslicerJobs()
 	while(jobNode)
 	{
 		SDeslicerJobStackNode *nextNode = jobNode->m_next;
+#ifdef LWMOVIE_PROFILE
 		jobNode->m_deslicerJob.GetProfileTags()->FlushTo(m_stDeslicerJob.GetProfileTags());
+#endif
 		if(!jobNode->m_memPooled)
 		{
 			jobNode->~SDeslicerJobStackNode();
@@ -534,5 +536,7 @@ void lwmovie::lwmVidStream::SDeslicerMemoryPool::Destroy(lwmSAllocator *alloc)
 
 void lwmovie::lwmVidStream::FlushProfileTags(lwmCProfileTagSet *tagSet)
 {
+#ifdef LWMOVIE_PROFILE
 	m_stDeslicerJob.GetProfileTags()->FlushTo(tagSet);
+#endif
 }

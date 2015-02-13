@@ -24,8 +24,6 @@
 
 #include "lwmovie_types.hpp"
 
-#define LWMOVIE_DEEP_PROFILE
-
 class lwmCProfileTagSet;
 
 enum lwmEProfileTag
@@ -45,6 +43,9 @@ enum lwmEProfileTag
 	lwmEPROFILETAG_Count,
 };
 
+#ifdef LWMOVIE_PROFILE
+
+
 class lwmCProfileTag
 {
 public:
@@ -58,6 +59,7 @@ private:
 	lwmUInt32 m_time;
 };
 
+
 class lwmCAutoProfile
 {
 public:
@@ -68,7 +70,6 @@ private:
 	lwmCProfileTag *m_tag;
 	lwmUInt32 m_baseTime;
 };
-
 
 class lwmCProfileTagSet
 {
@@ -84,8 +85,16 @@ public:
 	void FlushTo(lwmCProfileTagSet *otherTagSet);
 };
 
-
 #include "lwmovie_profile_win32.inl"
 
-#endif
+#else	// LWMOVIE_PROFILE
 
+class lwmCAutoProfile
+{
+public:
+	inline lwmCAutoProfile(lwmCProfileTagSet *tagSet, lwmEProfileTag profileTagIndex) { }
+};
+
+#endif	// LWMOVIE_PROFILE
+
+#endif

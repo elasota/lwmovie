@@ -19,69 +19,76 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __LWMOVIE_LAYER2_MATHOPS_HPP__
-#define __LWMOVIE_LAYER2_MATHOPS_HPP__
+#ifndef __LWMOVIE_LAYER2_FIXEDPOINT_HPP__
+#define __LWMOVIE_LAYER2_FIXEDPOINT_HPP__
 
 #include "lwmovie_layer2.hpp"
+#include "lwmovie_simdint.hpp"
 
 #ifdef LWMOVIE_FIXEDPOINT
 
+template<class TStorage>
 struct lwmFixed32Base
 {
-	lwmSInt32 m_i;
-#ifdef LWMOVIE_DEBUG_FIXEDPOINT
-	double debugValue;
-#endif
+	TStorage m_i;
 };
 
 #ifdef __cplusplus
 
-template<int FracBits>
-class lwmFixed32 : public lwmFixed32Base
+template<int FracBits, class TStorage>
+class lwmFixed32 : public lwmFixed32Base<TStorage>
 {
 public:
 	static const int FRACTION_BITS = FracBits;
 
-	int RawData() const;
+	TStorage RawData() const;
 
 	lwmFixed32();
-	explicit lwmFixed32(lwmSInt32 v);
+	explicit lwmFixed32(const TStorage &v);
 
 	lwmFixed32(const float &f);
 	lwmFixed32(const lwmUInt32 i);
 	lwmFixed32(const double &f);
 
-	lwmFixed32<FracBits> & operator +=(const lwmFixed32<FracBits> &rs);
+	lwmFixed32<FracBits, TStorage> & operator +=(const lwmFixed32<FracBits, TStorage> &rs);
 
-	lwmFixed32<FracBits> & operator -=(const lwmFixed32<FracBits> &rs);
+	lwmFixed32<FracBits, TStorage> & operator -=(const lwmFixed32<FracBits, TStorage> &rs);
 
-	lwmFixed32<FracBits> operator +(const lwmFixed32<FracBits> &rs) const;
+	lwmFixed32<FracBits, TStorage> operator +(const lwmFixed32<FracBits, TStorage> &rs) const;
 
-	lwmFixed32<FracBits> operator -(const lwmFixed32<FracBits> &rs) const;
+	lwmFixed32<FracBits, TStorage> operator -(const lwmFixed32<FracBits, TStorage> &rs) const;
 
-	lwmFixed32<FracBits> operator -() const;
+	lwmFixed32<FracBits, TStorage> operator -() const;
 
 	template<int RSFracBits>
-	lwmFixed32<FracBits + RSFracBits> operator *(const lwmFixed32<RSFracBits> &rs) const;
+	lwmFixed32<FracBits + RSFracBits, TStorage> operator *(const lwmFixed32<RSFracBits, TStorage> &rs) const;
 
 	template<int RSFracBits, int TargetBits>
-	lwmFixed32<TargetBits> MulTo(const lwmFixed32<RSFracBits> &rs) const;
+	lwmFixed32<TargetBits, TStorage> MulTo(const lwmFixed32<RSFracBits, TStorage> &rs) const;
 
 	lwmSInt32 MulAndRound(lwmSInt32 rs) const;
 	lwmSInt32 Round() const;
-	lwmFixed32<FracBits> RShift(int rs) const;
+	lwmFixed32<FracBits, TStorage> RShift(int rs) const;
 	template<int RShiftBits>
-	lwmFixed32<FracBits - RShiftBits> ReduceFracPrecision() const;
+	lwmFixed32<FracBits - RShiftBits, TStorage> ReduceFracPrecision() const;
 	template<int LShiftBits>
-	lwmFixed32<FracBits + LShiftBits> IncreaseFracPrecision() const;
+	lwmFixed32<FracBits + LShiftBits, TStorage> IncreaseFracPrecision() const;
 	template<int RShiftBits>
-	lwmFixed32<FracBits + RShiftBits> RShiftFixed() const;
-	lwmSInt32 LShiftAndRound(int rs) const;
+	lwmFixed32<FracBits + RShiftBits, TStorage> RShiftFixed() const;
+	lwmSimdInt16<TStorage> LShiftRoundClamp(const lwmFixed32<FracBits, TStorage> &append, int rs) const;
+
+	static lwmFixed32<FracBits, TStorage> Load(const lwmFixed32<FracBits, lwmSInt32> *source);
+	void Store(lwmFixed32<FracBits, lwmSInt32> *dest) const;
 };
+
 
 #endif  // __cplusplus
 
 #endif  // MP2DEC_FIXEDPOINT
+
+#include "lwmovie_layer2_sseint.hpp"
+#include "lwmovie_layer2_ssefloat.hpp"
+#include "lwmovie_layer2_nosimd.hpp"
 
 #endif
 

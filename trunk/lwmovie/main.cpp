@@ -111,11 +111,11 @@ int main(int argc, const char **argv)
 	lwmUInt8 buffer[32768];
 	size_t bufferAvailable;
 	lwmIVideoReconstructor *videoRecon = NULL;
-	LARGE_INTEGER frameTime;
-	lwmUInt64 frameTimeTotal = 0;
 	
 	lwmUInt32 width, height;
+#ifdef LWMOVIE_PROFILE
 	lwmCProfileTagSet tagSet;
+#endif
 	lwmSVideoFrameProvider *frameProvider;
 
 	while(true)
@@ -129,15 +129,10 @@ int main(int argc, const char **argv)
 		lwmUInt32 result = 0xffffffff;
 		while(bufferAvailable || result != lwmDIGEST_Nothing)
 		{
-			LARGE_INTEGER perfStart, perfEnd;
-			QueryPerformanceCounter(&perfStart);
 			lwmUInt32 digested;
 			lwmMovieState_FeedData(movieState, feedBuffer, bufferAvailable, &result, &digested);
-			QueryPerformanceCounter(&perfEnd);
 			bufferAvailable -= digested;
 			feedBuffer += digested;
-
-			frameTimeTotal += static_cast<lwmUInt64>(perfEnd.QuadPart - perfStart.QuadPart);
 
 			switch(result)
 			{
@@ -161,22 +156,10 @@ int main(int argc, const char **argv)
 				break;
 			case lwmDIGEST_VideoSync:
 				{
-					char outPath[1000];
-					static int numFrames = 0;
-
 					const lwmUInt8 *yBuffer;
 					const lwmUInt8 *uBuffer;
 					const lwmUInt8 *vBuffer;
 					lwmUInt32 yStride, uStride, vStride;
-					
-					LARGE_INTEGER perfFreq;
-					QueryPerformanceFrequency(&perfFreq);
-
-					double pfDouble = static_cast<double>(perfFreq.QuadPart);
-					double ptDouble = static_cast<double>(frameTimeTotal);
-
-					printf("Frame time: %f ms\n", ptDouble * 1000.0 / pfDouble);
-					frameTimeTotal = 0;
 
 					lwmUInt32 frameIndex = lwmVideoRecon_GetWorkFrameIndex(videoRecon);
 					frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
@@ -189,57 +172,29 @@ int main(int argc, const char **argv)
 					uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
 					vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
 
+#ifdef LWMOVIE_PROFILE
 					lwmFlushProfileTags(movieState, &tagSet);
+#endif
+					// TODO: Output frame
 
-					if(numFrames % 100 == 0)
-						printf("%i...\n", numFrames);
-					if(numFrames < 100)
-					{
-						sprintf(outPath, "%s/frame%4i.raw", argv[2], numFrames++);
-						FILE *frameF = fopen(outPath, "wb");
-						for(lwmUInt32 row=0;row<height;row++)
-						{
-							for(lwmUInt32 col=0;col<width;col++)
-							{
-								lwmSInt32 y = yBuffer[row*yStride+col];
-								lwmSInt32 u = uBuffer[(row/2)*uStride+(col/2)];
-								lwmSInt32 v = vBuffer[(row/2)*vStride+(col/2)];
-
-								lwmSInt32 yBase = y * 298;
-								lwmSInt32 r = (yBase + 409*v - 57120) / 256;
-								lwmSInt32 g = (yBase - 100*u - 208*v + 34656) / 256;
-								lwmSInt32 b = (yBase + 516*u - 70816) / 256;
-
-								if(r < 0) r = 0; else if(r > 255) r = 255;
-								if(g < 0) g = 0; else if(g > 255) g = 255;
-								if(b < 0) b = 0; else if(b > 255) b = 255;
-
-								lwmUInt8 outPixel[3];
-								//outPixel[0] = static_cast<lwmUInt8>(r);
-								//outPixel[1] = static_cast<lwmUInt8>(g);
-								//outPixel[2] = static_cast<lwmUInt8>(b);
-								outPixel[0] = static_cast<lwmUInt8>(y);
-								outPixel[1] = static_cast<lwmUInt8>(u);
-								outPixel[2] = static_cast<lwmUInt8>(v);
-								fwrite(outPixel, 3, 1, frameF);
-							}
-						}
-						fclose(frameF);
-					}
 					frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
 				}
 				break;
 			default:
-				{
-					int bp = 0;
-				}
 				break;
 			};
 		}
 	}
 done:
 
+	if(movieState)
+		lwmMovieState_Destroy(movieState);
+	if(videoRecon)
+		lwmIVideoReconstructor_Destroy(videoRecon);
+	if(frameProvider)
+		lwmSVideoFrameProvider_Destroy(frameProvider);
 
+#ifdef LWMOVIE_PROFILE
 	printf("Profile results:\n");
 	printf("Deslice: %f\n", tagSet.GetTag(lwmEPROFILETAG_Deslice)->GetTotalTime() * 1000.0);
 	printf("    ParseBlock: %f\n", tagSet.GetTag(lwmEPROFILETAG_ParseBlock)->GetTotalTime() * 1000.0);
@@ -252,6 +207,7 @@ done:
 	printf("                IDCT Full: %f\n", tagSet.GetTag(lwmEPROFILETAG_IDCTFull)->GetTotalTime() * 1000.0);
 	printf("        ReconRow: %f\n", tagSet.GetTag(lwmEPROFILETAG_ReconRow)->GetTotalTime() * 1000.0);
 	printf("            Motion: %f\n", tagSet.GetTag(lwmEPROFILETAG_Motion)->GetTotalTime() * 1000.0);
+#endif
 
 	printf("Done\n");
 	return 0;

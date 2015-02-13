@@ -115,7 +115,7 @@ namespace lwmovie
 			{ 16, 0 },
 		};
 
-		const lwmFixedReal29 MP2_DEWINDOW[FILTER_SIZE][NUM_SUBBANDS] =
+		LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB const lwmFixedReal29 MP2_DEWINDOW[FILTER_SIZE][NUM_SUBBANDS] =
 		{
 			{
 				0.0,			-0.000015259,	-0.000015259,	-0.000015259,
@@ -291,7 +291,7 @@ namespace lwmovie
 		lwmCMP2TableInitializer::lwmCMP2TableInitializer()
 		{
 			for(int i=0;i<64;i++)
-				MP2_SCALEFACTORS[i] = lwmCompressedSF(i);
+				MP2_SCALEFACTORS[i] = LWMOVIE_CREATE_CSF(i);
 			for(int i=0;i<NUM_QINDEX;i++)
 			{
 				if(MP2_QUANT_INFO[i].modGroup)

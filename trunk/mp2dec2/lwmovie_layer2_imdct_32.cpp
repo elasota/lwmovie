@@ -74,8 +74,8 @@ typedef lwmFixedReal14 REG_TYPE;
 #define cPI2_8 lwmFixedReal14(.70710678118654752441F)
 #define cPI1_8 lwmFixedReal14(.92387953251128675613F)
 
-#define MULT_NORM(x) ((x).ReduceFracPrecision<14>())
-#define HALVE(x) ((x).RShift(1))
+#define MULT_NORM(x) (LWMOVIE_FIXEDREAL_REDUCEFRACPRECISION((x), 14))
+#define HALVE(x) LWMOVIE_FIXEDREAL_RS((x), 1)
 
 #define M_PI (3.1415926535897932384626433832795)
 

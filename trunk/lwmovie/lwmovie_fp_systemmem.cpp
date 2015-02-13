@@ -36,6 +36,7 @@ namespace lwmovie
 		virtual void UnlockWorkFrame(lwmUInt32 workFrameIndex);
 		virtual void *GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
 		virtual lwmUInt32 GetWorkFramePlaneStride(lwmUInt32 planeIndex);
+		virtual void Destroy();
 
 	private:
 		static const lwmLargeUInt MAX_CHANNELS = 3;
@@ -112,12 +113,25 @@ lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneStride(lwmUInt32
 	return this->m_channelStrides[planeIndex];
 }
 
+void lwmovie::lwmCSystemMemFrameProvider::Destroy()
+{
+	lwmCSystemMemFrameProvider *self = this;
+	lwmSAllocator *alloc = self->m_alloc;
+	self->~lwmCSystemMemFrameProvider();
+	alloc->freeFunc(alloc, self);
+}
 
-extern "C" lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState)
+
+LWMOVIE_API_LINK lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState)
 {
 	lwmovie::lwmCSystemMemFrameProvider *fp = static_cast<lwmovie::lwmCSystemMemFrameProvider*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCSystemMemFrameProvider)));
 	if(!fp)
 		return NULL;
 	new (fp) lwmovie::lwmCSystemMemFrameProvider(alloc);
 	return fp;
+}
+
+LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(lwmSVideoFrameProvider *vfp)
+{
+	vfp->destroyFunc(vfp);
 }

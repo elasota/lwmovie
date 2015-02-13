@@ -93,7 +93,7 @@ bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, const mpe
 	while(true)
 	{
 		/* Parse Macroblock. */
-		constants::lwmEParseState parseState = ParseMacroBlock(&bitstream, max_mb_addr, recon, &m_profileTags);
+		constants::lwmEParseState parseState = ParseMacroBlock(&bitstream, max_mb_addr, recon, this->GetProfileTags());
 		if(parseState == constants::PARSE_BREAK)
 			break;
 		if(parseState != constants::PARSE_OK)

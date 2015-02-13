@@ -48,6 +48,11 @@ lwmUInt32 lwmovie::lwmIVideoFrameProvider::StaticGetWorkFramePlaneStride(lwmSVid
 	return static_cast<lwmIVideoFrameProvider *>(frameProvider)->GetWorkFramePlaneStride(planeIndex);
 }
 
+void lwmovie::lwmIVideoFrameProvider::StaticDestroy(lwmSVideoFrameProvider *frameProvider)
+{
+	return static_cast<lwmIVideoFrameProvider *>(frameProvider)->Destroy();
+}
+
 lwmovie::lwmIVideoFrameProvider::lwmIVideoFrameProvider()
 {
 	this->createWorkFramesFunc = StaticCreateWorkFrames;
@@ -55,6 +60,7 @@ lwmovie::lwmIVideoFrameProvider::lwmIVideoFrameProvider()
 	this->unlockWorkFrameFunc = StaticUnlockWorkFrame;
 	this->getWorkFramePlaneFunc = StaticGetWorkFramePlane;
 	this->getWorkFramePlaneStrideFunc = StaticGetWorkFramePlaneStride;
+	this->destroyFunc = StaticDestroy;
 }
 
 lwmovie::lwmIVideoFrameProvider::~lwmIVideoFrameProvider()

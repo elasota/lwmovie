@@ -51,6 +51,7 @@ static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &out
 	else
 		numChannels = asi.channelLayout = lwmAudioStreamInfo::CL_Mono;
 	asi.audioReadAhead = 0;
+	asi.startTimeSamples = 480;
 	asi.sampleRate = MP2_SAMPLERATE[mpegVersion][samplerateIndex];
 
 	lwmUInt32 bitrateKbps = MP2_BITRATE_KBPS[mpegVersion][bitrateIndex];

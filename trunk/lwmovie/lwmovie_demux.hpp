@@ -23,6 +23,7 @@
 #define __LWMOVIE_DEMUX_HPP__
 
 #include "lwmovie_types.hpp"
+#include "lwmovie_api.hpp"
 #include "lwmovie_external_types.h"
 
 struct lwmMovieState;
@@ -43,6 +44,7 @@ struct lwmSVideoFrameProvider
 	void (*unlockWorkFrameFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
 	void *(*getWorkFramePlaneFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
 	lwmUInt32 (*getWorkFramePlaneStrideFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+	void (*destroyFunc)(lwmSVideoFrameProvider *frameProvider);
 };
 
 enum
@@ -91,20 +93,25 @@ enum
 	lwmUSERFLAG_ThreadedDeslicer	= (1 << 0)
 };
 
-extern "C" lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
-extern "C" void lwmMovieState_FeedData(lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested);
-extern "C" int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *output);
-extern "C" void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieState, lwmIVideoReconstructor *recon);
-extern "C" void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieState);
-extern "C" void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier);
+LWMOVIE_API_LINK lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
+LWMOVIE_API_LINK void lwmMovieState_FeedData(lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested);
+LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *output);
+LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieState, lwmIVideoReconstructor *recon);
+LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieState);
+LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier);
+LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState);
 
-extern "C" void lwmVideoRecon_Participate(lwmIVideoReconstructor *videoRecon);
-extern "C" void lwmVideoRecon_SetWorkNotifier(lwmIVideoReconstructor *recon, lwmSWorkNotifier *workNotifier);
-extern "C" lwmUInt32 lwmVideoRecon_GetWorkFrameIndex(const lwmIVideoReconstructor *recon);
+LWMOVIE_API_LINK void lwmVideoRecon_Participate(lwmIVideoReconstructor *videoRecon);
+LWMOVIE_API_LINK void lwmVideoRecon_SetWorkNotifier(lwmIVideoReconstructor *recon, lwmSWorkNotifier *workNotifier);
+LWMOVIE_API_LINK lwmUInt32 lwmVideoRecon_GetWorkFrameIndex(const lwmIVideoReconstructor *recon);
+LWMOVIE_API_LINK void lwmVideoRecon_Destroy(lwmIVideoReconstructor *videoRecon);
 
-extern "C" lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState);
-extern "C" lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmSVideoFrameProvider *frameProvider);
+LWMOVIE_API_LINK lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState);
+LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(lwmSVideoFrameProvider *frameProvider);
 
-extern "C" void lwmFlushProfileTags(lwmMovieState *movieState, lwmCProfileTagSet *tagSet);
+LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmSVideoFrameProvider *frameProvider);
+LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(lwmIVideoReconstructor *videoRecon);
+
+LWMOVIE_API_LINK void lwmFlushProfileTags(lwmMovieState *movieState, lwmCProfileTagSet *tagSet);
 
 #endif

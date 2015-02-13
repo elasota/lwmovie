@@ -23,8 +23,10 @@
 
 #include "lwmovie_layer2_csf.hpp"
 
+#ifdef LWMOVIE_FIXEDPOINT
+
 // Scalefactors are 0.5 ^ (i/3 - 1)
-lwmovie::layerii::lwmCompressedSF::lwmCompressedSF(int exponent)
+lwmovie::layerii::lwmCompressedSF lwmovie::layerii::lwmCompressedSF::FromPower(int exponent)
 {
 	int step = exponent % 3;
 	int rshift;
@@ -39,8 +41,9 @@ lwmovie::layerii::lwmCompressedSF::lwmCompressedSF(int exponent)
 		base = static_cast<lwmUInt32>(pow(0.5, (double)step / 3.0) * (double)(1 << FRACTION_BITS));
 		rshift = (exponent / 3) - 1;
 	}
-	m_compressed = ((rshift - MIN_RSHIFT) << FRACTION_BITS) | base;
-#ifdef LWMOVIE_DEBUG_FIXEDPOINT
-	debugValue = pow(0.5, (double)exponent / 3.0 - 1.0);
-#endif
+	lwmCompressedSF csf;
+	csf.m_compressed = ((rshift - MIN_RSHIFT) << FRACTION_BITS) | base;
+	return csf;
 }
+
+#endif
