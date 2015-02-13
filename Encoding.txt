@@ -1,0 +1,14 @@
+lwmovie should supports any input file compliant with the required input format, but ffmpeg is generally preferred for its available options.
+
+===== MPEG-1 video authoring with ffmpeg =====
+Slice count: lwmovie supports threaded deslicing, which processes each slice of an input frame by dispatching a threadable work task, something that scales extremely well with processor count.  You can control the number of slices that ffmpeg produces per frame using the -slices command line switch.
+
+lwmovie's internal IDCT is nearly identical to the FFMPEG "int" idct, so you should add -idct int to your command line.  This will reduce artifacts from drift.
+
+
+---- Full-range trick ----
+If you want to use the higher-quality "full-range" YUV, then you'll need to manually convert to raw video in that colorspace and then encode from the raw video.  This requires manually specifying the framerate and dimensions as well.  Note that this is not recommended if you're encoding from an input format that is already in MPEG YUV space.
+
+Example with a 1920x768 24fps video:
+ffmpeg -i inputvideo.avi -vcodec rawvideo -pix_fmt yuvj420p -an -y rawvideo.yuv
+ffmpeg -f rawvideo -vcodec rawvideo -s 1920x768 -r 24 -pix_fmt yuv420p -i rawvideo.yuv -an -y rangehack.m1v

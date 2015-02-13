@@ -34,9 +34,6 @@ using namespace lwmovie::layerii;
 // Simple MP2 to raw sample converter
 int main(int argc, const char **argv)
 {
-	FILE *f = fopen(argv[1], "rb");
-	FILE *fout = fopen(argv[2], "wb");
-
 	unsigned char headerBytes[HEADER_SIZE_BYTES];
 	unsigned char frameBytes[MAX_FRAME_SIZE_BYTES];
 	clock_t startTime;
@@ -49,6 +46,8 @@ int main(int argc, const char **argv)
 	printf("Start\n");
 	startTime = clock();
 
+	FILE *f = fopen(argv[1], "rb");
+	FILE *fout = fopen(argv[2], "wb");
 	while(!feof(f))
 	{
 		fread(headerBytes, HEADER_SIZE_BYTES, 1, f);
@@ -62,9 +61,9 @@ int main(int argc, const char **argv)
 
 		fwrite(mixed, FRAME_NUM_SAMPLES*2*2, 1, fout);
 	}
-	printf("Time: %i\n", clock() - startTime);
-
 	fclose(f);
+	fclose(fout);
 
+	printf("Time: %i\n", clock() - startTime);
 	return 0;
 }

@@ -36,6 +36,7 @@ enum lwmEVideoStreamType
 
 	lwmVST_None			= 1,
 	lwmVST_M1V_Variant	= 2,		// Variant M1V
+	lwmVST_CVID_Variant	= 3,		// Variant CVID
 
 	lwmVST_Count,
 };
@@ -95,10 +96,12 @@ struct lwmAudioStreamInfo
 	lwmUInt32		sampleRate;
 	EChannelLayout	channelLayout;
 	lwmUInt32		audioReadAhead;
+	lwmUInt16		startTimeSamples;	// Number of samples
 };
 LWM_DECLARE_PLAN_MEMBER_NONZERO	(0, lwmAudioStreamInfo, lwmUInt32, sampleRate);
 LWM_DECLARE_PLAN_ENUM_MEMBER	(1, lwmAudioStreamInfo, lwmAudioStreamInfo::EChannelLayout, lwmAudioStreamInfo::CL_Count, lwmUInt8, channelLayout);
 LWM_DECLARE_PLAN_MEMBER			(2, lwmAudioStreamInfo, lwmUInt32, audioReadAhead);
+LWM_DECLARE_PLAN_MEMBER			(3, lwmAudioStreamInfo, lwmUInt16, startTimeSamples);
 LWM_DECLARE_PLAN(lwmAudioStreamInfo);
 
 enum lwmEPacketType

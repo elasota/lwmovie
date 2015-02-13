@@ -37,4 +37,3 @@ __forceinline lwmCAutoProfile::~lwmCAutoProfile()
 {
 	m_tag->AddTime(GetTickCount() - m_baseTime);
 }
-

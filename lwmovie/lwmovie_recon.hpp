@@ -35,6 +35,7 @@ struct lwmIVideoReconstructor
 	virtual void SetWorkNotifier(lwmSWorkNotifier *workNotifier) = 0;
 	virtual void FlushProfileTags(lwmCProfileTagSet *tagSet) = 0;
 	virtual lwmUInt32 GetWorkFrameIndex() const = 0;
+	virtual void Destroy() = 0;
 };
 
 #endif

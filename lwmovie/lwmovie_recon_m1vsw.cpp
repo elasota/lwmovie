@@ -52,8 +52,10 @@ lwmovie::lwmCM1VSoftwareReconstructor::~lwmCM1VSoftwareReconstructor()
 		m_alloc->freeFunc(m_alloc, m_rowCommitCounts);
 	if(m_workRowUsers)
 		m_alloc->freeFunc(m_alloc, m_workRowUsers);
+#ifdef LWMOVIE_PROFILE
 	if(m_workRowProfileTags)
 		m_alloc->freeFunc(m_alloc, m_workRowProfileTags);
+#endif
 }
 
 bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState)
@@ -81,10 +83,11 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 	m_rowCommitCounts = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
 	m_workRowUsers = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
 
+#ifdef LWMOVIE_PROFILE
 	m_workRowProfileTags = static_cast<lwmCProfileTagSet*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmCProfileTagSet)));
 	for(lwmUInt32 i=0;i<mbHeight;i++)
 		new (m_workRowProfileTags + i) lwmCProfileTagSet();
-
+#endif
 
 	m_mbWidth = mbWidth;
 	m_mbHeight = mbHeight;
@@ -207,7 +210,11 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
 		cy + row*mbRowStrideY, cu + row*mbRowStrideU, cv + row*mbRowStrideV,
 		fy + row*mbRowStrideY, fu + row*mbRowStrideU, fv + row*mbRowStrideV,
 		py + row*mbRowStrideY, pu + row*mbRowStrideU, pv + row*mbRowStrideV,
+#ifdef LWMOVIE_PROFILE
 		m_workRowProfileTags + row
+#else
+		NULL
+#endif
 		);
 }
 
@@ -385,8 +392,18 @@ void lwmovie::lwmCM1VSoftwareReconstructor::MarkRowFinished(lwmSInt32 firstMBAdd
 
 void lwmovie::lwmCM1VSoftwareReconstructor::FlushProfileTags(lwmCProfileTagSet *tagSet)
 {
+#ifdef LWMOVIE_PROFILE
 	for(lwmUInt32 i=0;i<m_mbHeight;i++)
 		m_workRowProfileTags[i].FlushTo(tagSet);
+#endif
+}
+
+
+void lwmovie::lwmCM1VSoftwareReconstructor::Destroy()
+{
+	lwmCM1VSoftwareReconstructor *self = this;
+	self->~lwmCM1VSoftwareReconstructor();
+	m_alloc->freeFunc(m_alloc, self);
 }
 
 lwmUInt32 lwmovie::lwmCM1VSoftwareReconstructor::GetWorkFrameIndex() const

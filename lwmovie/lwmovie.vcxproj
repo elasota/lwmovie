@@ -85,6 +85,8 @@
     <ClCompile Include="mpeg_vidstream.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="lwmovie.h" />
+    <ClInclude Include="lwmovie_api.hpp" />
     <ClInclude Include="lwmovie_atomicint.hpp" />
     <ClInclude Include="lwmovie_bits.hpp" />
     <ClInclude Include="lwmovie_bitstream.hpp" />

@@ -166,7 +166,6 @@ void Mux(lwmUInt32 audioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFile, l
 			lwmAudioSynchronizationPoint syncPoint;
 			lwmReadPlanFromFile<lwmAudioSynchronizationPoint>(syncPoint, audioFile);
 			tailAL->syncPeriod = syncPoint.audioPeriod;
-			//printf("Audio period out: %i\n", syncPoint.audioPeriod);
 			audioLink *newLink = new audioLink();
 			newLink->packetStart = nextPacket;
 			newLink->syncPeriod = 0;

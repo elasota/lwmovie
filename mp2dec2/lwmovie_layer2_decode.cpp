@@ -213,13 +213,11 @@ bool lwmovie::layerii::lwmCMP2DecodeState::DecodeFrameCH(const void *bytes, lwmS
 		for(lwmFastUInt8 vc=0;vc<3;vc++)
 			for(lwmFastUInt8 i=sbLimit;i<NUM_SUBBANDS;i++)
 				coeffs[ch][vc][i] = lwmFixedReal14(0);
-	
-	static int hits = 0;
+
 	for(lwmFastUInt8 cluster=0;cluster<3;cluster++)
 	{
 		for(lwmFastUInt8 block=0;block<4;block++)
 		{
-			hits++;
 			for(lwmFastUInt8 i=0;i<sbLimit;i++)
 			{
 				for(lwmFastUInt8 ch=0;ch<numChannels;ch++)
@@ -258,9 +256,9 @@ bool lwmovie::layerii::lwmCMP2DecodeState::DecodeFrameCH(const void *bytes, lwmS
 							for(int vc=0;vc<3;vc++)
 							{
 								lwmUInt32 a = baseValues[vc]*2 + 1;	// Max = 131071
-								lwmFixedReal29 b = lwmFixed32<0>(a) * rcp;
+								lwmFixedReal29 b = lwmFixedReal0(a) * rcp;
 								lwmFixedReal29 c = b - lwmFixedReal29(1.0);
-								lwmFixedReal14 d = scaleFactors[ch][i][cluster].Mul(c);
+								lwmFixedReal14 d = scaleFactors[ch][i][cluster] LWMOVIE_FIXEDREAL_CSF_MUL (c);
 								coeffs[ch][vc][i] = d;
 							}
 						}

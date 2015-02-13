@@ -30,6 +30,7 @@ namespace lwmovie
 {
 	namespace layerii
 	{
+#ifdef LWMOVIE_FIXEDPOINT
 		class lwmCompressedSF
 		{
 			static const int RSHIFT_BITS = 5;
@@ -39,17 +40,22 @@ namespace lwmovie
 			static const lwmUInt32 RSHIFT_BITS_MASK = 0x1f;
 
 			lwmUInt32 m_compressed;
-#ifdef LWMOVIE_DEBUG_FIXEDPOINT
-			double debugValue;
-#endif
 
 		public:
 			lwmCompressedSF();
-			explicit lwmCompressedSF(int exponent);
 			lwmFixedReal14 Mul(const lwmFixedReal29 &rs) const;
+			static lwmCompressedSF FromPower(int exponent);
 		};
+
+#define LWMOVIE_CREATE_CSF(exp)	lwmCompressedSF::FromPower(exp)
+#else
+		typedef float lwmCompressedSF;
+#define LWMOVIE_CREATE_CSF(exp)	(static_cast<lwmCompressedSF>(pow(0.5, static_cast<double>(exp) / 3.0 - 1.0)))
+#endif
 	}
 }
+
+#ifdef LWMOVIE_FIXEDPOINT
 
 inline lwmovie::layerii::lwmCompressedSF::lwmCompressedSF()
 {
@@ -64,11 +70,9 @@ inline lwmFixedReal14 lwmovie::layerii::lwmCompressedSF::Mul(const lwmFixedReal2
 	int rshiftAmount = rs.FRACTION_BITS + FRACTION_BITS - 32 - result.FRACTION_BITS + MIN_RSHIFT + shiftBase;
 	lwmSInt32 shifted = xmulHigh >> rshiftAmount;
 
-	result = lwmFixed32<0>(shifted).RShiftFixed<14>();
-#ifdef LWMOVIE_DEBUG_FIXEDPOINT
-	result.debugValue = debugValue * rs.debugValue;
-#endif
-	return result;
+	return lwmFixed32<0, lwmSInt32>(shifted).RShiftFixed<14>();
 }
+
+#endif
 
 #endif

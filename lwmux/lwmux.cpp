@@ -10,6 +10,7 @@ using namespace lwmovie::constants;
 
 void ConvertM1V(lwmOSFile *inFile, lwmOSFile *outFile);
 void ConvertMP2(lwmOSFile *inFile, lwmOSFile *outFile);
+void ConvertCVID(lwmOSFile *inFile, lwmOSFile *outFile);
 void Mux(lwmLargeUInt audioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFile, lwmOSFile *outFile);
 
 int main(int argc, const char **argv)

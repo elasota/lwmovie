@@ -205,7 +205,11 @@ namespace lwmovie
 	public:
 		lwmDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight);
 		bool Digest(const mpegSequence *sequenceData, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon);
+#ifdef LWMOVIE_PROFILE
 		inline lwmCProfileTagSet *GetProfileTags() { return &m_profileTags; }
+#else
+		inline lwmCProfileTagSet *GetProfileTags() { return 0; }
+#endif
 
 	private:
 		bool ParseSliceHeader(lwmCBitstream *bitstream);
@@ -225,7 +229,9 @@ namespace lwmovie
 		lwmSInt32 DecodeMotionVectors(lwmCBitstream *bitstream);
 		lwmUInt8 DecodeCBP(lwmCBitstream *bitstream);
 
+#ifdef LWMOVIE_PROFILE
 		lwmCProfileTagSet	m_profileTags;
+#endif
 		lwmUInt32			m_mb_width;
 		lwmUInt32			m_mb_height;
 		mpegSlice			m_slice;

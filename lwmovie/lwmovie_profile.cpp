@@ -21,6 +21,8 @@
  */
 #include "lwmovie_profile.hpp"
 
+#ifdef LWMOVIE_PROFILE
+
 void lwmCProfileTagSet::FlushTo(lwmCProfileTagSet *otherTagSet)
 {
 	for(int i=0;i<lwmEPROFILETAG_Count;i++)
@@ -29,3 +31,5 @@ void lwmCProfileTagSet::FlushTo(lwmCProfileTagSet *otherTagSet)
 		m_profileTags[i].Reset();
 	}
 }
+
+#endif

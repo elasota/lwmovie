@@ -19,6 +19,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include <new>
 #include "lwmovie_demux.hpp"
 #include "lwmovie_fillable.hpp"
 #include "lwmovie_package.hpp"
@@ -195,7 +196,10 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			return false;
 		if(movieState->videoInfo.videoHeight > 4095)
 			return false;
-		movieState->m1vDecoder = new lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
+		movieState->m1vDecoder = static_cast<lwmovie::lwmVidStream*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmVidStream)));
+		if(!movieState->m1vDecoder)
+			return false;
+		new (movieState->m1vDecoder) lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
 		break;
 	default:
 		return false;
@@ -203,7 +207,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 	return true;
 }
 
-extern "C" lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags)
+LWMOVIE_API_LINK lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags)
 {
 	lwmMovieState *movieState = static_cast<lwmMovieState *>(alloc->allocFunc(alloc, sizeof(lwmMovieState)));
 
@@ -226,7 +230,7 @@ extern "C" lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 us
 	return movieState;
 }
 
-extern "C" void lwmMovieState_FeedData(lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested)
+LWMOVIE_API_LINK void lwmMovieState_FeedData(lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested)
 {
 	lwmUInt32 bytesAvailable = numBytes;
 	const void *bytes = inBytes;
@@ -307,19 +311,29 @@ repeatFeed:;
 		break;
 	case lwmDEMUX_InitDecoding:
 		{
-			movieState->packetDataBytesEscaped = new lwmUInt8[movieState->movieInfo.largestPacketSize];
-			movieState->packetDataBytes = new lwmUInt8[movieState->movieInfo.largestPacketSize];
+			movieState->packetDataBytesEscaped = static_cast<lwmUInt8*>(movieState->alloc->allocFunc(movieState->alloc, movieState->movieInfo.largestPacketSize));
+			movieState->packetDataBytes = static_cast<lwmUInt8*>(movieState->alloc->allocFunc(movieState->alloc, movieState->movieInfo.largestPacketSize));
 			movieState->packetHeaderFillable.Init(movieState->packetHeaderBytes);
 
-			if(InitDecoding(movieState->alloc, movieState))
-			{
-				movieState->demuxState = lwmDEMUX_PacketHeader;
-				*outResult = lwmDIGEST_Initialize;
-			}
-			else
+			if(movieState->packetDataBytesEscaped == NULL || movieState->packetDataBytes == NULL)
 			{
 				movieState->demuxState = lwmDEMUX_FatalError;
 				*outResult = lwmDIGEST_Nothing;
+			}
+			else
+			{
+				movieState->packetHeaderFillable.Init(movieState->packetHeaderBytes);
+
+				if(InitDecoding(movieState->alloc, movieState))
+				{
+					movieState->demuxState = lwmDEMUX_PacketHeader;
+					*outResult = lwmDIGEST_Initialize;
+				}
+				else
+				{
+					movieState->demuxState = lwmDEMUX_FatalError;
+					*outResult = lwmDIGEST_Nothing;
+				}
 			}
 
 			*outBytesDigested = numBytes - bytesAvailable;
@@ -427,7 +441,7 @@ repeatFeed:;
 }
 
 
-extern "C" int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *outValue)
+LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *outValue)
 {
 	switch(streamType)
 	{
@@ -472,17 +486,19 @@ extern "C" int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieSta
 }
 
 
-extern "C" lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmSVideoFrameProvider *frameProvider)
+LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmSVideoFrameProvider *frameProvider)
 {
 	switch(reconstructorType)
 	{
 	case lwmRC_MPEG1Video:
 		{
-			// TODO MUSTFIX: Use the right allocator
-			lwmovie::lwmCM1VSoftwareReconstructor *recon = new lwmovie::lwmCM1VSoftwareReconstructor();
+			lwmovie::lwmCM1VSoftwareReconstructor *recon = static_cast<lwmovie::lwmCM1VSoftwareReconstructor*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCM1VSoftwareReconstructor)));
+			if(!recon)
+				return NULL;
+			new (recon) lwmovie::lwmCM1VSoftwareReconstructor();
 			if(!recon->Initialize(alloc, frameProvider, movieState))
 			{
-				delete recon;
+				lwmIVideoReconstructor_Destroy(recon);
 				recon = NULL;
 			}
 			return recon;
@@ -492,19 +508,40 @@ extern "C" lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieS
 	return NULL;
 }
 
-extern "C" void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieState, lwmIVideoReconstructor *recon)
+LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(lwmIVideoReconstructor *videoRecon)
+{
+	videoRecon->Destroy();
+}
+
+LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieState, lwmIVideoReconstructor *recon)
 {
 	movieState->videoReconstructor = recon;
 	if(movieState->m1vDecoder)
 		movieState->m1vDecoder->SetReconstructor(recon);
 }
 
-extern "C" void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier)
+LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier)
 {
 	movieState->videoDigestWorkNotifier = videoDigestWorkNotifier;
 }
 
-extern "C" void lwmFlushProfileTags(lwmMovieState *movieState, lwmCProfileTagSet *tagSet)
+LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
+{
+	lwmSAllocator *alloc = movieState->alloc;
+	if(movieState->packetDataBytesEscaped)
+		alloc->freeFunc(alloc, movieState->packetDataBytesEscaped);
+	if(movieState->packetDataBytes)
+		alloc->freeFunc(alloc, movieState->packetDataBytes);
+	if(movieState->m1vDecoder)
+	{
+		movieState->m1vDecoder->~lwmVidStream();
+		alloc->freeFunc(alloc, movieState->m1vDecoder);
+	}
+	alloc->freeFunc(alloc, movieState);
+}
+
+
+LWMOVIE_API_LINK void lwmFlushProfileTags(lwmMovieState *movieState, lwmCProfileTagSet *tagSet)
 {
 	if(movieState->videoReconstructor)
 		movieState->videoReconstructor->FlushProfileTags(tagSet);
@@ -512,23 +549,23 @@ extern "C" void lwmFlushProfileTags(lwmMovieState *movieState, lwmCProfileTagSet
 		movieState->m1vDecoder->FlushProfileTags(tagSet);
 }
 
-extern "C" void lwmVideoRecon_SetWorkNotifier(lwmIVideoReconstructor *recon, lwmSWorkNotifier *workNotifier)
+LWMOVIE_API_LINK void lwmVideoRecon_SetWorkNotifier(lwmIVideoReconstructor *recon, lwmSWorkNotifier *workNotifier)
 {
 	recon->SetWorkNotifier(workNotifier);
 }
 
-extern "C" void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieState)
+LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieState)
 {
 	if(movieState->m1vDecoder)
 		movieState->m1vDecoder->Participate();
 }
 
-extern "C" void lwmVideoRecon_Participate(lwmIVideoReconstructor *recon)
+LWMOVIE_API_LINK void lwmVideoRecon_Participate(lwmIVideoReconstructor *recon)
 {
 	recon->Participate();
 }
 
-extern "C" lwmUInt32 lwmVideoRecon_GetWorkFrameIndex(const lwmIVideoReconstructor *recon)
+LWMOVIE_API_LINK lwmUInt32 lwmVideoRecon_GetWorkFrameIndex(const lwmIVideoReconstructor *recon)
 {
 	return recon->GetWorkFrameIndex();
 }

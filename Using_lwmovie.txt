@@ -29,8 +29,8 @@ Result codes and expected handling:
 lwmDIGEST_Initialize - Indicates that lwmovie has finished parsing the stream header.  When this is returned, you should create a video reconstructor and assign it to the video using lwmMovieState_SetVideoReconstructor.  You can also access stream parameters at this point.  No further processing should be performed on the video until a reconstructor is assigned.
 lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation and is awaiting more data.
 lwmDIGEST_Worked - Indicates that lwmovie has performed some internal work even if it hasn't digested any data.
-lwmDIGEST_Error - Indicates that lwmovie has encountered an error.
-lwmDIGEST_VideoSync - Indicates that a new video frame is available.  lwmovie will automatically synchronize the reconstructor when this code is returned.
+lwmDIGEST_FatalError - Indicates that lwmovie encountered an error and is unable to continue processing.
+lwmDIGEST_VideoSync - Indicates that a new video frame is available.  lwmovie will automatically wait for the reconstructor to finish when this code is returned.
 lwmDIGEST_AudioSync - Indicates that a new audio frame is available.
 
 === Accessing video stream information ===
@@ -45,9 +45,14 @@ Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Al
 
 You can optionally assign a work notifier to the reconstructor using lwmVideoRecon_SetWorkNotifier, which should call lwmVideoRecon_Participate.
 
-To retrieve output from a software reconstructor, wait for a lwmDIGEST_VideoSync result.  The resulting frame can be accessed in one of several ways:
-- lwmReconGetChannel allows you to specify a plane and will return back the address of the plane and the stride in bytes.
-- TODO
+To retrieve output from a software reconstructor, wait for a lwmDIGEST_VideoSync result.  How to retrieve your video frame from that point varies.
+
+For software reconstruction:
+- Call lwmVideoRecon_GetWorkFrame on the video reconstructor to get the current work frame index.
+- Call the lockWorkFrameFunc member of the frame provider and pass the frame provider, the work frame index, and lwmVIDEOLOCK_Read to lock the frame.
+- Call the getWorkFramePlaneFunc member of the frame provider and pass the frame provider, the work frame index, and the channel number to retrieve a pointer to the channel data.
+- Call the getWorkFramePlaneStrideFunc member of the frame provider and pass the frame provider and the channel number to retrieve the offset of each row's starting data to the starting data of the next row.
+- When done, call the unlockWorkFrameFunc member of the frame provider and pass the frame provider and the work frame index to unlock the frame.
 
 === Audio results ===
 - TODO
@@ -61,14 +66,13 @@ The timestamp represents the amount of data that the encoder has finished, inclu
 
 === Additional topics ===
 -- Full-range color --
-  lwmovie supports full-range color, but full-range color is non-standard in MPEG-1 and requires tricking the encoder.  You can get around this limit in ffmpeg by converting your movie to rawvideo using -pix_fmt yuvj420p and then encoding it using -pix_fmt yuv420p.
+  lwmovie supports full-range color, but full-range color is non-standard in MPEG-1 and requires either hacks or "tricking" the encoder.  You can get around this limit in ffmpeg by converting your movie to rawvideo using -pix_fmt yuvj420p and then encoding it using -pix_fmt yuv420p.
 
   
 === Thread pooling ===
-lwmovie supports thread pooling by uwing lwmSWorkNotifier structures.
+lwmovie supports thread pooling by using lwmSWorkNotifier structures.
 
 Work notifiers are expected to contain 2 fields:
-- An "opaque" field containing a unique identifier that will be passed back to the other callbacks.
 - A "notifyAvailableFunc" callback that will be passed the work notifier instance new work is available.  The function should call a participate function appropriate for the type of work assigned to the work notifier exactly once.
 - A "joinFunc" callback that will wait for all outstanding work assigned to the notifier to finish.
 
@@ -77,6 +81,9 @@ To assign a work notifier to the video reconstructor, use lwmSetVideoReconWorkNo
 
 
 === Cleaning up ===
+To destroy a movie state, call lwmMovieState_Destroy and pass the movie state.
+To destroy a video reconstructor, call lwmIVideoReconstructor_Destroy and pass the video reconstructor.
+To destroy a frame provider, call lwmSVideoFrameProvider_Destroy and pass the frame provider.
 
 === Additional topics ===
 -- Thread safety --

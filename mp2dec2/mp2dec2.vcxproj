@@ -68,6 +68,7 @@
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\lwmovie_config.h" />
     <ClInclude Include="lwmovie_layer2.hpp" />
     <ClInclude Include="lwmovie_layer2_bitstream.hpp" />
     <ClInclude Include="lwmovie_layer2_constants.hpp" />
@@ -76,6 +77,11 @@
     <ClInclude Include="lwmovie_layer2_dspops.hpp" />
     <ClInclude Include="lwmovie_layer2_fixedpoint.hpp" />
     <ClInclude Include="lwmovie_layer2_fixedreal.hpp" />
+    <ClInclude Include="lwmovie_layer2_nosimd.hpp" />
+    <ClInclude Include="lwmovie_layer2_ssefloat.hpp" />
+    <ClInclude Include="lwmovie_layer2_sseint.hpp" />
+    <ClInclude Include="lwmovie_simdint.hpp" />
+    <ClInclude Include="lwmovie_simdint_sse2.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="lwmovie_layer2_xmath.hpp" />

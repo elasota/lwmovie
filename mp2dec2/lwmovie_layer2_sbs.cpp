@@ -25,24 +25,31 @@
 
 void lwmovie::layerii::SubBandSynthesis(lwmSInt16 *output, lwmFixedReal22 accumulators[FILTER_SIZE][NUM_SUBBANDS], const lwmFixedReal14 coeffs[NUM_SUBBANDS], int currentRotator, lwmFastUInt8 stride)
 {
-	lwmFixedReal14 subbands[NUM_SUBBANDS*2];
+	lwmUInt8 alignedSubbands[sizeof(lwmFixedReal14)*NUM_SUBBANDS*2 + LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT];
+	lwmFixedReal14 *subbands = reinterpret_cast<lwmFixedReal14*>(alignedSubbands - ((alignedSubbands  - reinterpret_cast<lwmUInt8*>(NULL)) & (LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT - 1)) + LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT);
+
 	IMDCT32(subbands, coeffs);
 
 	// Special first case, output instead of writing to accumulator
 	{
 		const lwmFixedReal22 *accumulator = accumulators[currentRotator % FILTER_SIZE];
 
-		for(int sample=0;sample<NUM_SUBBANDS;sample++)
+		for(int samplePair=0;samplePair<NUM_SUBBANDS;samplePair+=LWMOVIE_FIXEDREAL_SIMD_WIDTH*2)
 		{
-			lwmFixedReal22 finalSample = accumulator[sample] + MP2_DEWINDOW[0][sample].MulTo<27, 22>(subbands[sample].IncreaseFracPrecision<13>());
+			lwmSimdFixedReal22 finalSample[2];
+			for(int subSample=0;subSample<2;subSample++)
+			{
+				int sample = samplePair + subSample*LWMOVIE_FIXEDREAL_SIMD_WIDTH;
+				lwmSimdFixedReal27 highPrecSample = LWMOVIE_FIXEDREAL_INCREASEFRACPRECISION(lwmSimdFixedReal14::Load(subbands + sample), 13);
+				finalSample[subSample] = lwmSimdFixedReal22::Load(accumulator + sample) + lwmSimdFixedReal29::Load(MP2_DEWINDOW[0] + sample) LWMOVIE_FIXEDREAL_MULTO(27, 22) (highPrecSample);
+			}
 
-			lwmSInt32 raw = finalSample.LShiftAndRound(OUT_SCALE_SHIFT);
-			if(raw>OUT_SCALE_MAX)
-				raw=OUT_SCALE_MAX;
-			else if(raw<OUT_SCALE_MIN)
-				raw=OUT_SCALE_MIN;
-			*output = static_cast<lwmSInt16>(raw);
-			output += stride;
+			lwmSimdInt16<lwmSimdFixedRealRaw> outSamples = LWMOVIE_FIXEDREAL_LSAR_CLAMP(finalSample[0], finalSample[1], OUT_SCALE_SHIFT);
+			for(int simdSub=0;simdSub<LWMOVIE_FIXEDREAL_SIMD_WIDTH*2;simdSub++)
+			{
+				*output = outSamples.GetSimdSub(simdSub);
+				output += stride;
+			}
 		}
 	}
 
@@ -53,8 +60,12 @@ void lwmovie::layerii::SubBandSynthesis(lwmSInt16 *output, lwmFixedReal22 accumu
 		const lwmFixedReal14 *phaseSubbands = subbands + (hist & 1)*NUM_SUBBANDS;
 		lwmFixedReal22 *accumulator = accumulators[(currentRotator + hist) % FILTER_SIZE];
 
-		for(int sample=0;sample<NUM_SUBBANDS;sample++)
-			accumulator[sample] += windowp[sample].MulTo<27, 22>(phaseSubbands[sample].IncreaseFracPrecision<13>());
+		for(int sample=0;sample<NUM_SUBBANDS;sample+=LWMOVIE_FIXEDREAL_SIMD_WIDTH)
+		{
+			lwmSimdFixedReal22 accum = lwmSimdFixedReal22::Load(accumulator + sample);
+			accum += lwmSimdFixedReal29::Load(windowp + sample) LWMOVIE_FIXEDREAL_MULTO(27, 22) (LWMOVIE_FIXEDREAL_INCREASEFRACPRECISION(lwmSimdFixedReal14::Load(phaseSubbands + sample), 13));
+			accum.Store(accumulator + sample);
+		}
 	}
 
 	// Special last case, overwrite instead of accumulate
@@ -63,7 +74,11 @@ void lwmovie::layerii::SubBandSynthesis(lwmSInt16 *output, lwmFixedReal22 accumu
 		const lwmFixedReal14 *phaseSubbands = subbands + NUM_SUBBANDS;
 		lwmFixedReal22 *accumulator = accumulators[(currentRotator + FILTER_SIZE - 1) % FILTER_SIZE];
 
-		for(int sample=0;sample<NUM_SUBBANDS;sample++)
-			accumulator[sample] = windowp[sample].MulTo<27, 22>(phaseSubbands[sample].IncreaseFracPrecision<13>());
+		for(int sample=0;sample<NUM_SUBBANDS;sample+=LWMOVIE_FIXEDREAL_SIMD_WIDTH)
+		{
+			lwmSimdFixedReal22 accum = lwmSimdFixedReal22::Load(accumulator + sample);
+			accum = lwmSimdFixedReal29::Load(windowp + sample) LWMOVIE_FIXEDREAL_MULTO(27, 22) (LWMOVIE_FIXEDREAL_INCREASEFRACPRECISION(lwmSimdFixedReal14::Load(phaseSubbands + sample), 13));
+			accum.Store(accumulator + sample);
+		}
 	}
 }

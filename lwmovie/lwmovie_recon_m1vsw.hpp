@@ -56,6 +56,8 @@ namespace lwmovie
 
 		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
 
+		virtual void Destroy();
+
 	private:
 		struct STWorkNotifier : public lwmSWorkNotifier
 		{
@@ -92,7 +94,9 @@ namespace lwmovie
 		lwmDCTBLOCK *m_dctBlocks;
 		lwmAtomicInt *m_rowCommitCounts;
 		lwmAtomicInt *m_workRowUsers;
+#ifdef LWMOVIE_PROFILE
 		lwmCProfileTagSet *m_workRowProfileTags;
+#endif
 
 		STarget m_currentTarget;
 		STarget m_pastTarget;
