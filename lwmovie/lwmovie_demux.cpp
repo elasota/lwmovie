@@ -880,6 +880,10 @@ repeatFeed:;
 			*outBytesDigested = numBytes - bytesAvailable;
 			return;
 		}
+	case lwmDEMUX_FatalError:
+		*outResult = lwmDIGEST_Error;
+		*outBytesDigested = 0;
+		break;
 	};
 }
 
@@ -993,6 +997,11 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 	{
 		movieState->m1vDecoder->~lwmVidStream();
 		alloc->freeFunc(alloc, movieState->m1vDecoder);
+	}
+	if(movieState->mp2Decoder)
+	{
+		movieState->mp2Decoder->~lwmCMP2Decoder();
+		alloc->freeFunc(alloc, movieState->mp2Decoder);
 	}
 	alloc->freeFunc(alloc, movieState);
 }

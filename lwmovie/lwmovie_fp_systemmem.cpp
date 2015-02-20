@@ -30,6 +30,7 @@ namespace lwmovie
 	{
 	public:
 		explicit lwmCSystemMemFrameProvider(lwmSAllocator *alloc);
+		~lwmCSystemMemFrameProvider();
 
 		virtual int CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
 		virtual void LockWorkFrame(lwmUInt32 workFrameIndex, lwmUInt32 lockType);
@@ -51,8 +52,15 @@ namespace lwmovie
 
 lwmovie::lwmCSystemMemFrameProvider::lwmCSystemMemFrameProvider(lwmSAllocator *alloc)
 	: lwmIVideoFrameProvider()
+	, m_frameBytes(NULL)
 {
 	m_alloc = alloc;
+}
+
+lwmovie::lwmCSystemMemFrameProvider::~lwmCSystemMemFrameProvider()
+{
+	if(m_frameBytes)
+		m_alloc->freeFunc(m_alloc, m_frameBytes);
 }
 
 int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat)

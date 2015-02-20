@@ -115,13 +115,24 @@ void Mux(lwmUInt32 audioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFile, l
 
 	for(int i=0;i<STREAM_SOURCE_COUNT;i++)
 	{
-		lwmReadPlanFromFile<lwmMovieHeader>(pkgHeaders[i], streamFiles[i]);
-		
-		if(pkgHeaders[i].videoStreamType != lwmVST_None)
-			lwmReadPlanFromFile<lwmVideoStreamInfo>(videoStreamInfos[i], streamFiles[i]);
+		if(streamFiles[i] == NULL)
+		{
+			pkgHeaders[i].audioStreamType = lwmAST_None;
+			pkgHeaders[i].videoStreamType = lwmVST_None;
+			pkgHeaders[i].largestPacketSize = 0;
+			pkgHeaders[i].longestFrameReadahead = 0;
+			pkgHeaders[i].numTOC = 0;
+		}
+		else
+		{
+			lwmReadPlanFromFile<lwmMovieHeader>(pkgHeaders[i], streamFiles[i]);
 
-		if(pkgHeaders[i].audioStreamType != lwmAST_None)
-			lwmReadPlanFromFile<lwmAudioStreamInfo>(audioStreamInfos[i], streamFiles[i]);
+			if(pkgHeaders[i].videoStreamType != lwmVST_None)
+				lwmReadPlanFromFile<lwmVideoStreamInfo>(videoStreamInfos[i], streamFiles[i]);
+
+			if(pkgHeaders[i].audioStreamType != lwmAST_None)
+				lwmReadPlanFromFile<lwmAudioStreamInfo>(audioStreamInfos[i], streamFiles[i]);
+		}
 	}
 
 	// Write package headers
@@ -136,45 +147,50 @@ void Mux(lwmUInt32 audioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFile, l
 
 		audioStreamInfos[STREAM_SOURCE_AUDIO].audioReadAhead = audioReadAhead;
 		
-		lwmWritePlanToFile<lwmVideoStreamInfo>(videoStreamInfos[STREAM_SOURCE_VIDEO], outFile);
-		lwmWritePlanToFile<lwmAudioStreamInfo>(audioStreamInfos[STREAM_SOURCE_AUDIO], outFile);
+		if(outPkgHeader.videoStreamType != lwmVST_None)
+			lwmWritePlanToFile<lwmVideoStreamInfo>(videoStreamInfos[STREAM_SOURCE_VIDEO], outFile);
+		if(outPkgHeader.audioStreamType != lwmAST_None)
+			lwmWritePlanToFile<lwmAudioStreamInfo>(audioStreamInfos[STREAM_SOURCE_AUDIO], outFile);
 	}
 
 	lwmUInt32 largestPacketSize = 0;
 
 	// Scan audio packets
-	headAL = tailAL = new audioLink();
-	tailAL->packetStart = audioFile->FilePos();
-	tailAL->syncPeriod = 0;
-	tailAL->next = NULL;
-	while(true)
+	if(audioFile)
 	{
-		lwmPacketHeader pktHeader;
-		lwmPacketHeaderFull pktHeaderFull;
-
-		if(!lwmReadPlanFromFile<lwmPacketHeader>(pktHeader, audioFile) ||
-			!lwmReadPlanFromFile<lwmPacketHeaderFull>(pktHeaderFull, audioFile))
-			break;
-
-		if(pktHeaderFull.packetSize > largestPacketSize)
-			largestPacketSize = pktHeaderFull.packetSize;
-
-		lwmUInt64 nextPacket = audioFile->FilePos() + pktHeaderFull.packetSize;
-
-		if(pktHeader.GetPacketType() == lwmEPT_Audio_Synchronization)
+		headAL = tailAL = new audioLink();
+		tailAL->packetStart = audioFile->FilePos();
+		tailAL->syncPeriod = 0;
+		tailAL->next = NULL;
+		while(true)
 		{
-			lwmAudioSynchronizationPoint syncPoint;
-			lwmReadPlanFromFile<lwmAudioSynchronizationPoint>(syncPoint, audioFile);
-			tailAL->syncPeriod = syncPoint.audioPeriod;
-			audioLink *newLink = new audioLink();
-			newLink->packetStart = nextPacket;
-			newLink->syncPeriod = 0;
-			newLink->next = NULL;
-			tailAL->next = newLink;
-			tailAL = newLink;
-		}
+			lwmPacketHeader pktHeader;
+			lwmPacketHeaderFull pktHeaderFull;
 
-		audioFile->Seek(nextPacket);
+			if(!lwmReadPlanFromFile<lwmPacketHeader>(pktHeader, audioFile) ||
+				!lwmReadPlanFromFile<lwmPacketHeaderFull>(pktHeaderFull, audioFile))
+				break;
+
+			if(pktHeaderFull.packetSize > largestPacketSize)
+				largestPacketSize = pktHeaderFull.packetSize;
+
+			lwmUInt64 nextPacket = audioFile->FilePos() + pktHeaderFull.packetSize;
+
+			if(pktHeader.GetPacketType() == lwmEPT_Audio_Synchronization)
+			{
+				lwmAudioSynchronizationPoint syncPoint;
+				lwmReadPlanFromFile<lwmAudioSynchronizationPoint>(syncPoint, audioFile);
+				tailAL->syncPeriod = syncPoint.audioPeriod;
+				audioLink *newLink = new audioLink();
+				newLink->packetStart = nextPacket;
+				newLink->syncPeriod = 0;
+				newLink->next = NULL;
+				tailAL->next = newLink;
+				tailAL = newLink;
+			}
+
+			audioFile->Seek(nextPacket);
+		}
 	}
 
 	bool anyVideo = false;

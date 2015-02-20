@@ -42,6 +42,7 @@ lwmovie::lwmCM1VSoftwareReconstructor::lwmCM1VSoftwareReconstructor()
 
 lwmovie::lwmCM1VSoftwareReconstructor::~lwmCM1VSoftwareReconstructor()
 {
+	this->WaitForFinish();
 	if(m_mblocks)
 		m_alloc->freeFunc(m_alloc, m_mblocks);
 	if(m_blocks)
@@ -401,9 +402,10 @@ void lwmovie::lwmCM1VSoftwareReconstructor::FlushProfileTags(lwmCProfileTagSet *
 
 void lwmovie::lwmCM1VSoftwareReconstructor::Destroy()
 {
+	lwmSAllocator *alloc = m_alloc;
 	lwmCM1VSoftwareReconstructor *self = this;
 	self->~lwmCM1VSoftwareReconstructor();
-	m_alloc->freeFunc(m_alloc, self);
+	alloc->freeFunc(alloc, self);
 }
 
 lwmUInt32 lwmovie::lwmCM1VSoftwareReconstructor::GetWorkFrameIndex() const

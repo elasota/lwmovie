@@ -213,6 +213,8 @@ void lwmOSFile::Seek(lwmSInt64 pos, lwmOSFile::ESeekMode seekMode)
 
 lwmOSFile *lwmOSFile::Open(const char *path, EFileMode fileMode)
 {
+	if(!strcmp(path, "-"))
+		return NULL;
 	lwmOSFileImpl *impl = new lwmOSFileImpl();
 	if(!impl->Open(path, fileMode))
 	{

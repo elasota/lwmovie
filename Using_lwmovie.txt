@@ -114,6 +114,8 @@ To destroy a movie state, call lwmMovieState_Destroy and pass the movie state.
 To destroy a video reconstructor, call lwmIVideoReconstructor_Destroy and pass the video reconstructor.
 To destroy a frame provider, call lwmSVideoFrameProvider_Destroy and pass the frame provider.
 
+When destroying video resources, you should destroy the movie state first, then the video reconstructor, then the frame provider.
+
 === Additional topics ===
 -- Thread safety --
 It is safe to digest multiple lwmovies at the same time in different threads.
