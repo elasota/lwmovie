@@ -322,6 +322,8 @@ int main(int argc, char **argv)
 				}
 			}
 			break;
+		case lwmDIGEST_Error:
+			goto exitMovieLoop;
 		default:
 			break;
 		};
@@ -334,8 +336,13 @@ int main(int argc, char **argv)
 	}
 
 exitMovieLoop:
+	lwmMovieState_Destroy(movieState);
+	lwmIVideoReconstructor_Destroy(videoRecon);
+	lwmSVideoFrameProvider_Destroy(frameProvider);
 
 	SDL_CloseAudioDevice(audioDeviceID);
+	if(audioQueue)
+		delete audioQueue;
 	SDL_Quit();
 
 	return 0;
