@@ -47,9 +47,9 @@ static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &out
 
 	int numChannels;
 	if(mode != 3)
-		numChannels = asi.channelLayout = lwmAudioStreamInfo::CL_Stereo_LR;
+		numChannels = asi.speakerLayout = lwmSPEAKERLAYOUT_Stereo_LR;
 	else
-		numChannels = asi.channelLayout = lwmAudioStreamInfo::CL_Mono;
+		numChannels = asi.speakerLayout = lwmSPEAKERLAYOUT_Mono;
 	asi.audioReadAhead = 0;
 	asi.startTimeSamples = 480;
 	asi.sampleRate = MP2_SAMPLERATE[mpegVersion][samplerateIndex];

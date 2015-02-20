@@ -4,8 +4,6 @@
 #include "SDL2-2.0.3/include/SDL.h"
 #include "../lwmovie/lwmovie.h"
 
-#pragma optimize("",off)
-
 namespace lwplay
 {
 	class CAllocator : public lwmSAllocator
@@ -318,7 +316,6 @@ int main(int argc, char **argv)
 					{
 						void *dest = audioQueue->GetQueuePoint();
 						lwmUInt32 numSamplesRead = lwmMovieState_ReadAudioSamples(movieState, dest, audioQueue->NumBytesAvailable() / sampleSizeBytes);
-						printf("RAS first sample: %i\n", *static_cast<const lwmSInt16*>(dest));
 						audioQueue->CommitQueuedData(numSamplesRead * sampleSizeBytes);
 					}
 					SDL_UnlockAudioDevice(audioDeviceID);

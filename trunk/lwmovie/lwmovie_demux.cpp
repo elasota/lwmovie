@@ -89,10 +89,7 @@ private:
 	lwmUInt32 m_numCommittedSamples;
 
 	lwmSAllocator *m_alloc;
-	void *m_samplesBuf;
 	void *m_samples;
-	void *m_canary1;
-	void *m_canary2;
 	lwmUInt8 m_numChannels;
 	lwmUInt8 m_sampleSizeBytes;
 
@@ -116,8 +113,8 @@ lwmCAudioBuffer::lwmCAudioBuffer(lwmSAllocator *alloc)
 
 lwmCAudioBuffer::~lwmCAudioBuffer()
 {
-	if(m_samplesBuf)
-		m_alloc->freeFunc(m_alloc, m_samplesBuf);
+	if(m_samples)
+		m_alloc->freeFunc(m_alloc, m_samples);
 }
 
 
@@ -128,10 +125,7 @@ bool lwmCAudioBuffer::Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 
 	if(intMax / m_sampleSizeBytes < numSamples)
 		return false;	// Overflow
 	m_alloc = alloc;
-	m_samplesBuf = alloc->allocFunc(alloc, m_sampleSizeBytes * numSamples + 4);
-	m_canary1 = m_samplesBuf;
-	m_canary2 = reinterpret_cast<lwmUInt8*>(m_samplesBuf) + m_sampleSizeBytes * numSamples + 2;
-	m_samples = reinterpret_cast<lwmUInt8*>(m_samplesBuf) + 2;
+	m_samples = alloc->allocFunc(alloc, m_sampleSizeBytes * numSamples);
 	m_numChannels = numChannels;
 	m_capacity = numSamples;
 	if(m_samples == NULL)
