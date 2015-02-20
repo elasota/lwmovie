@@ -24,6 +24,7 @@
 
 #include "lwmovie_types.hpp"
 #include "../lwmovie/lwmovie_packetplan.hpp"
+#include "../lwmovie/lwmovie_demux.hpp"		// Needed for some enums
 
 enum lwmEVersion
 {
