@@ -51,13 +51,16 @@ namespace lwmovie
 		public:
 			lwmCMP2DecodeState();
 			bool ParseHeader(const void *bytes);
-			
-			template<lwmFastUInt8 numChannels>
-			bool DecodeFrameCH(const void *bytes, lwmSInt16 *output);
 
 			bool DecodeFrame(const void *bytes, lwmSInt16 *output);
 
 			lwmUInt16 GetFrameSizeBytes() const;
+			lwmUInt8 GetChannelCount() const;
+			lwmUInt32 GetSampleRate() const;
+
+		private:
+			template<lwmFastUInt8 numChannels>
+			bool DecodeFrameCH(const void *bytes, lwmSInt16 *output);
 		};
 	}
 }

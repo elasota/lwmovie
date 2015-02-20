@@ -42,11 +42,6 @@ static void MyFree(lwmSAllocator *alloc, void *ptr)
 	_aligned_free(ptr);
 }
 
-static lwmLargeUInt MyRead(void *f, void *buf, lwmLargeUInt nBytes)
-{
-	return fread(buf, 1, nBytes, static_cast<FILE *>(f));
-}
-
 VOID NTAPI MyVideoDigestWorkCallback(PTP_CALLBACK_INSTANCE instance, PVOID context, PTP_WORK work)
 {
 	lwmMovieState *movieState = static_cast<lwmMovieState *>(context);
@@ -118,6 +113,8 @@ int main(int argc, const char **argv)
 #endif
 	lwmSVideoFrameProvider *frameProvider;
 
+	CWinThreadPoolWorkNotifier videoReconNotifier;
+
 	while(true)
 	{
 		bufferAvailable = fread(buffer, 1, sizeof(buffer), f);
@@ -148,7 +145,6 @@ int main(int argc, const char **argv)
 					
 					PTP_WORK videoReconWork = CreateThreadpoolWork(MyVideoReconWorkCallback, videoRecon, NULL);
 
-					CWinThreadPoolWorkNotifier videoReconNotifier;
 					videoReconNotifier.SetWork(videoReconWork);
 
 					lwmVideoRecon_SetWorkNotifier(videoRecon, &videoReconNotifier);

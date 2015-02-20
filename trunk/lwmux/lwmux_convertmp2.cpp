@@ -47,7 +47,7 @@ static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &out
 
 	int numChannels;
 	if(mode != 3)
-		numChannels = asi.channelLayout = lwmAudioStreamInfo::CL_Stereo;
+		numChannels = asi.channelLayout = lwmAudioStreamInfo::CL_Stereo_LR;
 	else
 		numChannels = asi.channelLayout = lwmAudioStreamInfo::CL_Mono;
 	asi.audioReadAhead = 0;
@@ -184,7 +184,7 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 
 		{
 			lwmAudioSynchronizationPoint syncPoint;
-			syncPoint.audioPeriod = emittedSamples;
+			syncPoint.audioPeriod = emittedSamples - 480;	// Offset for MP2 delay
 
 			lwmPacketHeader syncPacket;
 			lwmPacketHeaderFull syncPacketFull;

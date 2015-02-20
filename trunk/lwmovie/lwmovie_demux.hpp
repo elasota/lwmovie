@@ -47,7 +47,7 @@ struct lwmSVideoFrameProvider
 	void (*destroyFunc)(lwmSVideoFrameProvider *frameProvider);
 };
 
-enum
+enum lwmEDigestResult
 {
 	lwmDIGEST_Nothing,
 	lwmDIGEST_Worked,
@@ -57,18 +57,28 @@ enum
 	lwmDIGEST_Initialize,
 };
 
-enum
+enum lwmEReconstructorType
 {
 	lwmRC_Unknown,
 	lwmRC_MPEG1Video,
 };
 
-enum
+enum lwmEFrameFormat
 {
+	lwmFRAMEFORMAT_Unknown,
 	lwmFRAMEFORMAT_YUV420P_Planar,
 };
 
-enum
+enum lwmESpeakerLayout
+{
+	lwmSPEAKERLAYOUT_Unknown,
+	lwmSPEAKERLAYOUT_Mono,
+	lwmSPEAKERLAYOUT_Stereo_LR,
+
+	lwmSPEAKERLAYOUT_Count,
+};
+
+enum lwmEStreamType
 {
 	lwmSTREAMTYPE_Video,
 	lwmSTREAMTYPE_Audio,
@@ -76,7 +86,7 @@ enum
 	lwmSTREAMTYPE_Count,
 };
 
-enum
+enum lwmEStreamParameter
 {
 	lwmSTREAMPARAM_U32_Width,
 	lwmSTREAMPARAM_U32_Height,
@@ -84,9 +94,12 @@ enum
 	lwmSTREAMPARAM_U32_PPSNumerator,
 	lwmSTREAMPARAM_U32_PPSDenominator,
 	lwmSTREAMPARAM_U32_ReconType,
+
+	lwmSTREAMPARAM_U32_SampleRate,
+	lwmSTREAMPARAM_U32_SpeakerLayout,
 };
 
-enum
+enum lwmEUserFlag
 {
 	lwmUSERFLAG_None				= 0,
 
@@ -100,6 +113,12 @@ LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieSt
 LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier);
 LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState);
+
+
+LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(lwmMovieState *movieState);
+LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movieState);
+LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(lwmMovieState *movieState, void *samples, lwmUInt32 numSamples);
+LWMOVIE_API_LINK void lwmMovieState_NotifyAudioPlaybackUnderrun(lwmMovieState *movieState);
 
 LWMOVIE_API_LINK void lwmVideoRecon_Participate(lwmIVideoReconstructor *videoRecon);
 LWMOVIE_API_LINK void lwmVideoRecon_SetWorkNotifier(lwmIVideoReconstructor *recon, lwmSWorkNotifier *workNotifier);

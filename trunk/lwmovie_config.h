@@ -14,6 +14,9 @@
 // Define this to not use any SIMD instruction set
 //#define LWMOVIE_NOSIMD
 
+// Define this to compile lwmovie as a DLL
+#define LWMOVIE_DLL
+
 
 #ifdef LWMOVIE_SSE42
 	#define LWMOVIE_SSE2
