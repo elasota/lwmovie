@@ -217,7 +217,7 @@ void Mux(lwmUInt32 audioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFile, l
 				lwmVideoSynchronizationPoint vidSync;
 				lwmReadPlanFromFile(vidSync, videoFile);
 				lwmUInt32 audioPeriod = static_cast<lwmUInt32>(
-					static_cast<lwmUInt64>(vidSync.videoPeriod)
+					static_cast<lwmUInt64>(vidSync.videoPeriod - 1)
 					* static_cast<lwmUInt64>(videoStreamInfos[STREAM_SOURCE_VIDEO].periodsPerSecondDenom
 					* static_cast<lwmUInt64>(audioStreamInfos[STREAM_SOURCE_AUDIO].sampleRate)
 					/ videoStreamInfos[STREAM_SOURCE_VIDEO].periodsPerSecondNum));

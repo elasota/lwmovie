@@ -51,6 +51,16 @@ lwmUInt16 lwmovie::layerii::lwmCMP2DecodeState::GetFrameSizeBytes() const
 	return frameBytes;
 }
 
+lwmUInt8 lwmovie::layerii::lwmCMP2DecodeState::GetChannelCount() const
+{
+	return m_numChannels;
+}
+
+lwmUInt32 lwmovie::layerii::lwmCMP2DecodeState::GetSampleRate() const
+{
+	return m_sampleRate;
+}
+
 bool lwmovie::layerii::lwmCMP2DecodeState::ParseHeader(const void *data)
 {
 	const lwmUInt8 *bytes = static_cast<const lwmUInt8 *>(data);
