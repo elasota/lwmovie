@@ -22,7 +22,7 @@
 #ifndef __LWMOVIE_FP_HPP__
 #define __LWMOVIE_FP_HPP__
 
-#include "lwmovie_demux.hpp"
+#include "lwmovie.h"
 
 namespace lwmovie
 {

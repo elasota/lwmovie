@@ -22,7 +22,7 @@
 #ifndef __LWMOVIE_BITSTREAM_HPP__
 #define __LWMOVIE_BITSTREAM_HPP__
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 
 namespace lwmovie
 {

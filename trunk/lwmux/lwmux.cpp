@@ -1,12 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../lwmovie/lwmovie_types.hpp"
-#include "../lwmovie/lwmovie_constants.hpp"
+#include "../common/lwmovie_coretypes.h"
 #include "lwmux_osfile.hpp"
-
-using namespace lwmovie;
-using namespace lwmovie::constants;
 
 void ConvertM1V(lwmOSFile *inFile, lwmOSFile *outFile);
 void ConvertMP2(lwmOSFile *inFile, lwmOSFile *outFile);

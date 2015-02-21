@@ -22,9 +22,12 @@
 #ifndef __LWMOVIE_LAYER2_CONSTANTS_HPP__
 #define __LWMOVIE_LAYER2_CONSTANTS_HPP__
 
+#include "../common/lwmovie_coretypes.h"
 #include "lwmovie_layer2.hpp"
 #include "lwmovie_layer2_fixedreal.hpp"
 #include "lwmovie_layer2_csf.hpp"
+
+#include "../common/lwmovie_coretypes.h"
 
 namespace lwmovie
 {
@@ -77,7 +80,12 @@ namespace lwmovie
 		extern const lwmUInt8 MP2_QINDEX[NUM_QINDEX_TABLES][1 << MAX_BITALLOC];
 		extern const lwmUInt8 MP2_QUANT_GROUP[NUM_QINDEX_TABLES][NUM_QINDEX];
 		extern MP2QuantInfo MP2_QUANT_INFO[NUM_QINDEX];
-		extern LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB const lwmFixedReal29 MP2_DEWINDOW[FILTER_SIZE][NUM_SUBBANDS];
+
+		extern LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB lwmSInt32 MP2_DEWINDOW_BASE[FILTER_SIZE][NUM_SUBBANDS];
+		extern const lwmFixedReal29 (*MP2_DEWINDOW)[NUM_SUBBANDS];
+
+		
+		void InitializeTables();
 	}
 }
 

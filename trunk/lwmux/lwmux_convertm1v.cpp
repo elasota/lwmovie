@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
-#include "../lwmovie/lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 #include "../lwmovie/lwmovie_constants.hpp"
 #include "../lwmovie/lwmovie_package.hpp"
 #include "lwmux_osfile.hpp"

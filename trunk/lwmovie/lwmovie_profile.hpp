@@ -22,7 +22,7 @@
 #ifndef __LWMOVIE_PROFILE_HPP__
 #define __LWMOVIE_PROFILE_HPP__
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 
 class lwmCProfileTagSet;
 

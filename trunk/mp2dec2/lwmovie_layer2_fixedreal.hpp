@@ -224,17 +224,17 @@ typedef lwmSimdSInt32 lwmSimdFixedRealRaw;
 
 #pragma warning(disable:4305)   // Truncation from double to float
 
-typedef float lwmFixedReal;
-typedef float lwmFixedReal0;
-typedef float lwmFixedReal31;
-typedef float lwmFixedReal30;
-typedef float lwmFixedReal29;
-typedef float lwmFixedReal22;
-typedef float lwmFixedReal24;
-typedef float lwmFixedReal27;
-typedef float lwmFixedReal18;
-typedef float lwmFixedReal17;
-typedef float lwmFixedReal14;
+typedef lwmFloat32 lwmFixedReal;
+typedef lwmFloat32 lwmFixedReal0;
+typedef lwmFloat32 lwmFixedReal31;
+typedef lwmFloat32 lwmFixedReal30;
+typedef lwmFloat32 lwmFixedReal29;
+typedef lwmFloat32 lwmFixedReal22;
+typedef lwmFloat32 lwmFixedReal24;
+typedef lwmFloat32 lwmFixedReal27;
+typedef lwmFloat32 lwmFixedReal18;
+typedef lwmFloat32 lwmFixedReal17;
+typedef lwmFloat32 lwmFixedReal14;
 
 #define LWMOVIE_FIXEDREAL_LSAR_CLAMP(n0, n1, v) (n0).MulClamp((n1), static_cast<float>(1 << (v)))
 #define LWMOVIE_FIXEDREAL_MAR(n, v) static_cast<lwmSInt32>((n) * static_cast<float>(v))

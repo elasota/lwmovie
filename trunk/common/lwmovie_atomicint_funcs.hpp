@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Eric Lasota
+ * Copyright (c) 2015 Eric Lasota
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,27 +19,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef __LWMOVIE_ATOMICINT_FUNCS_HPP__
+#define __LWMOVIE_ATOMICINT_FUNCS_HPP__
 
-#ifndef __LWMOVIE_ATOMICINT_HPP__
-#define __LWMOVIE_ATOMICINT_HPP__
+#include "lwmovie_atomicint_type.hpp"
+
+#ifdef _MSC_VER
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include "lwmovie_types.hpp"
 
-inline lwmAtomicInt lwmAtomicIncrement(lwmAtomicInt volatile* ptr)
+__forceinline lwmAtomicInt lwmAtomicIncrement(lwmAtomicInt volatile* ptr)
 {
 	return InterlockedIncrement(ptr);
 }
 
-inline lwmAtomicInt lwmAtomicDecrement(lwmAtomicInt volatile* ptr)
+__forceinline lwmAtomicInt lwmAtomicDecrement(lwmAtomicInt volatile* ptr)
 {
 	return InterlockedDecrement(ptr);
 }
 
-inline void *lwmAtomicCompareAndSwap(void *volatile* destination, void *newValue, void *comp)
+__forceinline void *lwmAtomicCompareAndSwap(void *volatile* destination, void *newValue, void *comp)
 {
 	return InterlockedCompareExchangePointer(destination, newValue, comp);
 }
+
+#endif	// _MSC_VER
 
 #endif

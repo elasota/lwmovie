@@ -1,7 +1,7 @@
 #ifndef __LWMUX_OSFILE_HPP__
 #define __LWMUX_OSFILE_HPP__
 
-#include "../lwmovie/lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 
 class lwmOSFileImpl;
 

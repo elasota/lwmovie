@@ -11,17 +11,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4D50A48B-D801-4AE7-B4D5-922D461C8354}</ProjectGuid>
-    <RootNamespace>lwmovie</RootNamespace>
+    <ProjectGuid>{052446C7-08D5-4389-A19E-47105E884742}</ProjectGuid>
+    <RootNamespace>mp2maketable</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
@@ -41,11 +41,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>LWMOVIE_DLL_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -54,63 +52,15 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
-      <PreprocessorDefinitions>LWMOVIE_DLL_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="idct\fastjrevdct.cpp" />
-    <ClCompile Include="lwmovie_bitstream.cpp" />
-    <ClCompile Include="lwmovie_decodedct.cpp" />
-    <ClCompile Include="lwmovie_demux.cpp" />
-    <ClCompile Include="lwmovie_fp.cpp" />
-    <ClCompile Include="lwmovie_fp_systemmem.cpp" />
-    <ClCompile Include="lwmovie_idct.cpp" />
-    <ClCompile Include="lwmovie_init.cpp" />
-    <ClCompile Include="lwmovie_macroblock.cpp" />
-    <ClCompile Include="lwmovie_motionvectors.cpp" />
-    <ClCompile Include="lwmovie_parseblock.cpp" />
-    <ClCompile Include="lwmovie_constants.cpp" />
-    <ClCompile Include="lwmovie_profile.cpp" />
-    <ClCompile Include="lwmovie_recon.cpp" />
-    <ClCompile Include="lwmovie_recon_m1vsw.cpp" />
-    <ClCompile Include="lwmovie_recon_m1vsw_sse2.cpp" />
-    <ClCompile Include="lwmovie_vlc.cpp" />
-    <ClCompile Include="lwmovie_vlctables.cpp" />
-    <ClCompile Include="mpeg_deslicer.cpp" />
-    <ClCompile Include="mpeg_vidstream.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="lwmovie.h" />
-    <ClInclude Include="lwmovie_api.hpp" />
-    <ClInclude Include="lwmovie_bits.hpp" />
-    <ClInclude Include="lwmovie_bitstream.hpp" />
-    <ClInclude Include="lwmovie_constants.hpp" />
-    <ClInclude Include="lwmovie_demux.hpp" />
-    <ClInclude Include="lwmovie_external_types.h" />
-    <ClInclude Include="lwmovie_fillable.hpp" />
-    <ClInclude Include="lwmovie_fp.hpp" />
-    <ClInclude Include="lwmovie_package.hpp" />
-    <ClInclude Include="lwmovie_packetplan.hpp" />
-    <ClInclude Include="lwmovie_profile.hpp" />
-    <ClInclude Include="lwmovie_recon.hpp" />
-    <ClInclude Include="lwmovie_recon_m1v.hpp" />
-    <ClInclude Include="lwmovie_recon_m1vsw.hpp" />
-    <ClInclude Include="lwmovie_simd_defs.hpp" />
-    <ClInclude Include="lwmovie_types.hpp" />
-    <ClInclude Include="lwmovie_videotypes.hpp" />
-    <ClInclude Include="lwmovie_vlc.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\mp2dec2\mp2dec2.vcxproj">
-      <Project>{c20d80ea-b440-485b-b555-26401fe7a054}</Project>
-    </ProjectReference>
+    <ClCompile Include="mp2maketable.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

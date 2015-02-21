@@ -1,7 +1,8 @@
 #ifndef __LWMOVIE_VIDEOTYPES_HPP__
 #define __LWMOVIE_VIDEOTYPES_HPP__
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
+#include "../common/lwmovie_atomicint_type.hpp"
 #include "lwmovie_external_types.h"
 #include "lwmovie_bitstream.hpp"
 #include "lwmovie_constants.hpp"
