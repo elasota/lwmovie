@@ -74,6 +74,8 @@ namespace lwmovie
 	void AccumDctBlockToPlane( const lwmDCTBLOCK *block, lwmUInt8 *dest, const lwmUInt8 *src, lwmLargeUInt pitch );
 }
 
+#if 0
+
 inline void lwmovie::WriteDctRowToPlane( const lwmSInt16 *row, lwmUInt8 *px )
 {
 	for(lwmLargeUInt i=0;i<8;i++)
@@ -97,3 +99,5 @@ inline void lwmovie::AccumDctBlockToPlane( const lwmDCTBLOCK *block, lwmUInt8 *d
 	for(lwmLargeUInt i=0;i<8;i++)
 		AccumDctRowToPlane(block->data + i*8, dest + i*pitch, src + i*pitch);
 }
+
+#endif

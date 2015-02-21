@@ -21,7 +21,7 @@
  */
 #include <emmintrin.h>
 #include <string.h>
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 #include "lwmovie_videotypes.hpp"
 
 void j_rev_dct_sse2( lwmSInt16 data[64] );

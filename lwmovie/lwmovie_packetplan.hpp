@@ -22,7 +22,7 @@
 #ifndef __LWMOVIE_PACKETPLAN_HPP__
 #define __LWMOVIE_PACKETPLAN_HPP__
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 
 template<class T> struct lwmPlanHandler { };
 template<class T> struct lwmPlanMemberHandler { };

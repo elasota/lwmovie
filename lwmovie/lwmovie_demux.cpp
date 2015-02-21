@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 #include <new>
-#include "lwmovie_demux.hpp"
+#include "lwmovie.h"
 #include "lwmovie_fillable.hpp"
 #include "lwmovie_package.hpp"
 #include "lwmovie_videotypes.hpp"
@@ -922,6 +922,9 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 				return 1;
 			case lwmSTREAMPARAM_U32_SyncPeriod:
 				*outValue = movieState->streamSyncPeriods[lwmSTREAMTYPE_Video];
+				return 1;
+			case lwmSTREAMPARAM_U32_LongestFrameReadAhead:
+				*outValue = movieState->movieInfo.longestFrameReadahead;
 				return 1;
 			};
 		}

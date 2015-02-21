@@ -67,7 +67,8 @@
     <ClCompile Include="lwmovie_layer2_tables.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\lwmovie_config.h" />
+    <ClInclude Include="..\common\lwmovie_config.h" />
+    <ClInclude Include="..\common\lwmovie_coretypes.h" />
     <ClInclude Include="lwmovie_layer2.hpp" />
     <ClInclude Include="lwmovie_layer2_bitstream.hpp" />
     <ClInclude Include="lwmovie_layer2_constants.hpp" />

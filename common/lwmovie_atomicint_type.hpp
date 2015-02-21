@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Eric Lasota
+ * Copyright (c) 2015 Eric Lasota
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,28 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef __LWMOVIE_EXTERNAL_TYPES_H__
-#define __LWMOVIE_EXTERNAL_TYPES_H__
+#ifndef __LWMOVIE_ATOMICINT_TYPE_HPP__
+#define __LWMOVIE_ATOMICINT_TYPE_HPP__
 
-#include "../common/lwmovie_coretypes.h"
+#ifdef _MSC_VER
 
-struct lwmMovieState;
+typedef long lwmAtomicInt;
 
-struct lwmSAllocator
-{
-	void *(*allocFunc)(lwmSAllocator *alloc, lwmLargeUInt sz);
-	void (*freeFunc)(lwmSAllocator *alloc, void *ptr);
-};
-
-struct lwmSWorkNotifier
-{
-	void (*notifyAvailableFunc)(lwmSWorkNotifier *workNotifier);
-	void (*joinFunc)(lwmSWorkNotifier *workNotifier);
-};
-
-struct lwmIOFuncs
-{
-	lwmLargeUInt (*readFunc)(void *f, void *buf, lwmLargeUInt nBytes);
-};
+#endif	// _MSC_VER
 
 #endif

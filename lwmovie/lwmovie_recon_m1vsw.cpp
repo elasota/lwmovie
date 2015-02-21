@@ -22,12 +22,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <new>
-#include "lwmovie_atomicint.hpp"
+#include "../common/lwmovie_atomicint_funcs.hpp"
+#include "../common/lwmovie_coretypes.h"
+#include "lwmovie.h"
 #include "lwmovie_recon_m1vsw.hpp"
-#include "lwmovie_types.hpp"
 #include "lwmovie_simd_defs.hpp"
 #include "lwmovie_profile.hpp"
-#include "lwmovie_demux.hpp"
 
 void j_rev_dct_sse2( lwmSInt16 data[64] );
 void j_rev_dct_sse2_sparseDC( lwmSInt16 data[64], lwmSInt16 value );

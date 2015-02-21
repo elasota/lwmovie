@@ -139,6 +139,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	lwmInitialize();
+
 	lwplay::CAllocator myAllocator;
 	char dataBuffer[4000];
 	char *unreadDataStart = NULL;
@@ -216,7 +218,7 @@ int main(int argc, char **argv)
 				wantAudio.freq = static_cast<int>(audioSampleRate);
 				wantAudio.channels = static_cast<int>(neededChannels);
 				wantAudio.format = AUDIO_S16SYS;
-				wantAudio.samples = 4096;
+				wantAudio.samples = 512;
 				wantAudio.userdata = audioQueue = new lwplay::CAudioQueue(sampleSizeBytes * 8192);
 				wantAudio.callback = lwplay::CAudioQueue::StaticPullFromSDL;
 				audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &wantAudio, &haveAudio, 0);

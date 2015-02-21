@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mp2dec2", "mp2dec2\mp2dec2.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwplay", "lwplay\lwplay.vcxproj", "{9689753A-3C3F-49FA-8E9C-7373747054C3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mp2maketable", "mp2maketable\mp2maketable.vcxproj", "{052446C7-08D5-4389-A19E-47105E884742}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -31,6 +33,10 @@ Global
 		{9689753A-3C3F-49FA-8E9C-7373747054C3}.Debug|Win32.Build.0 = Debug|Win32
 		{9689753A-3C3F-49FA-8E9C-7373747054C3}.Release|Win32.ActiveCfg = Release|Win32
 		{9689753A-3C3F-49FA-8E9C-7373747054C3}.Release|Win32.Build.0 = Release|Win32
+		{052446C7-08D5-4389-A19E-47105E884742}.Debug|Win32.ActiveCfg = Debug|Win32
+		{052446C7-08D5-4389-A19E-47105E884742}.Debug|Win32.Build.0 = Debug|Win32
+		{052446C7-08D5-4389-A19E-47105E884742}.Release|Win32.ActiveCfg = Release|Win32
+		{052446C7-08D5-4389-A19E-47105E884742}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

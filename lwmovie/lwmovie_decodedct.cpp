@@ -62,7 +62,7 @@
 * SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 */
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 #include "lwmovie_videotypes.hpp"
 #include "lwmovie_vlc.hpp"
 #include "lwmovie_bits.hpp"

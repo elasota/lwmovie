@@ -23,7 +23,7 @@
 #define __LWMOVIE_FILLABLE_HPP__
 
 #include <string.h>
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 
 struct lwmFillableBuffer
 {

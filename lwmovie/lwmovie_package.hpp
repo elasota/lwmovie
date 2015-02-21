@@ -22,9 +22,9 @@
 #ifndef __LWMOVIE_PACKAGE_HPP__
 #define __LWMOVIE_PACKAGE_HPP__
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
 #include "../lwmovie/lwmovie_packetplan.hpp"
-#include "../lwmovie/lwmovie_demux.hpp"		// Needed for some enums
+#include "../lwmovie/lwmovie.h"		// Needed for some enums
 
 enum lwmEVersion
 {

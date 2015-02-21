@@ -18,7 +18,9 @@ lwmux finalize <number of audio readahead samples> <audio> <video> <output> - Mu
 === Decoding videos with lwmovie ===
 lwmovie depends on the host application to perform timing and IO.  To avoid IO stalls, it instead provides decoding hints that specify how much data needs to be read ahead to avoid falling behind.
 
-The first step to digesting a movie with lwmovie is to create a lwmSAllocator instance and pass it to lwmCreateMovieState.  The allocator should always return blocks allocated on SIMD boundaries and should not be destroyed until the movie state is destroyed.  The allocator instance passed to functions will always be the one passed back to the callbacks.  lwmCreateMovieState will return a lwmMovieState object if successful.
+Before doing anything with lwmovie, you should call lwmInitialize to initialize it.  This should only be called once.
+
+Once initialized, the next step to digesting a movie with lwmovie is to create a lwmSAllocator instance and pass it to lwmCreateMovieState.  The allocator should always return blocks allocated on SIMD boundaries and should not be destroyed until the movie state is destroyed.  The allocator instance passed to functions will always be the one passed back to the callbacks.  lwmCreateMovieState will return a lwmMovieState object if successful.
 
 You can pass a bitmask of user flags to lwmCreateMovieState:
 - lwmUSERFLAG_ThreadedDeslicer - Allows bitstream parsing to be thread pooled, but increases memory consumption.  If you use this, you should set a work notifier using lwmMovieState_SetVideoDigestWorkNotifier and the work notifier should call lwmMovieState_VideoDigestParticipate.
@@ -27,21 +29,22 @@ To digest data, pass a data buffer and the buffer size to lwmMovieState_FeedData
 
 Result codes and expected handling:
 lwmDIGEST_Initialize - Indicates that lwmovie has finished parsing the stream header.  When this is returned, you should create a video reconstructor and assign it to the video using lwmMovieState_SetVideoReconstructor.  You can also access stream parameters at this point.  No further processing should be performed on the video until a reconstructor is assigned.
-lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation and is awaiting more data.
+lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation and is awaiting more data.  If there is no more data to feed, then movie decoding is complete.
 lwmDIGEST_Worked - Indicates that lwmovie has performed some internal work, even if it hasn't digested any data.
 lwmDIGEST_FatalError - Indicates that lwmovie encountered an error and is unable to continue processing.
 lwmDIGEST_VideoSync - Indicates that a new video frame is available.
-lwmDIGEST_AudioSync - Indicates that a new audio frame is available.
 
 === Accessing video stream information ===
-After lwmDIGEST_Initialize is received, you can access information about the video using lwmGetVideoParameters.  All parameters passed to it are optional, it will return the width and height in pixels, the number of frames per second expressed as a fraction, and the reconstructor type code.
+After lwmDIGEST_Initialize is received, you can access information about the video using lwmGetStreamParameterU32, including the dimensions, frame rate, and reconstructor type.
 
 === Software reconstructors ===
+Decoding video requires a reconstructor.
+
 To use the software reconstructor, you must first create a frame provider.  Frame providers serve work frames to the reconstructor.
 
 System memory frame providers use a provided allocator and store results in main memory.  To create a system memory frame provider, call lwmCreateSystemMemoryFrameProvider.
 
-Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Always pass the reconstructor the reconstructor type code received from lwmGetStreamParameterU32 with lwmSTREAMPARAM_U32_ReconType.
+Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Always pass reconstructor creation functions the reconstructor type code received from lwmGetStreamParameterU32 with lwmSTREAMPARAM_U32_ReconType.
 
 You can optionally assign a work notifier to the reconstructor using lwmVideoRecon_SetWorkNotifier, which should call lwmVideoRecon_Participate.
 
@@ -108,7 +111,6 @@ NOTE:
 - lwmMovieState_NotifyAudioPlaybackUnderrun: Unsynchronizes audio, allowing the audio decode system to resynchronize at a future point in time.
 
 
-
 === Cleaning up ===
 To destroy a movie state, call lwmMovieState_Destroy and pass the movie state.
 To destroy a video reconstructor, call lwmIVideoReconstructor_Destroy and pass the video reconstructor.
@@ -123,6 +125,11 @@ It is safe to digest multiple lwmovies at the same time in different threads.
 Work participation may create jobs for other work notifiers, but will never create jobs for the participating notifier.
 
 Work participation will never call the memory allocator.
+
+-- Avoiding stalls when IO-bound --
+Playing back video from devices that are restricted to a particular data rate may necessitate queuing playback data due to variations in bitrate even when using CBR encoding.  lwmovie does not currently provide a way to determine the amount of readahead necessary because that figure is based on both the video data and the exact IO limit.
+
+One option that may help is passing lwmSTREAMPARAM_U32_LongestFrameReadAhead and lwmSTREAMTYPE_Video to lwmMovieState_GetStreamParameterU32, which will output the largest number of bytes that the video ever requires to digest and produce one video frame from the previous frame.
 
 -- Security --
 Currently, lwmovie is NOT expected to be safe when decoding untrusted data.

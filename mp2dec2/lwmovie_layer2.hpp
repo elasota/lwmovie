@@ -22,35 +22,7 @@
 #ifndef __LWMOVIE_LAYER2_HPP__
 #define __LWMOVIE_LAYER2_HPP__
 
-#include "../lwmovie_config.h"
-
-#include <ctype.h>
-
-typedef long long lwmSInt64;
-typedef int lwmSInt32;
-typedef unsigned int lwmUInt32;
-typedef unsigned short lwmUInt16;
-typedef unsigned char lwmUInt8;
-typedef short lwmSInt16;
-typedef size_t lwmLargeUInt;
-
-typedef unsigned int lwmFastUInt8;
-typedef unsigned int lwmFastUInt16;
-
-#define LWMOVIE_FIXEDPOINT
-//#define LWMOVIE_NOSIMD
-#define LWMOVIE_SSE2
-#define LWMOVIE_SSE41
-
-
-#if defined(LWMOVIE_SSE2)
-	#define LWMOVIE_FIXEDREAL_SIMD_WIDTH		4
-	#define LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT	16
-	#define LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB	__declspec(align(16))
-#elif defined(LWMOVIE_NOSIMD)
-	#define LWMOVIE_FIXEDREAL_SIMD_WIDTH		1
-	#define LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT	1
-	#define LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB
-#endif
+#include "../common/lwmovie_config.h"
+#include "../common/lwmovie_coretypes.h"
 
 #endif

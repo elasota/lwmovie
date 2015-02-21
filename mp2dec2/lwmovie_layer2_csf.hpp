@@ -65,7 +65,7 @@ inline lwmFixedReal14 lwmovie::layerii::lwmCompressedSF::Mul(const lwmFixedReal2
 {
 	lwmSInt32 frac = static_cast<lwmSInt32>(m_compressed & FRACTION_BITS_MASK);
 	int shiftBase = static_cast<int>((m_compressed >> FRACTION_BITS) & RSHIFT_BITS_MASK);
-	lwmSInt32 xmulHigh = static_cast<lwmSInt32>(lwmovie::xmath::EMul(rs.RawData(), frac) >> 32);	// So we can discard the lower 32 entirely
+	lwmSInt32 xmulHigh = lwmovie::xmath::EMulHigh(rs.RawData(), frac);	// Discard the lower 32 entirely
 	lwmFixedReal14 result;
 	int rshiftAmount = rs.FRACTION_BITS + FRACTION_BITS - 32 - result.FRACTION_BITS + MIN_RSHIFT + shiftBase;
 	lwmSInt32 shifted = xmulHigh >> rshiftAmount;

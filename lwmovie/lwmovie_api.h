@@ -1,7 +1,7 @@
 #ifndef __LWMOVIE_API_HPP__
 #define __LWMOVIE_API_HPP__
 
-#include "../lwmovie_config.h"
+#include "../common/lwmovie_config.h"
 
 #ifdef LWMOVIE_DLL
 	#ifdef LWMOVIE_DLL_EXPORT

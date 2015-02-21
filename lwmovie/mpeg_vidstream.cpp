@@ -86,12 +86,13 @@ THE SOFTWARE.
 #include <stdio.h>
 #include <new>
 
-#include "lwmovie_types.hpp"
+#include "../common/lwmovie_coretypes.h"
+#include "../common/lwmovie_atomicint_type.hpp"
+#include "../common/lwmovie_atomicint_funcs.hpp"
+#include "lwmovie.h"
 #include "lwmovie_videotypes.hpp"
 #include "lwmovie_constants.hpp"
-#include "lwmovie_demux.hpp"
 #include "lwmovie_recon_m1v.hpp"
-#include "lwmovie_atomicint.hpp"
 
 lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParseSeqHead_MPEG(lwmCBitstream *bitstream)
 {
