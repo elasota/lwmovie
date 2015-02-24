@@ -47,7 +47,6 @@ enum lwmEAudioStreamType
 	lwmAST_Invalid		= 0,
 	lwmAST_None			= 1,
 	lwmAST_MP2			= 2,	// MPEG layer II
-	lwmAST_IMA_ADPCM	= 4,	// IMA ADPCM
 
 	lwmAST_Count,
 };

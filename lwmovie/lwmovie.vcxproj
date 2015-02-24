@@ -73,7 +73,6 @@
     <ClCompile Include="lwmovie_fp_systemmem.cpp" />
     <ClCompile Include="lwmovie_idct.cpp" />
     <ClCompile Include="lwmovie_init.cpp" />
-    <ClCompile Include="lwmovie_macroblock.cpp" />
     <ClCompile Include="lwmovie_motionvectors.cpp" />
     <ClCompile Include="lwmovie_parseblock.cpp" />
     <ClCompile Include="lwmovie_constants.cpp" />

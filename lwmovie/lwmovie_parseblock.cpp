@@ -244,7 +244,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 				i += run + 1;
 
 				if(i >= 64)
-					break;		/* Illegal access */
+					return false;		/* Illegal access */
 				pos = constants::ZIGZAG_DIRECT[i];
 
 				/* quantizes and oddifies each coefficient */
@@ -321,7 +321,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 
 				i += run + 1;
 				if(i >= 64)
-					break;	// Illegal
+					return false;	/* Illegal access */
 
 				pos = constants::ZIGZAG_DIRECT[i];
 
