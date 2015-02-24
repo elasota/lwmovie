@@ -207,7 +207,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
 
 	lwmUInt32 mbAddress = row*mbWidth;
 
-	ReconstructRow(m_mblocks + mbAddress, m_blocks + mbAddress*6, m_dctBlocks + mbAddress*6,
+	ReconstructRow(row, m_mblocks + mbAddress, m_blocks + mbAddress*6, m_dctBlocks + mbAddress*6,
 		cy + row*mbRowStrideY, cu + row*mbRowStrideU, cv + row*mbRowStrideV,
 		fy + row*mbRowStrideY, fu + row*mbRowStrideU, fv + row*mbRowStrideV,
 		py + row*mbRowStrideY, pu + row*mbRowStrideU, pv + row*mbRowStrideV,
@@ -281,7 +281,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructBlock(const lwmReconMBloc
 	}
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlocks,
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlocks,
 	lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
 	lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv,
 	lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv,
@@ -304,11 +304,24 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(const lwmReconMBlock 
 	blockOffsets[2] = yStride * 8;
 	blockOffsets[3] = 8 + yStride * 8;
 
+	lwmSInt32 mvMinDown = -static_cast<lwmSInt32>(row) * 32;
+	lwmSInt32 mvMaxDown = (m_mbHeight - row - 1) * 32;
+	lwmSInt32 mvMinRight = 0;
+	lwmSInt32 mvMaxRight = (m_mbWidth - 1) * 32;
+
 	for(lwmUInt32 mbCol=0;mbCol<mbWidth;mbCol++)
 	{
-		bool allZero = mblock->skipped ||
-			(block[0].zero_block_flag && block[1].zero_block_flag && block[2].zero_block_flag &&
-			 block[3].zero_block_flag && block[4].zero_block_flag && block[5].zero_block_flag);
+		// Check MVs
+		if(mblock->mb_motion_forw)
+		{
+			if(mblock->recon_down_for < mvMinDown || mblock->recon_down_for > mvMaxDown || mblock->recon_right_for < mvMinRight || mblock->recon_right_for > mvMaxRight)
+				continue;
+		}
+		if(mblock->mb_motion_back)
+		{
+			if(mblock->recon_down_back < mvMinDown || mblock->recon_down_back > mvMaxDown || mblock->recon_right_back < mvMinRight || mblock->recon_right_back > mvMaxRight)
+				continue;
+		}
 
 		ReconstructLumaBlocks(mblock, block, dctBlocks, cy, fy, py, yStride, profileTags);
 		ReconstructChromaBlock(mblock, block + 4, dctBlocks + 4, cu, fu, pu, uStride, profileTags);
@@ -326,6 +339,8 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(const lwmReconMBlock 
 		dctBlocks += 6;
 		mblock++;
 		block += 6;
+		mvMinRight -= 32;
+		mvMaxRight -= 32;
 	}
 }
 
