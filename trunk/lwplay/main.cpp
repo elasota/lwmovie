@@ -248,6 +248,12 @@ int main(int argc, char **argv)
 					{
 						SDL_Delay(thisFrameTime - currentTime);
 					}
+					else
+					{
+						lwmUInt32 slip = currentTime - thisFrameTime;
+						if(slip > 1000)
+							playbackStartTime += slip;
+					}
 				}
 
 				SDL_Event e;
