@@ -160,6 +160,8 @@ void Mux(lwmUInt32 extraAudioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFi
 	}
 
 	// Write package headers
+	muxPkgHeader.videoStreamType = streamFiles[STREAM_SOURCE_VIDEO] ? pkgHeaders[STREAM_SOURCE_VIDEO].videoStreamType : lwmVST_None;
+	muxPkgHeader.audioStreamType = streamFiles[STREAM_SOURCE_AUDIO] ? pkgHeaders[STREAM_SOURCE_AUDIO].audioStreamType : lwmAST_None;
 	WriteHeaders(&muxPkgHeader, &muxVideoInfo, &muxAudioInfo, outFile);
 
 
