@@ -66,7 +66,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="idct\fastjrevdct.cpp" />
+    <ClCompile Include="lwmovie_audiobuffer.cpp" />
     <ClCompile Include="lwmovie_bitstream.cpp" />
+    <ClCompile Include="lwmovie_celt_decoder.cpp" />
     <ClCompile Include="lwmovie_decodedct.cpp" />
     <ClCompile Include="lwmovie_demux.cpp" />
     <ClCompile Include="lwmovie_fp.cpp" />
@@ -74,6 +76,7 @@
     <ClCompile Include="lwmovie_idct.cpp" />
     <ClCompile Include="lwmovie_init.cpp" />
     <ClCompile Include="lwmovie_motionvectors.cpp" />
+    <ClCompile Include="lwmovie_mp2_decoder.cpp" />
     <ClCompile Include="lwmovie_parseblock.cpp" />
     <ClCompile Include="lwmovie_constants.cpp" />
     <ClCompile Include="lwmovie_profile.cpp" />
@@ -88,13 +91,16 @@
   <ItemGroup>
     <ClInclude Include="lwmovie.h" />
     <ClInclude Include="lwmovie_api.hpp" />
+    <ClInclude Include="lwmovie_audiobuffer.hpp" />
     <ClInclude Include="lwmovie_bits.hpp" />
     <ClInclude Include="lwmovie_bitstream.hpp" />
+    <ClInclude Include="lwmovie_celt_decoder.hpp" />
     <ClInclude Include="lwmovie_constants.hpp" />
     <ClInclude Include="lwmovie_demux.hpp" />
     <ClInclude Include="lwmovie_external_types.h" />
     <ClInclude Include="lwmovie_fillable.hpp" />
     <ClInclude Include="lwmovie_fp.hpp" />
+    <ClInclude Include="lwmovie_mp2_decoder.hpp" />
     <ClInclude Include="lwmovie_package.hpp" />
     <ClInclude Include="lwmovie_packetplan.hpp" />
     <ClInclude Include="lwmovie_profile.hpp" />
@@ -107,6 +113,9 @@
     <ClInclude Include="lwmovie_vlc.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\lwcelt\lwcelt.vcxproj">
+      <Project>{245603e3-f580-41a5-9632-b25fe3372cbf}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\mp2dec2\mp2dec2.vcxproj">
       <Project>{c20d80ea-b440-485b-b555-26401fe7a054}</Project>
     </ProjectReference>

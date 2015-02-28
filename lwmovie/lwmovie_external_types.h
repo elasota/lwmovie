@@ -28,14 +28,14 @@ struct lwmMovieState;
 
 struct lwmSAllocator
 {
-	void *(*allocFunc)(lwmSAllocator *alloc, lwmLargeUInt sz);
-	void (*freeFunc)(lwmSAllocator *alloc, void *ptr);
+	void *(*allocFunc)(struct lwmSAllocator *alloc, lwmLargeUInt sz);
+	void (*freeFunc)(struct lwmSAllocator *alloc, void *ptr);
 };
 
 struct lwmSWorkNotifier
 {
-	void (*notifyAvailableFunc)(lwmSWorkNotifier *workNotifier);
-	void (*joinFunc)(lwmSWorkNotifier *workNotifier);
+	void (*notifyAvailableFunc)(struct lwmSWorkNotifier *workNotifier);
+	void (*joinFunc)(struct lwmSWorkNotifier *workNotifier);
 };
 
 struct lwmIOFuncs
