@@ -28,7 +28,7 @@
 
 struct lwmMovieState;
 struct lwmIVideoReconstructor;
-class lwmCProfileTagSet;
+LWMOVIE_API_CLASS lwmCProfileTagSet;
 
 enum
 {
@@ -39,12 +39,12 @@ enum
 
 struct lwmSVideoFrameProvider
 {
-	int (*createWorkFramesFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
-	void (*lockWorkFrameFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 lockType);
-	void (*unlockWorkFrameFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
-	void *(*getWorkFramePlaneFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
-	lwmUInt32 (*getWorkFramePlaneStrideFunc)(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
-	void (*destroyFunc)(lwmSVideoFrameProvider *frameProvider);
+	int (*createWorkFramesFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
+	void (*lockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 lockType);
+	void (*unlockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
+	void *(*getWorkFramePlaneFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
+	lwmUInt32 (*getWorkFramePlaneStrideFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+	void (*destroyFunc)(struct lwmSVideoFrameProvider *frameProvider);
 };
 
 enum lwmEDigestResult
@@ -108,31 +108,31 @@ enum lwmEUserFlag
 };
 
 LWMOVIE_API_LINK void lwmInitialize();
-LWMOVIE_API_LINK lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
-LWMOVIE_API_LINK void lwmMovieState_FeedData(lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested);
-LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *output);
-LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieState, lwmIVideoReconstructor *recon);
-LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieState);
-LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier);
-LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState);
+LWMOVIE_API_LINK struct lwmMovieState *lwmCreateMovieState(struct lwmSAllocator *alloc, lwmUInt32 userFlags);
+LWMOVIE_API_LINK void lwmMovieState_FeedData(struct lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested);
+LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *output);
+LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(struct lwmMovieState *movieState, struct lwmIVideoReconstructor *recon);
+LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(struct lwmMovieState *movieState);
+LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(struct lwmMovieState *movieState, struct lwmSWorkNotifier *videoDigestWorkNotifier);
+LWMOVIE_API_LINK void lwmMovieState_Destroy(struct lwmMovieState *movieState);
 
 
-LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(lwmMovieState *movieState);
-LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movieState);
-LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(lwmMovieState *movieState, void *samples, lwmUInt32 numSamples);
-LWMOVIE_API_LINK void lwmMovieState_NotifyAudioPlaybackUnderrun(lwmMovieState *movieState);
+LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(struct lwmMovieState *movieState);
+LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(struct lwmMovieState *movieState);
+LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(struct lwmMovieState *movieState, void *samples, lwmUInt32 numSamples);
+LWMOVIE_API_LINK void lwmMovieState_NotifyAudioPlaybackUnderrun(struct lwmMovieState *movieState);
 
-LWMOVIE_API_LINK void lwmVideoRecon_Participate(lwmIVideoReconstructor *videoRecon);
-LWMOVIE_API_LINK void lwmVideoRecon_SetWorkNotifier(lwmIVideoReconstructor *recon, lwmSWorkNotifier *workNotifier);
-LWMOVIE_API_LINK lwmUInt32 lwmVideoRecon_GetWorkFrameIndex(const lwmIVideoReconstructor *recon);
-LWMOVIE_API_LINK void lwmVideoRecon_Destroy(lwmIVideoReconstructor *videoRecon);
+LWMOVIE_API_LINK void lwmVideoRecon_Participate(struct lwmIVideoReconstructor *videoRecon);
+LWMOVIE_API_LINK void lwmVideoRecon_SetWorkNotifier(struct lwmIVideoReconstructor *recon, struct lwmSWorkNotifier *workNotifier);
+LWMOVIE_API_LINK lwmUInt32 lwmVideoRecon_GetWorkFrameIndex(const struct lwmIVideoReconstructor *recon);
+LWMOVIE_API_LINK void lwmVideoRecon_Destroy(struct lwmIVideoReconstructor *videoRecon);
 
-LWMOVIE_API_LINK lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState);
-LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(lwmSVideoFrameProvider *frameProvider);
+LWMOVIE_API_LINK struct lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(struct lwmSAllocator *alloc, const struct lwmMovieState *movieState);
+LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(struct lwmSVideoFrameProvider *frameProvider);
 
-LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmSVideoFrameProvider *frameProvider);
-LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(lwmIVideoReconstructor *videoRecon);
+LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, struct lwmSVideoFrameProvider *frameProvider);
+LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(struct lwmIVideoReconstructor *videoRecon);
 
-LWMOVIE_API_LINK void lwmFlushProfileTags(lwmMovieState *movieState, lwmCProfileTagSet *tagSet);
+LWMOVIE_API_LINK void lwmFlushProfileTags(struct lwmMovieState *movieState, LWMOVIE_API_CLASS lwmCProfileTagSet *tagSet);
 
 #endif
