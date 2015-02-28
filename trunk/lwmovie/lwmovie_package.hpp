@@ -37,7 +37,6 @@ enum lwmEVideoStreamType
 
 	lwmVST_None			= 1,
 	lwmVST_M1V_Variant	= 2,		// Variant M1V
-	lwmVST_CVID_Variant	= 3,		// Variant CVID
 
 	lwmVST_Count,
 };
@@ -47,6 +46,7 @@ enum lwmEAudioStreamType
 	lwmAST_Invalid		= 0,
 	lwmAST_None			= 1,
 	lwmAST_MP2			= 2,	// MPEG layer II
+	lwmAST_CELT_0_11_1	= 3,	// CELT 0.11.1
 
 	lwmAST_Count,
 };

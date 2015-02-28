@@ -81,8 +81,8 @@ static lwmUInt32 CopyAudioPackets(audioLink **currentAudioBlock, lwmUInt32 start
 			lwmReadPlanFromFile(pktHeader, audioFile);
 			lwmReadPlanFromFile(pktHeaderFull, audioFile);
 
-			if(pktHeader.GetPacketType() == lwmEPT_Audio_Frame ||
-				pktHeader.GetPacketType() == lwmEPT_Audio_StreamParameters)
+			// Don't copy stream parameters here, stream parameters are copied with the video parameters
+			if(pktHeader.GetPacketType() == lwmEPT_Audio_Frame)
 			{
 				CopyPacket(pktHeader, pktHeaderFull, audioFile, outFile);
 			}
@@ -166,6 +166,7 @@ void Mux(lwmUInt32 extraAudioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFi
 
 
 	lwmUInt32 largestPacketSize = 0;
+	bool haveASP = false;
 
 	// Scan audio packets
 	if(audioFile)
@@ -200,6 +201,10 @@ void Mux(lwmUInt32 extraAudioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFi
 				tailAL->next = newLink;
 				tailAL = newLink;
 			}
+			else if(pktHeader.GetPacketType() == lwmEPT_Audio_StreamParameters)
+			{
+				haveASP = true;
+			}
 
 			audioFile->Seek(nextPacket);
 		}
@@ -227,6 +232,19 @@ void Mux(lwmUInt32 extraAudioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFi
 		switch(vidPacket.GetPacketType())
 		{
 		case lwmEPT_Video_StreamParameters:
+			CopyPacket(vidPacket, vidPacketFull, videoFile, outFile);
+			if(haveASP)
+			{
+				audioFile->Seek(headAL->packetStart, lwmOSFile::SM_Start);
+				lwmPacketHeader audPacket;
+				lwmPacketHeaderFull audPacketFull;
+				if(!lwmReadPlanFromFile(audPacket, videoFile) ||
+					!lwmReadPlanFromFile(audPacketFull, videoFile))
+				{
+					CopyPacket(audPacket, audPacketFull, audioFile, outFile);
+				}
+			}
+			break;
 		case lwmEPT_Video_InlinePacket:
 			CopyPacket(vidPacket, vidPacketFull, videoFile, outFile);
 			break;

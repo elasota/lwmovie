@@ -6,6 +6,7 @@
 
 void ConvertM1V(lwmOSFile *inFile, lwmOSFile *outFile);
 void ConvertMP2(lwmOSFile *inFile, lwmOSFile *outFile);
+void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond);
 void ConvertCVID(lwmOSFile *inFile, lwmOSFile *outFile);
 void Mux(lwmLargeUInt audioReadAhead, lwmOSFile *audioFile, lwmOSFile *videoFile, lwmOSFile *outFile);
 
@@ -31,6 +32,12 @@ int main(int argc, const char **argv)
 		lwmOSFile *outFile = lwmOSFile::Open(argv[5], lwmOSFile::FM_Create);
 		
 		Mux(audioReadAhead, audioFile, videoFile, outFile);
+	}
+	else if(!strcmp(argv[1], "importwav_celt"))
+	{
+		lwmOSFile *wavFile = lwmOSFile::Open(argv[3], lwmOSFile::FM_Read);
+		lwmOSFile *outFile = lwmOSFile::Open(argv[4], lwmOSFile::FM_Create);
+		ConvertWAV_CELT(wavFile, outFile, atoi(argv[2]));
 	}
 
 	return 0;

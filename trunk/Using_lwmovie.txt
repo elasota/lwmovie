@@ -7,8 +7,9 @@ Authoring with lwmovie requires three steps:
 --- Importing streams ---
 All importation is done with the "lwmux" utility.
 
-lwmux importm1v <input.m1v> <output> - Imports MPEG-1 video and converts it to an lwmovie video stream.  This does not currently support multiplexed MPEG videos, you must demux the video and convert only the video.
-lwmux importmp2 <input.mp2> <output> - Imports MPEG-1 layer II audio and converts it to an lwmovie audio stream.  This does not currently support multiplexed MPEG videos.
+lwmux importm1v <input.m1v> <output> - Imports MPEG-1 video and writes an lwmovie video stream.  This does not currently support multiplexed MPEG videos, you must demux the video and convert only the video.
+lwmux importmp2 <input.mp2> <output> - Imports MPEG-1 layer II audio and writes an lwmovie audio stream.  This does not currently support multiplexed MPEG videos.
+lwmux importwav_celt <bits per second> <input.wav> <output> - Imports a mono or stereo PCM WAV, encodes it using CELT, and writes an lwmovie audio stream.
 
 --- Multiplexing lwmovie streams ---
 lwmux finalize <number of audio readahead samples> <audio> <video> <output> - Multiplexes an audio and video stream into a finished lwmovie.  You can enter "-" as the filename for a stream to omit the stream.  This does not currently support extracting streams from already-finalized lwmovies.

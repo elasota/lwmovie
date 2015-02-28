@@ -2,7 +2,7 @@
 #include <string.h>
 #include "../lwmovie/lwmovie_package.hpp"
 #include "lwmux_osfile.hpp"
-
+#include "lwmux_escape.hpp"
 
 static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &outIsPadded, bool &outHasChecksum, lwmUInt32 &outFrameSize)
 {
@@ -71,29 +71,6 @@ static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &out
 	return true;
 }
 
-static lwmUInt32 ComputeEscapes(const lwmUInt8 *bytes, lwmUInt32 unescapedSize)
-{
-	lwmUInt32 escapedSize = unescapedSize;
-	for(lwmUInt32 i=2;i<unescapedSize;i++)
-	{
-		if(bytes[i] == 1 && bytes[i-1] == 0 && bytes[i-2] == 0)
-			escapedSize++;
-	}
-	return escapedSize;
-}
-
-static void GenerateEscapedBytes(lwmUInt8 *outBytes, const lwmUInt8 *inBytes, lwmUInt32 unescapedSize)
-{
-	outBytes[0] = inBytes[0];
-	outBytes[1] = inBytes[1];
-	outBytes += 2;
-	for(lwmUInt32 i=2;i<unescapedSize;i++)
-	{
-		*outBytes++ = inBytes[i];
-		if(inBytes[i] == 1 && inBytes[i-1] == 0 && inBytes[i-2] == 0)
-			*outBytes++ = 0xfe;
-	}
-}
 
 void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 {
@@ -157,11 +134,11 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 		if(isPadded)
 			mpegFile->Seek(mpegFile->FilePos() + 1);
 
-		lwmUInt32 packetSizeEscaped = ComputeEscapes(packetBytes, 4 + outFrameSize);
+		lwmUInt32 packetSizeEscaped = lwmComputeEscapes(packetBytes, 4 + outFrameSize);
 		if(packetSizeEscaped != pktHeaderFull.packetSize)
 		{
 			escapedPacketBytes = new lwmUInt8[packetSizeEscaped];
-			GenerateEscapedBytes(escapedPacketBytes, packetBytes, pktHeaderFull.packetSize);
+			lwmGenerateEscapedBytes(escapedPacketBytes, packetBytes, pktHeaderFull.packetSize);
 			pktHeader.packetTypeAndFlags |= lwmPacketHeader::EFlag_Escaped;
 			pktHeaderFull.packetSize = packetSizeEscaped;
 		}

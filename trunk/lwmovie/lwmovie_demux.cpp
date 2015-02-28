@@ -25,12 +25,16 @@
 #include "lwmovie_package.hpp"
 #include "lwmovie_videotypes.hpp"
 #include "lwmovie_recon_m1vsw.hpp"
+#include "lwmovie_audiobuffer.hpp"
+#include "lwmovie_mp2_decoder.hpp"
+#include "lwmovie_celt_decoder.hpp"
 #include "../mp2dec2/lwmovie_layer2_decodestate.hpp"
 
 namespace lwmovie
 {
 	class lwmVidStream;
 	class lwmCMP2Decoder;
+	class lwmCCELTDecoder;
 }
 
 
@@ -57,354 +61,6 @@ enum lwmDemuxState
 
 	lwmDEMUX_FatalError
 };
-
-class lwmCAudioBuffer
-{
-public:
-	explicit lwmCAudioBuffer(lwmSAllocator *alloc);
-	~lwmCAudioBuffer();
-	bool Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 numChannels);
-	lwmUInt8 GetNumChannels() const;
-	lwmUInt32 GetNumCommittedSamples() const;
-	lwmUInt32 GetNumUncommittedSamples() const;
-	void CommitSamples();
-	void ClearAll();
-	void ClearCommittedSamples();
-	lwmUInt32 ReadCommittedSamples(void *output, lwmUInt32 numSamples);
-
-	// Reserves a contiguous block of samples at the end of the ring.  Never fails if the buffer is large enough, may delete samples.
-	void *ReserveNewContiguous(lwmUInt32 numSamples, lwmUInt32 &outNumDroppedSamples);
-	void SkipSamples(lwmUInt32 numSamples);
-
-private:
-	// Synchronization info
-	lwmUInt32 m_startPeriod;
-	lwmUInt32 m_capacity;
-
-	lwmUInt32 m_topOffset;
-	lwmUInt32 m_topSize;
-	lwmUInt32 m_bottomOffset;
-	lwmUInt32 m_bottomSize;
-
-	lwmUInt32 m_numCommittedSamples;
-
-	lwmSAllocator *m_alloc;
-	void *m_samples;
-	lwmUInt8 m_numChannels;
-	lwmUInt8 m_sampleSizeBytes;
-
-	void *SampleMemAtPos(lwmUInt32 pos);
-};
-
-lwmCAudioBuffer::lwmCAudioBuffer(lwmSAllocator *alloc)
-	: m_alloc(alloc)
-	, m_startPeriod(0)
-	, m_topOffset(0)
-	, m_topSize(0)
-	, m_bottomOffset(0)
-	, m_bottomSize(0)
-	, m_numChannels(0)
-	, m_sampleSizeBytes(0)
-	, m_samples(NULL)
-	, m_capacity(0)
-	, m_numCommittedSamples(0)
-{
-}
-
-lwmCAudioBuffer::~lwmCAudioBuffer()
-{
-	if(m_samples)
-		m_alloc->freeFunc(m_alloc, m_samples);
-}
-
-
-bool lwmCAudioBuffer::Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 numChannels)
-{
-	lwmUInt32 intMax = ~static_cast<lwmUInt32>(0);
-	m_sampleSizeBytes = 2 * numChannels;
-	if(intMax / m_sampleSizeBytes < numSamples)
-		return false;	// Overflow
-	m_alloc = alloc;
-	m_samples = alloc->allocFunc(alloc, m_sampleSizeBytes * numSamples);
-	m_numChannels = numChannels;
-	m_capacity = numSamples;
-	if(m_samples == NULL)
-		return false;
-	return true;
-}
-
-lwmUInt8 lwmCAudioBuffer::GetNumChannels() const
-{
-	return m_numChannels;
-}
-
-lwmUInt32 lwmCAudioBuffer::GetNumCommittedSamples() const
-{
-	return m_numCommittedSamples;
-}
-
-lwmUInt32 lwmCAudioBuffer::GetNumUncommittedSamples() const
-{
-	return m_topSize + m_bottomSize - m_numCommittedSamples;
-}
-
-void lwmCAudioBuffer::CommitSamples()
-{
-	m_numCommittedSamples = m_topSize + m_bottomSize;
-}
-
-void lwmCAudioBuffer::ClearAll()
-{
-	m_numCommittedSamples = m_topSize = m_bottomSize = 0;
-}
-
-void lwmCAudioBuffer::ClearCommittedSamples()
-{
-	SkipSamples(m_numCommittedSamples);
-}
-
-lwmUInt32 lwmCAudioBuffer::ReadCommittedSamples(void *output, lwmUInt32 numSamples)
-{
-	if(m_bottomOffset > m_capacity || m_topOffset > m_capacity || m_bottomOffset + m_bottomSize > m_capacity || m_topOffset + m_topSize > m_capacity)
-	{
-		__asm { int 3 }
-	}
-
-	if(numSamples > m_numCommittedSamples)
-		numSamples = m_numCommittedSamples;
-	m_numCommittedSamples -= numSamples;
-
-	lwmUInt32 numTopDecoded = 0;
-	if(m_topSize)
-	{
-		const void *topMem = SampleMemAtPos(m_topOffset);
-		if(m_topSize >= numSamples)
-		{
-			m_topSize -= numSamples;
-			m_topOffset += numSamples;
-
-			memcpy(output, topMem, m_sampleSizeBytes * numSamples);
-			return numSamples;
-		}
-		else
-		{
-			memcpy(output, topMem, m_sampleSizeBytes * m_topSize);
-			numTopDecoded = m_topSize;
-			numSamples -= m_topSize;
-			output = static_cast<lwmUInt8*>(output) + m_topSize * m_sampleSizeBytes;
-			m_topSize = 0;
-		}
-	}
-
-	if(m_bottomSize)
-	{
-		const void *bottomMem = SampleMemAtPos(m_bottomOffset);
-		if(m_bottomSize >= numSamples)
-		{
-			m_bottomSize -= numSamples;
-			m_bottomOffset += numSamples;
-			memcpy(output, bottomMem, m_sampleSizeBytes * numSamples);
-			return numTopDecoded + numSamples;
-		}
-		else
-		{
-			memcpy(output, bottomMem, m_sampleSizeBytes * m_bottomSize);
-			lwmUInt32 numBottomDecoded = m_bottomSize;
-			m_bottomSize = 0;
-			return numBottomDecoded + numTopDecoded;
-		}
-	}
-	else
-	{
-		return numTopDecoded;
-	}
-}
-
-void *lwmCAudioBuffer::ReserveNewContiguous(lwmUInt32 numSamples, lwmUInt32 &outNumDroppedSamples)
-{
-	if(m_bottomOffset > m_capacity || m_topOffset > m_capacity || m_bottomOffset + m_bottomSize > m_capacity || m_topOffset + m_topSize > m_capacity)
-	{
-		__asm { int 3 }
-	}
-	if(numSamples > m_capacity)
-		return NULL;
-
-	lwmUInt32 available = m_capacity - m_topSize - m_bottomSize;
-	if(available < numSamples)
-	{
-		lwmUInt32 numDropped = numSamples - available;
-		if(numDropped >= m_numCommittedSamples)
-			m_numCommittedSamples = 0;
-		else
-			m_numCommittedSamples -= numDropped;
-		SkipSamples(numDropped);
-		outNumDroppedSamples = numDropped;
-	}
-	else
-	{
-		outNumDroppedSamples = 0;
-	}
-
-	if(m_bottomSize == 0)
-		m_bottomOffset = 0;
-
-	if(m_topSize == 0)
-	{
-		// Single chunk in the ring buffer
-		// See if there is space at the end of bottom
-		if(m_capacity - m_bottomOffset - m_bottomSize >= numSamples)
-		{
-			// Reserve at the end of bottom
-			void *loc = SampleMemAtPos(m_bottomOffset + m_bottomSize);
-			m_bottomSize += numSamples;
-			return loc;
-		}
-		// See if there is space below bottom, which would cause bottom to become top
-		if(m_bottomOffset >= numSamples)
-		{
-			m_topOffset = m_bottomOffset;
-			m_topSize = m_bottomSize;
-			m_bottomOffset = 0;
-			m_bottomSize = numSamples;
-
-			return m_samples;
-		}
-
-		// Move the bottom to zero
-		memmove(m_samples, SampleMemAtPos(m_bottomOffset), m_bottomSize * m_sampleSizeBytes);
-		m_bottomOffset = 0;
-		void *loc = SampleMemAtPos(0 + m_bottomSize);
-		m_bottomSize += numSamples;
-		return loc;
-	}
-	else
-	{
-		// 2 chunks in the ring buffer
-		// See if there is space between the chunks
-		if(m_topOffset - m_bottomOffset - m_bottomSize)
-		{
-			void *loc = SampleMemAtPos(m_bottomOffset + m_bottomSize);
-			m_bottomSize += numSamples;
-			return loc;
-		}
-		// There isn't, need to relocate both chunks to the edges
-		// TODO: Might be able to merge by moving top below bottom if the reserve fits above
-		memmove(m_samples, SampleMemAtPos(m_bottomOffset), m_bottomSize * m_sampleSizeBytes);
-		m_bottomOffset = 0;
-		memmove(SampleMemAtPos(m_capacity - m_topSize), SampleMemAtPos(m_topOffset), m_topSize * m_sampleSizeBytes);
-		m_topOffset = m_capacity - m_topSize;
-		void *loc = SampleMemAtPos(0 + m_bottomSize);
-		m_bottomSize += numSamples;
-		return loc;
-	}
-}
-
-void *lwmCAudioBuffer::SampleMemAtPos(lwmUInt32 pos)
-{
-	return static_cast<lwmUInt8*>(m_samples) + pos * m_sampleSizeBytes;
-}
-
-void lwmCAudioBuffer::SkipSamples(lwmUInt32 numSamples)
-{
-	if(numSamples >= m_numCommittedSamples)
-		m_numCommittedSamples = 0;
-	else
-		m_numCommittedSamples -= numSamples;
-
-	if(m_topSize >= numSamples)
-	{
-		m_topOffset += numSamples;
-		m_topSize -= numSamples;
-		return;
-	}
-	numSamples -= m_topSize;
-	m_topSize = 0;
-
-	if(m_bottomSize >= numSamples)
-	{
-		m_bottomOffset += numSamples;
-		m_bottomSize -= numSamples;
-		return;
-	}
-	else
-	{
-		m_bottomOffset = 0;
-		m_bottomSize = 0;
-	}
-}
-
-class lwmovie::lwmCMP2Decoder
-{
-public:
-	explicit lwmCMP2Decoder(lwmSAllocator *alloc);
-	~lwmCMP2Decoder();
-	bool Init(const lwmAudioStreamInfo *audioStreamInfo);
-	bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
-	lwmCAudioBuffer *GetAudioBuffer();
-
-private:
-	lwmSAllocator *m_alloc;
-	lwmUInt8 m_numChannels;
-	lwmovie::layerii::lwmCMP2DecodeState m_decodeState;
-	lwmUInt8 m_frameData[lwmovie::layerii::MAX_FRAME_SIZE_BYTES];
-	lwmCAudioBuffer m_audioBuffer;
-};
-
-lwmovie::lwmCMP2Decoder::lwmCMP2Decoder(lwmSAllocator *alloc)
-	: m_alloc(alloc)
-	, m_numChannels(0)
-	, m_audioBuffer(alloc)
-{
-	memset(m_frameData, 0, sizeof(m_frameData));
-}
-
-lwmovie::lwmCMP2Decoder::~lwmCMP2Decoder()
-{
-}
-
-bool lwmovie::lwmCMP2Decoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
-{
-	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
-		m_numChannels = 1;
-	else if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Stereo_LR)
-		m_numChannels = 2;
-	else
-		return false;	// Unsupported channel layout
-
-	if(!this->m_audioBuffer.Init(m_alloc, audioStreamInfo->audioReadAhead, m_numChannels))
-		return false;
-
-	return true;
-}
-
-bool lwmovie::lwmCMP2Decoder::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun)
-{
-	outOverrun = false;
-	if(packetSize > lwmovie::layerii::MAX_FRAME_SIZE_BYTES || packetSize < lwmovie::layerii::HEADER_SIZE_BYTES)
-		return false;
-	// TODO: If unsafe decodes are permitted, fast decode could skip this copy
-	memcpy(m_frameData, bytes, packetSize);
-	if(!m_decodeState.ParseHeader(m_frameData))
-		return false;
-	if(packetSize - lwmovie::layerii::HEADER_SIZE_BYTES != m_decodeState.GetFrameSizeBytes())
-		return false;
-	if(m_decodeState.GetChannelCount() != m_numChannels)
-		return false;	// Real-time switch between mono/stereo not supported
-	lwmUInt32 numDroppedSamples;
-	void *outputBuf = m_audioBuffer.ReserveNewContiguous(lwmovie::layerii::FRAME_NUM_SAMPLES, numDroppedSamples);
-	if(!outputBuf)
-		return false;
-	if(!m_decodeState.DecodeFrame(m_frameData + lwmovie::layerii::HEADER_SIZE_BYTES, static_cast<lwmSInt16*>(outputBuf)))
-		return false;
-	if(numDroppedSamples)
-		outOverrun = true;
-	return true;
-}
-
-lwmCAudioBuffer *lwmovie::lwmCMP2Decoder::GetAudioBuffer()
-{
-	return &m_audioBuffer;
-}
 
 struct lwmMovieState
 {
@@ -439,6 +95,8 @@ struct lwmMovieState
 	lwmUInt32 userFlags;
 
 	bool isAudioSynchronized;
+	bool needVideoStreamParameters;
+	bool needAudioStreamParameters;
 
 	lwmUInt32 streamSyncPeriods[lwmSTREAMTYPE_Count];
 
@@ -446,6 +104,7 @@ struct lwmMovieState
 	lwmIVideoReconstructor *videoReconstructor;
 	lwmovie::lwmVidStream *m1vDecoder;
 	lwmovie::lwmCMP2Decoder *mp2Decoder;
+	lwmovie::lwmCCELTDecoder *celtDecoder;
 
 	lwmMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
 	void DesyncAudio();
@@ -462,7 +121,10 @@ lwmMovieState::lwmMovieState(lwmSAllocator *pAlloc, lwmUInt32 pUserFlags)
 	, alloc(pAlloc)
 	, mp2Decoder(NULL)
 	, m1vDecoder(NULL)
+	, celtDecoder(NULL)
 	, isAudioSynchronized(false)
+	, needVideoStreamParameters(false)
+	, needAudioStreamParameters(false)
 {
 	this->headerFillable.Init(this->pkgHeaderBytes);
 	this->videoFillable.Init(this->videoInfoBytes);
@@ -480,6 +142,8 @@ lwmCAudioBuffer *lwmMovieState::GetAudioBuffer() const
 {
 	if(this->mp2Decoder)
 		return this->mp2Decoder->GetAudioBuffer();
+	if(this->celtDecoder)
+		return this->celtDecoder->GetAudioBuffer();
 	return NULL;
 }
 
@@ -529,10 +193,25 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 		packetData = movieState->packetDataBytes;
 	}
 
-	switch(movieState->packetInfo.packetTypeAndFlags & ~(lwmPacketHeader::EFlag_All))
+	lwmEPacketType packetType = static_cast<lwmEPacketType>(movieState->packetInfo.packetTypeAndFlags & ~(lwmPacketHeader::EFlag_All));
+	bool expectVSP = false;
+	bool expectASP = false;
+
+	if(movieState->needVideoStreamParameters)
+		expectVSP = true;
+	else if(movieState->needAudioStreamParameters)
+		expectASP = true;
+
+	if((expectVSP && packetType != lwmEPT_Video_StreamParameters) || (expectASP && packetType != lwmEPT_Audio_StreamParameters))
+	{
+		*outResult = lwmDIGEST_Error;
+		return;
+	}
+
+	switch(packetType)
 	{
 	case lwmEPT_Video_StreamParameters:
-		if(movieState->movieInfo.videoStreamType == lwmVST_None)
+		if(!expectVSP || movieState->movieInfo.videoStreamType == lwmVST_None)
 			*outResult = lwmDIGEST_Error;
 		else
 		{
@@ -541,8 +220,12 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 				movieState->m1vDecoder->WaitForDigestFinish();
 			movieState->videoReconstructor->WaitForFinish();
 			if(movieState->m1vDecoder)
-				if(!movieState->m1vDecoder->DigestStreamParameters(packetData, packetSize))
+			{
+				if(movieState->m1vDecoder->DigestStreamParameters(packetData, packetSize))
+					movieState->needVideoStreamParameters = false;
+				else
 					result = lwmDIGEST_Error;
+			}
 			*outResult = result;
 		}
 		break;
@@ -585,7 +268,13 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 		}
 		break;
 	case lwmEPT_Audio_StreamParameters:
-		*outResult = lwmDIGEST_Error;
+		if(!expectASP)
+			*outResult = lwmDIGEST_Error;
+		else
+		{
+			lwmEDigestResult result = lwmDIGEST_Worked;
+			*outResult = result;
+		}
 		break;
 	case lwmEPT_Audio_Frame:
 		{
@@ -596,7 +285,10 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 				bool overrun = false;
 				bool mustDesync = false;
 
-				if(!movieState->mp2Decoder->DigestDataPacket(packetData, packetSize, overrun))
+				if(
+					(movieState->mp2Decoder && !movieState->mp2Decoder->DigestDataPacket(packetData, packetSize, overrun))
+					|| (movieState->celtDecoder && !movieState->celtDecoder->DigestDataPacket(packetData, packetSize, overrun))
+					)
 				{
 					*outResult = lwmDIGEST_Error;
 					mustDesync = true;
@@ -673,6 +365,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			if(!movieState->m1vDecoder)
 				goto cleanup;
 			new (movieState->m1vDecoder) lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
+			movieState->needVideoStreamParameters = true;
 		}
 		break;
 	default:
@@ -690,6 +383,14 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			goto cleanup;
 		new (movieState->mp2Decoder) lwmovie::lwmCMP2Decoder(alloc);
 		if(!movieState->mp2Decoder->Init(&movieState->audioInfo))
+			goto cleanup;
+		break;
+	case lwmAST_CELT_0_11_1:
+		movieState->celtDecoder = static_cast<lwmovie::lwmCCELTDecoder*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCCELTDecoder)));
+		if(!movieState->celtDecoder)
+			goto cleanup;
+		new (movieState->celtDecoder) lwmovie::lwmCCELTDecoder(alloc);
+		if(!movieState->celtDecoder->Init(&movieState->audioInfo))
 			goto cleanup;
 		break;
 	default:
@@ -1046,6 +747,11 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 	{
 		movieState->mp2Decoder->~lwmCMP2Decoder();
 		alloc->freeFunc(alloc, movieState->mp2Decoder);
+	}
+	if(movieState->celtDecoder)
+	{
+		movieState->celtDecoder->~lwmCCELTDecoder();
+		alloc->freeFunc(alloc, movieState->celtDecoder);
 	}
 	alloc->freeFunc(alloc, movieState);
 }
