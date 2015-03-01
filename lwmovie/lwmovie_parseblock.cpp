@@ -70,7 +70,7 @@
 #include "lwmovie_recon_m1v.hpp"
 #include "lwmovie_profile.hpp"
 
-bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
+bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VBlockCursor *blockCursor, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffs);
@@ -79,8 +79,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 	lwmFastSInt16 firstCoeff = 0;
 	lwmFastUInt8 firstCoeffPos = 0;
 
-	lwmSInt32 blockAddress = n + m_mblock.mb_address * 6;
-	lwmDCTBLOCK *recondata = recon->StartReconBlock(blockAddress);
+	lwmDCTBLOCK *recondata = blockCursor->StartReconBlock(n);
 
 	if(m_mblock.mb_intra)
 	{
@@ -179,7 +178,6 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 
 			if (size == lwmovie::vlc::UERROR8)
 			{
-				printf("Error!\n");
 				bitstream->flush_bits(flushed);
 				return false;
 			}
@@ -357,7 +355,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
 	if(coeffCount == 0)
 	{
 		// Sparse IDCT, as zero
-		recon->CommitZero(blockAddress);
+		blockCursor->CommitZero();
 	}
 	else if(coeffCount == 1)
 	{
@@ -370,12 +368,12 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmSInt3
             58, 59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63
         };
 
-		recon->CommitSparse(blockAddress, zigzagOrder[firstCoeffPos], firstCoeff);
+		blockCursor->CommitSparse(zigzagOrder[firstCoeffPos], firstCoeff);
 	}
 	else
 	{
 		// Full IDCT
-		recon->CommitFull(blockAddress);
+		blockCursor->CommitFull();
 	}
 
 	return true;

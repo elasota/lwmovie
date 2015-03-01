@@ -47,8 +47,8 @@ To use the software reconstructor, you must first create a frame provider.  Fram
 System memory frame providers use a provided allocator and store results in main memory.  To create a system memory frame provider, call lwmCreateSystemMemoryFrameProvider.
 
 Software reconstructors can be created using lwmCreateSoftwareReconstructor.  Always pass reconstructor creation functions the reconstructor type code received from lwmGetStreamParameterU32 with lwmSTREAMPARAM_U32_ReconType.
-
-You can optionally assign a work notifier to the reconstructor using lwmVideoRecon_SetWorkNotifier, which should call lwmVideoRecon_Participate.
+Optional flags for lwmCreateSoftwareReconstructor:
+ - lwmUSERFLAG_ThreadedReconstructor: Allows the reconstructor to be thread pooled.  Using this option will substantially increase memory usage.  If you set this option, you should assign a work notifier to the reconstructor using lwmVideoRecon_SetWorkNotifier, and the work notifier should call lwmVideoRecon_Participate.
 
 To retrieve output from a software reconstructor, wait for a lwmDIGEST_VideoSync result.  How to retrieve your video frame from that is determined by the reconstructor.
 

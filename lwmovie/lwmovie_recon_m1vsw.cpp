@@ -37,6 +37,9 @@ lwmovie::lwmCM1VSoftwareReconstructor::lwmCM1VSoftwareReconstructor()
 :	m_mblocks(NULL)
 ,	m_blocks(NULL)
 ,	m_dctBlocks(NULL)
+,	m_workRowUsers(NULL)
+,	m_rowCommitCounts(NULL)
+,	m_useRowJobs(false)
 {
 }
 
@@ -59,7 +62,7 @@ lwmovie::lwmCM1VSoftwareReconstructor::~lwmCM1VSoftwareReconstructor()
 #endif
 }
 
-bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState)
+bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState, bool useRowJobs)
 {
 	lwmUInt32 width, height;
 
@@ -71,6 +74,7 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 	lwmUInt32 numMB = mbWidth * mbHeight;
 	m_alloc = alloc;
 	m_frameProvider = frameProvider;
+	m_useRowJobs = useRowJobs;
 
 	if(!frameProvider->createWorkFramesFunc(frameProvider, 2, 1, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_YUV420P_Planar))
 		return false;
@@ -78,11 +82,14 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 	m_uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
 	m_vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
 
-	m_mblocks = static_cast<lwmReconMBlock*>(m_alloc->allocFunc(m_alloc, sizeof(lwmReconMBlock) * numMB));
-	m_blocks = static_cast<lwmBlockInfo*>(m_alloc->allocFunc(m_alloc, sizeof(lwmBlockInfo) * numMB * 6));
-	m_dctBlocks = static_cast<lwmDCTBLOCK*>(m_alloc->allocFunc(m_alloc, sizeof(lwmDCTBLOCK) * numMB * 6));
-	m_rowCommitCounts = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
-	m_workRowUsers = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
+	if(m_useRowJobs)
+	{
+		m_mblocks = static_cast<lwmReconMBlock*>(m_alloc->allocFunc(m_alloc, sizeof(lwmReconMBlock) * numMB));
+		m_blocks = static_cast<lwmBlockInfo*>(m_alloc->allocFunc(m_alloc, sizeof(lwmBlockInfo) * numMB * 6));
+		m_dctBlocks = static_cast<lwmDCTBLOCK*>(m_alloc->allocFunc(m_alloc, sizeof(lwmDCTBLOCK) * numMB * 6));
+		m_rowCommitCounts = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
+		m_workRowUsers = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
+	}
 
 #ifdef LWMOVIE_PROFILE
 	m_workRowProfileTags = static_cast<lwmCProfileTagSet*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmCProfileTagSet)));
@@ -95,8 +102,11 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 
 	m_movieState = movieState;
 
-	if(!m_mblocks || !m_blocks || !m_dctBlocks || !m_rowCommitCounts)
-		return false;
+	if(m_useRowJobs)
+	{
+		if(!m_mblocks || !m_blocks || !m_dctBlocks || !m_rowCommitCounts || !m_workRowUsers)
+			return false;
+	}
 
 	m_stWorkNotifier.joinFunc = STWNJoinFunc;
 	m_stWorkNotifier.notifyAvailableFunc = STWNNotifyAvailableFunc;
@@ -107,55 +117,6 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 	m_currentTarget.isOpen = m_pastTarget.isOpen = m_futureTarget.isOpen = false;
 
 	return true;
-}
-
-lwmovie::lwmDCTBLOCK *lwmovie::lwmCM1VSoftwareReconstructor::StartReconBlock(lwmSInt32 address)
-{
-	return m_dctBlocks + address;
-}
-
-void lwmovie::lwmCM1VSoftwareReconstructor::SetMBlockInfo(lwmSInt32 mbAddress, bool skipped, bool mb_motion_forw, bool mb_motion_back,
-			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool full_pel_forw,
-			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back, bool full_pel_back)
-{
-	if(full_pel_forw)
-	{
-		recon_right_for <<= 1;
-		recon_down_for <<= 1;
-	}
-	if(full_pel_back)
-	{
-		recon_right_back <<= 1;
-		recon_down_back <<= 1;
-	}
-
-	m_mblocks[mbAddress].SetReconInfo(skipped, mb_motion_forw, mb_motion_back, recon_right_for, recon_down_for, recon_right_back, recon_down_back);
-}
-
-void lwmovie::lwmCM1VSoftwareReconstructor::SetBlockInfo(lwmSInt32 sbAddress, bool zero_block_flag)
-{
-	m_blocks[sbAddress].SetReconInfo(zero_block_flag);
-}
-
-void lwmovie::lwmCM1VSoftwareReconstructor::CommitZero(lwmSInt32 address)
-{
-	m_blocks[address].needs_idct = false;
-}
-
-void lwmovie::lwmCM1VSoftwareReconstructor::CommitSparse(lwmSInt32 address, lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff)
-{
-	lwmBlockInfo *blockInfo = m_blocks + address;
-	blockInfo->needs_idct = true;
-	blockInfo->sparse_idct = true;
-	blockInfo->sparse_idct_coef = lastCoeff;
-	blockInfo->sparse_idct_index = lastCoeffPos;
-}
-
-void lwmovie::lwmCM1VSoftwareReconstructor::CommitFull(lwmSInt32 address)
-{
-	lwmBlockInfo *blockInfo = m_blocks + address;
-	blockInfo->needs_idct = true;
-	blockInfo->sparse_idct = false;
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::WaitForFinish()
@@ -224,61 +185,57 @@ void lwmovie::lwmCM1VSoftwareReconstructor::SetWorkNotifier(lwmSWorkNotifier *wo
 	m_workNotifier = workNotifier;
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
-	lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, bool halfRes, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
+void lwmovie::lwmCM1VSoftwareReconstructor::STReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks, lwmSInt32 mbAddress)
 {
-	lwmSInt32 mbRightFor = mblock->recon_right_for;
-	lwmSInt32 mbDownFor = mblock->recon_down_for;
-	lwmSInt32 mbRightBack = mblock->recon_right_back;
-	lwmSInt32 mbDownBack = mblock->recon_down_back;
+	lwmUInt32 mbWidth = m_mbWidth;
 
-	if(halfRes)
+	lwmUInt32 yStride = m_yStride;
+	lwmUInt32 uStride = m_uStride;
+	lwmUInt32 vStride = m_vStride;
+
+	lwmLargeUInt blockOffsets[4];
+	blockOffsets[0] = 0;
+	blockOffsets[1] = 8;
+	blockOffsets[2] = yStride * 8;
+	blockOffsets[3] = 8 + yStride * 8;
+
+	lwmSInt32 row = mbAddress / m_mbWidth;
+	lwmSInt32 col = mbAddress % m_mbWidth;
+
+	lwmSInt32 mvMinDown = -row * 32;
+	lwmSInt32 mvMaxDown = (m_mbHeight - row - 1) * 32;
+	lwmSInt32 mvMinRight = -col * 32;
+	lwmSInt32 mvMaxRight = (m_mbWidth - col - 1) * 32;
+
+	// Check MVs
+	if(mblock->mb_motion_forw)
 	{
-		mbRightFor >>= 1;
-		mbDownFor >>= 1;
-		mbRightBack >>= 1;
-		mbDownBack >>= 1;
+		if(mblock->recon_down_for < mvMinDown || mblock->recon_down_for > mvMaxDown || mblock->recon_right_for < mvMinRight || mblock->recon_right_for > mvMaxRight)
+			return;
+	}
+	if(mblock->mb_motion_back)
+	{
+		if(mblock->recon_down_back < mvMinDown || mblock->recon_down_back > mvMaxDown || mblock->recon_right_back < mvMinRight || mblock->recon_right_back > mvMaxRight)
+			return;
 	}
 
-	// Halfpel approximation
-	mbRightFor /= 2;
-	mbDownFor /= 2;
-	mbRightBack /= 2;
-	mbDownBack /= 2;
+	lwmUInt32 yOffset = static_cast<lwmUInt32>(row * 16 * m_yStride + col * 16);
+	lwmUInt32 uOffset = static_cast<lwmUInt32>(row * 8 * m_uStride + col * 8);
+	lwmUInt32 vOffset = static_cast<lwmUInt32>(row * 8 * m_vStride + col * 8);
 
-	f += mbRightFor + mbDownFor * static_cast<lwmSInt32>(stride);
-	p += mbRightBack + mbDownBack * static_cast<lwmSInt32>(stride);
+	lwmUInt8 *cy = m_currentTarget.yPlane;
+	lwmUInt8 *cu = m_currentTarget.uPlane;
+	lwmUInt8 *cv = m_currentTarget.vPlane;
+	lwmUInt8 *py = m_pastTarget.yPlane;
+	lwmUInt8 *pu = m_pastTarget.uPlane;
+	lwmUInt8 *pv = m_pastTarget.vPlane;
+	lwmUInt8 *fy = m_futureTarget.yPlane;
+	lwmUInt8 *fu = m_futureTarget.uPlane;
+	lwmUInt8 *fv = m_futureTarget.vPlane;
 
-	const lwmSInt16 *dctCoeff = dctBlock->data;
-	for(int row=0;row<8;row++)
-	{
-		lwmUInt8 *cpx = c;
-		const lwmUInt8 *fpx = f;
-		const lwmUInt8 *ppx = p;
-		
-		for(int col=0;col<8;col++)
-		{
-			lwmSInt16 coeff = 0;
-
-			if(mblock->mb_motion_forw)
-				coeff = *fpx++;
-			if(mblock->mb_motion_back)
-				coeff += *ppx++;
-			if(mblock->mb_motion_forw && mblock->mb_motion_back)
-				coeff /= 2;
-
-			if(!mblock->skipped)
-				coeff += (*dctCoeff++);
-
-			if(coeff < 0) coeff = 0;
-			else if(coeff > 255) coeff = 255;
-			(*cpx++) = static_cast<lwmUInt8>(coeff);
-		}
-
-		c += stride;
-		f += stride;
-		p += stride;
-	}
+	ReconstructLumaBlocks(mblock, blocks, dctBlocks, cy + yOffset, fy + yOffset, py + yOffset, yStride, NULL);
+	ReconstructChromaBlock(mblock, blocks + 4, dctBlocks + 4, cu + uOffset, fu + uOffset, pu + uOffset, uStride, NULL);
+	ReconstructChromaBlock(mblock, blocks + 5, dctBlocks + 5, cv + vOffset, fv + vOffset, pv + vOffset, vStride, NULL);
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlocks,
@@ -344,31 +301,13 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const 
 	}
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::PutDCTBlock(const lwmDCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride)
-{
-	const lwmSInt16 *s16row = dctBlock->data;
-	for(lwmUInt32 row=0;row<8;row++)
-	{
-		for(lwmUInt32 col=0;col<8;col++)
-		{
-			lwmSInt16 value = s16row[col];
-			if(value < 0)
-				value = 0;
-			else if(value > 255)
-				value = 255;
-			channel[col] = static_cast<lwmUInt8>(value);
-		}
-		s16row += 8;
-		channel += stride;
-	}
-}
-
 void lwmovie::lwmCM1VSoftwareReconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB)
 {
 	this->CloseFrame();
 
-	for(lwmUInt32 i=0;i<m_mbHeight;i++)
-		m_rowCommitCounts[i] = m_workRowUsers[i] = 0;
+	if(m_useRowJobs)
+		for(lwmUInt32 i=0;i<m_mbHeight;i++)
+			m_rowCommitCounts[i] = m_workRowUsers[i] = 0;
 
 	m_frameProvider->lockWorkFrameFunc(m_frameProvider, current - 1, currentIsB ? lwmVIDEOLOCK_Write_Only : lwmVIDEOLOCK_Write_ReadLater);
 	m_currentTarget.LoadFromFrameProvider(m_frameProvider, current - 1);
@@ -397,13 +336,40 @@ void lwmovie::lwmCM1VSoftwareReconstructor::PresentFrame(lwmUInt32 slot)
 	this->m_outputTarget = slot - 1;
 }
 
+lwmovie::lwmIM1VBlockCursor *lwmovie::lwmCM1VSoftwareReconstructor::CreateBlockCursor()
+{
+	if(!m_useRowJobs)
+	{
+		lwmCM1VSelfContainedBlockCursor *blockCursor = static_cast<lwmCM1VSelfContainedBlockCursor*>(m_alloc->allocFunc(m_alloc, sizeof(lwmCM1VSelfContainedBlockCursor)));
+		if(blockCursor)
+		{
+			new (blockCursor) lwmCM1VSelfContainedBlockCursor(this);
+			return blockCursor;
+		}
+		else
+			return NULL;
+	}
+
+	lwmCM1VGridBlockCursor *blockCursor = static_cast<lwmCM1VGridBlockCursor*>(m_alloc->allocFunc(m_alloc, sizeof(lwmCM1VGridBlockCursor)));
+	if(blockCursor)
+	{
+		new (blockCursor) lwmCM1VGridBlockCursor(m_mblocks, m_blocks, m_dctBlocks);
+		return blockCursor;
+	}
+	else
+		return NULL;
+}
+
 void lwmovie::lwmCM1VSoftwareReconstructor::MarkRowFinished(lwmSInt32 firstMBAddress)
 {
-	lwmUInt32 row = static_cast<lwmUInt32>(firstMBAddress) / m_mbWidth;
+	if(m_useRowJobs)
+	{
+		lwmUInt32 row = static_cast<lwmUInt32>(firstMBAddress) / m_mbWidth;
 
-	// Check commit count, should be zero.  If non-zero, the video is bad and is committing the same row multiple times
-	if(lwmAtomicIncrement(m_rowCommitCounts + row) == 1)
-		m_workNotifier->notifyAvailableFunc(m_workNotifier);
+		// Check commit count, should be zero.  If non-zero, the video is bad and is committing the same row multiple times
+		if(lwmAtomicIncrement(m_rowCommitCounts + row) == 1)
+			m_workNotifier->notifyAvailableFunc(m_workNotifier);
+	}
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::FlushProfileTags(lwmCProfileTagSet *tagSet)
@@ -445,4 +411,102 @@ void lwmovie::lwmCM1VSoftwareReconstructor::STarget::Close(lwmSVideoFrameProvide
 		this->isOpen = false;
 		frameProvider->unlockWorkFrameFunc(frameProvider, this->frameIndex);
 	}
+}
+
+//////////////////////////////////////////////////////////////////
+// Grid block cursor
+lwmovie::lwmCM1VGridBlockCursor::lwmCM1VGridBlockCursor(lwmReconMBlock *mblocks, lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks)
+	: m_mblocks(mblocks)
+	, m_blocks(blocks)
+	, m_dctBlocks(dctBlocks)
+{
+}
+
+void lwmovie::lwmCM1VGridBlockCursor::OpenMB(lwmSInt32 mbAddress)
+{
+	m_currentMBlock = m_mblocks + mbAddress;
+	m_currentBlockBase = m_blocks + mbAddress*6;
+	m_currentDCTBlockBase = m_dctBlocks + mbAddress*6;
+}
+
+//////////////////////////////////////////////////////////////////
+// Self-contained block cursor
+lwmovie::lwmCM1VSelfContainedBlockCursor::lwmCM1VSelfContainedBlockCursor(lwmCM1VSoftwareReconstructor *recon)
+	: m_targetMBAddress(0)
+	, m_recon(recon)
+{
+}
+
+void lwmovie::lwmCM1VSelfContainedBlockCursor::OpenMB(lwmSInt32 mbAddress)
+{
+	m_targetMBAddress = mbAddress;
+	m_currentDCTBlockBase = m_dctBlocks;
+	m_currentBlockBase = m_blocks;
+	m_currentMBlock = &m_mblock;
+}
+
+void lwmovie::lwmCM1VSelfContainedBlockCursor::CloseMB()
+{
+	m_recon->STReconstructBlock(&m_mblock, m_blocks, m_dctBlocks, m_targetMBAddress);
+}
+
+
+//////////////////////////////////////////////////////////////////
+// Base block cursor
+lwmovie::lwmCM1VBaseBlockCursor::lwmCM1VBaseBlockCursor()
+	: m_currentMBlock(NULL)
+	, m_currentBlockBase(NULL)
+	, m_currentDCTBlockBase(NULL)
+	, m_openedReconBlock(NULL)
+{
+}
+
+void lwmovie::lwmCM1VBaseBlockCursor::CloseMB()
+{
+}
+
+void lwmovie::lwmCM1VBaseBlockCursor::SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
+			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back)
+{
+	m_currentMBlock->SetReconInfo(skipped, mb_motion_forw, mb_motion_back, recon_right_for, recon_down_for, recon_right_back, recon_down_back);
+}
+
+void lwmovie::lwmCM1VBaseBlockCursor::SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag)
+{
+	m_currentBlockBase[blockIndex].SetReconInfo(zero_block_flag);
+}
+
+lwmovie::lwmDCTBLOCK *lwmovie::lwmCM1VBaseBlockCursor::StartReconBlock(lwmSInt32 subBlockIndex)
+{
+	m_openedReconBlock = m_currentBlockBase + subBlockIndex;
+	return m_currentDCTBlockBase + subBlockIndex;
+}
+
+void lwmovie::lwmCM1VBaseBlockCursor::CommitZero()
+{
+	m_openedReconBlock->needs_idct = false;
+}
+
+void lwmovie::lwmCM1VBaseBlockCursor::CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff)
+{
+	lwmBlockInfo *blockInfo = m_openedReconBlock;
+	blockInfo->needs_idct = true;
+	blockInfo->sparse_idct = true;
+	blockInfo->sparse_idct_coef = lastCoeff;
+	blockInfo->sparse_idct_index = lastCoeffPos;
+}
+
+
+void lwmovie::lwmCM1VBaseBlockCursor::CommitFull()
+{
+	lwmBlockInfo *blockInfo = m_openedReconBlock;
+	blockInfo->needs_idct = true;
+	blockInfo->sparse_idct = false;
+}
+
+
+/////////////////////////////////////////////////////////////
+lwmovie::lwmIM1VBlockCursor::~lwmIM1VBlockCursor()
+{
 }

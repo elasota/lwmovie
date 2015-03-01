@@ -27,17 +27,47 @@
 
 namespace lwmovie
 {
+	struct lwmIM1VBlockCursor
+	{
+		virtual ~lwmIM1VBlockCursor() = 0;
+		virtual void OpenMB(lwmSInt32 mbAddress) = 0;
+		virtual void CloseMB() = 0;
+		virtual void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
+			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back) = 0;
+
+		virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag) = 0;
+		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex) = 0;
+
+		virtual void CommitZero() = 0;
+		virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff) = 0;
+		virtual void CommitFull() = 0;
+
+		inline void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool full_pel_forw,
+			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back, bool full_pel_back)
+		{
+			if(full_pel_forw)
+			{
+				recon_right_for <<= 1;
+				recon_down_for <<= 1;
+			}
+			if(full_pel_back)
+			{
+				recon_right_back <<= 1;
+				recon_down_back <<= 1;
+			}
+
+			this->SetMBlockInfo(skipped, mb_motion_forw, mb_motion_back, recon_right_for, recon_down_for, recon_right_back, recon_down_back);
+		}
+	};
+
 	struct lwmIM1VReconstructor : public lwmIVideoReconstructor
 	{
 	public:
-		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 address) = 0;
-		virtual void SetMBlockInfo(lwmSInt32 mbAddress, bool skipped, bool mb_motion_forw, bool mb_motion_back,
-			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool full_pel_forw,
-			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back, bool full_pel_back) = 0;
-		virtual void SetBlockInfo(lwmSInt32 sbAddress, bool zero_block_flag) = 0;
-		virtual void CommitZero(lwmSInt32 address) = 0;
-		virtual void CommitSparse(lwmSInt32 address, lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff) = 0;
-		virtual void CommitFull(lwmSInt32 address) = 0;
+		// In low memory mode, the reconstructor won't contain macroblocks or blocks
+		virtual lwmIM1VBlockCursor *CreateBlockCursor() = 0;
+
 		virtual void MarkRowFinished(lwmSInt32 firstMBAddress) = 0;
 		virtual void WaitForFinish() = 0;
 

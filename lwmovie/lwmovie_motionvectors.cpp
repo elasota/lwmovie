@@ -60,7 +60,9 @@
 * BASIS, AND BROWN UNIVERSITY HAS NO OBLIGATION TO PROVIDE MAINTENANCE,
 * SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 */
+#include <stdlib.h>
 #include "lwmovie_videotypes.hpp"
+#include "lwmovie_recon_m1v.hpp"
 
 inline void ComputeVector(lwmSInt32 *recon_right_ptr, lwmSInt32 *recon_down_ptr, lwmSInt32 *recon_right_prev, lwmSInt32 *recon_down_prev,
 			lwmUInt8 f, bool full_pel_vector, lwmSInt32 motion_h_code, lwmSInt32 motion_v_code, lwmUInt8 motion_h_r, lwmUInt8 motion_v_r)
@@ -165,7 +167,18 @@ void lwmovie::lwmDeslicerJob::ComputeBackVector( lwmSInt32 *recon_right_back_ptr
 				m_mblock.motion_h_back_r, m_mblock.motion_v_back_r);
 }
 
-lwmovie::lwmVidStream::SDeslicerJobStackNode::SDeslicerJobStackNode(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
+lwmovie::lwmVidStream::SDeslicerJobStackNode::SDeslicerJobStackNode(lwmSAllocator *alloc, lwmUInt32 mbWidth, lwmUInt32 mbHeight)
 	: m_deslicerJob(mbWidth, mbHeight)
+	, m_blockCursor(NULL)
+	, m_alloc(alloc)
 {
+}
+
+lwmovie::lwmVidStream::SDeslicerJobStackNode::~SDeslicerJobStackNode()
+{
+	if(m_blockCursor)
+	{
+		m_blockCursor->~lwmIM1VBlockCursor();
+		m_alloc->freeFunc(m_alloc, m_blockCursor);
+	}
 }

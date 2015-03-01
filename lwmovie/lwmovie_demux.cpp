@@ -707,17 +707,19 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 }
 
 
-LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmSVideoFrameProvider *frameProvider)
+LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmUInt32 flags, lwmSVideoFrameProvider *frameProvider)
 {
 	switch(reconstructorType)
 	{
 	case lwmRC_MPEG1Video:
 		{
+			bool useRowThreading = ((flags & lwmUSERFLAG_ThreadedReconstructor) != 0);
 			lwmovie::lwmCM1VSoftwareReconstructor *recon = static_cast<lwmovie::lwmCM1VSoftwareReconstructor*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCM1VSoftwareReconstructor)));
 			if(!recon)
 				return NULL;
 			new (recon) lwmovie::lwmCM1VSoftwareReconstructor();
-			if(!recon->Initialize(alloc, frameProvider, movieState))
+			// TODO: Low memory flag
+			if(!recon->Initialize(alloc, frameProvider, movieState, useRowThreading))
 			{
 				lwmIVideoReconstructor_Destroy(recon);
 				recon = NULL;

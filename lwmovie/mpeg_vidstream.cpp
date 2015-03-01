@@ -269,6 +269,7 @@ lwmovie::lwmVidStream::lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUI
 {
 	m_alloc = alloc;
 
+	m_stBlockCursor = NULL;
 	m_deslicerJobStack = NULL;
 	m_movieState = movieState;
 	m_workNotifier = workNotifier;
@@ -297,6 +298,11 @@ lwmovie::lwmVidStream::~lwmVidStream()
 {
 	WaitForDigestFinish();
 	m_deslicerMemPool.Destroy(m_alloc);
+	if(m_stBlockCursor)
+	{
+		m_stBlockCursor->~lwmIM1VBlockCursor();
+		m_alloc->freeFunc(m_alloc, m_stBlockCursor);
+	}
 }
 
 void lwmovie::lwmVidStream::SkipExtraBitInfo(lwmCBitstream *bitstream)
@@ -336,6 +342,11 @@ bool lwmovie::lwmVidStream::DigestStreamParameters(const void *bytes, lwmUInt32 
 
 void lwmovie::lwmVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 packetSize, lwmIM1VReconstructor *recon)
 {
+	lwmIM1VBlockCursor *blockCursor = recon->CreateBlockCursor();
+
+	if(!blockCursor)
+		return;		// TODO: Fix this...
+
 	// TODO: Overflow check
 	bool pooled = true;
 	lwmUInt32 stackNodeSize = sizeof(SDeslicerJobStackNode) + packetSize - 1;
@@ -352,18 +363,21 @@ void lwmovie::lwmVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 pac
 	
 	if(memBuf == NULL)
 	{
-		m_stDeslicerJob.Digest(&m_sequence, &m_picture, bytes, packetSize, recon);
+		m_stDeslicerJob.Digest(&m_sequence, blockCursor, &m_picture, bytes, packetSize, recon);
+		blockCursor->~lwmIM1VBlockCursor();
+		m_alloc->freeFunc(m_alloc, blockCursor);
 		return;
 	}
 
 	SDeslicerJobStackNode *deslicerStackNode = static_cast<SDeslicerJobStackNode*>(memBuf);
 
-	new (deslicerStackNode) SDeslicerJobStackNode(m_mb_width, m_mb_height);
+	new (deslicerStackNode) SDeslicerJobStackNode(m_alloc, m_mb_width, m_mb_height);
 	deslicerStackNode->m_accessFlag = 0;
 	memcpy(deslicerStackNode->m_dataBytes, bytes, packetSize);
 	deslicerStackNode->m_dataSize = packetSize;
 	deslicerStackNode->m_recon = recon;
 	deslicerStackNode->m_memPooled = pooled;
+	deslicerStackNode->m_blockCursor = blockCursor;
 
 	// Insert into the job stack
 	while(true)
@@ -433,7 +447,14 @@ bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packet
 		}
 		else
 		{
-			m_stDeslicerJob.Digest(&m_sequence, &m_picture, bytes, packetSize, m_recon);
+			if(!m_stBlockCursor)
+			{
+				m_stBlockCursor = m_recon->CreateBlockCursor();
+				if(!m_stBlockCursor)
+					return false;
+			}
+
+			m_stDeslicerJob.Digest(&m_sequence, m_stBlockCursor, &m_picture, bytes, packetSize, m_recon);
 		}
 		return true;
 	}
@@ -455,7 +476,7 @@ void lwmovie::lwmVidStream::Participate()
 		if(lwmAtomicIncrement(&dsJob->m_accessFlag) == 1)
 		{
 			// Can consume this job
-			dsJob->m_deslicerJob.Digest(&m_sequence, &m_picture, dsJob->m_dataBytes, dsJob->m_dataSize, m_recon);
+			dsJob->m_deslicerJob.Digest(&m_sequence, dsJob->m_blockCursor, &m_picture, dsJob->m_dataBytes, dsJob->m_dataSize, m_recon);
 			return;
 		}
 		dsJob = dsJob->m_next;
