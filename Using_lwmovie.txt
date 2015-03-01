@@ -80,6 +80,8 @@ Work notifiers are expected to contain 2 fields:
 To assign a work notifier to the video digester, use lwmSetVideoDigestWorkNotifier and participate using lwmVideoDigestParticipate.
 To assign a work notifier to the video reconstructor, use lwmSetVideoReconWorkNotifier and participate using lwmVideoReconParticipate.
 
+Currently, pooling the digester causes a minor increase in memory usage and pooling the reconstructor causes a heavy increase in memory usage.  Pooling the reconstructor is more beneficial if there are fewer slices than available CPUs, but has almost no improvement when using a high slice count, so you should avoid pooling the reconstructor unless you're playing back videos with low slice counts.
+
 === Audio ===
 lwmovie's audio decoding process uses a synchronization mechanism to ensure that playback can recover in the case of errors or stalls.  Audio samples returned by the decoder are intended to be queued consecutively, or played back immediately if no samples are queued.
 
