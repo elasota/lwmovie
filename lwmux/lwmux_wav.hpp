@@ -29,6 +29,8 @@ namespace lwmovie
 
 			void Read(const CRIFFDataChunk *dataChunk, lwmOSFile *sourceFile);
 		};
+
+		bool ReadPaddedWAVSamples(lwmOSFile *inFile, lwmSInt16 *samples, lwmUInt32 numAvailableSamples, lwmUInt16 numChannels, lwmUInt16 bitsPerSample, lwmUInt32 numOutputSamples);
 	}
 }
 

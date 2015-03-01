@@ -28,6 +28,7 @@
 #include "lwmovie_audiobuffer.hpp"
 #include "lwmovie_mp2_decoder.hpp"
 #include "lwmovie_celt_decoder.hpp"
+#include "lwmovie_adpcm_decoder.hpp"
 #include "../mp2dec2/lwmovie_layer2_decodestate.hpp"
 
 namespace lwmovie
@@ -35,6 +36,7 @@ namespace lwmovie
 	class lwmVidStream;
 	class lwmCMP2Decoder;
 	class lwmCCELTDecoder;
+	class lwmCADPCMDecoder;
 }
 
 
@@ -105,6 +107,7 @@ struct lwmMovieState
 	lwmovie::lwmVidStream *m1vDecoder;
 	lwmovie::lwmCMP2Decoder *mp2Decoder;
 	lwmovie::lwmCCELTDecoder *celtDecoder;
+	lwmovie::lwmCADPCMDecoder *adpcmDecoder;
 
 	lwmMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
 	void DesyncAudio();
@@ -122,6 +125,7 @@ lwmMovieState::lwmMovieState(lwmSAllocator *pAlloc, lwmUInt32 pUserFlags)
 	, mp2Decoder(NULL)
 	, m1vDecoder(NULL)
 	, celtDecoder(NULL)
+	, adpcmDecoder(NULL)
 	, isAudioSynchronized(false)
 	, needVideoStreamParameters(false)
 	, needAudioStreamParameters(false)
@@ -144,6 +148,8 @@ lwmCAudioBuffer *lwmMovieState::GetAudioBuffer() const
 		return this->mp2Decoder->GetAudioBuffer();
 	if(this->celtDecoder)
 		return this->celtDecoder->GetAudioBuffer();
+	if(this->adpcmDecoder)
+		return this->adpcmDecoder->GetAudioBuffer();
 	return NULL;
 }
 
@@ -288,6 +294,7 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 				if(
 					(movieState->mp2Decoder && !movieState->mp2Decoder->DigestDataPacket(packetData, packetSize, overrun))
 					|| (movieState->celtDecoder && !movieState->celtDecoder->DigestDataPacket(packetData, packetSize, overrun))
+					|| (movieState->adpcmDecoder && !movieState->adpcmDecoder->DigestDataPacket(packetData, packetSize, overrun))
 					)
 				{
 					*outResult = lwmDIGEST_Error;
@@ -391,6 +398,14 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			goto cleanup;
 		new (movieState->celtDecoder) lwmovie::lwmCCELTDecoder(alloc);
 		if(!movieState->celtDecoder->Init(&movieState->audioInfo))
+			goto cleanup;
+		break;
+	case lwmAST_ADPCM:
+		movieState->adpcmDecoder = static_cast<lwmovie::lwmCADPCMDecoder*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCADPCMDecoder)));
+		if(!movieState->adpcmDecoder)
+			goto cleanup;
+		new (movieState->adpcmDecoder) lwmovie::lwmCADPCMDecoder(alloc);
+		if(!movieState->adpcmDecoder->Init(&movieState->audioInfo))
 			goto cleanup;
 		break;
 	default:
@@ -752,6 +767,11 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 	{
 		movieState->celtDecoder->~lwmCCELTDecoder();
 		alloc->freeFunc(alloc, movieState->celtDecoder);
+	}
+	if(movieState->adpcmDecoder)
+	{
+		movieState->adpcmDecoder->~lwmCADPCMDecoder();
+		alloc->freeFunc(alloc, movieState->adpcmDecoder);
 	}
 	alloc->freeFunc(alloc, movieState);
 }
