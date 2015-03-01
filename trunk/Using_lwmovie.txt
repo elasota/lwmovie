@@ -134,9 +134,9 @@ Playing back video from devices that are restricted to a particular data rate ma
 One option that may help is passing lwmSTREAMPARAM_U32_LongestFrameReadAhead and lwmSTREAMTYPE_Video to lwmMovieState_GetStreamParameterU32, which will output the largest number of bytes that the video ever requires to digest and produce one video frame from the previous frame.
 
 -- Security --
-Currently, lwmovie is NOT expected to be safe when decoding untrusted data.
-- TODO
+lwmovie itself should be fully validating all data now.  It's intended to be safe for use with untrusted data, but is still being stress-tested.
+
+lwmux only performs minimal validation and is not intended for use with untrusted data.
 
 -- Error recovery --
-Currently, all errors in lwmovie are fatal.
-- TODO
+Currently, most decode errors in lwmovie are non-recoverable.
