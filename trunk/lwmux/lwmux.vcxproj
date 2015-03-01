@@ -60,6 +60,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\lwmovie\lwmovie_adpcm.cpp" />
+    <ClCompile Include="lwmux_adpcmenc.cpp" />
     <ClCompile Include="lwmux.cpp" />
     <ClCompile Include="lwmux_celtenc.cpp" />
     <ClCompile Include="lwmux_convertm1v.cpp" />
@@ -68,14 +70,17 @@
     <ClCompile Include="lwmux_mux.cpp" />
     <ClCompile Include="lwmux_osfile_win32.cpp" />
     <ClCompile Include="lwmux_riff.cpp" />
+    <ClCompile Include="lwmux_util.cpp" />
     <ClCompile Include="lwmux_wav.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\lwmovie\lwmovie_adpcm.hpp" />
     <ClInclude Include="..\lwmovie\lwmovie_package.hpp" />
     <ClInclude Include="..\lwmovie\lwmovie_packetplan.hpp" />
     <ClInclude Include="lwmux_escape.hpp" />
     <ClInclude Include="lwmux_osfile.hpp" />
     <ClInclude Include="lwmux_riff.hpp" />
+    <ClInclude Include="lwmux_util.hpp" />
     <ClInclude Include="lwmux_wav.hpp" />
   </ItemGroup>
   <ItemGroup>

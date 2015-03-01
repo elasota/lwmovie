@@ -68,6 +68,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="idct\fastjrevdct.cpp" />
+    <ClCompile Include="lwmovie_adpcm.cpp" />
+    <ClCompile Include="lwmovie_adpcm_decoder.cpp" />
     <ClCompile Include="lwmovie_audiobuffer.cpp" />
     <ClCompile Include="lwmovie_bitstream.cpp" />
     <ClCompile Include="lwmovie_celt_decoder.cpp" />
@@ -92,6 +94,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lwmovie.h" />
+    <ClInclude Include="lwmovie_adpcm_decoder.hpp" />
     <ClInclude Include="lwmovie_api.hpp" />
     <ClInclude Include="lwmovie_audiobuffer.hpp" />
     <ClInclude Include="lwmovie_bits.hpp" />
