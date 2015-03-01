@@ -29,21 +29,75 @@ struct lwmSVideoFrameProvider;
 
 namespace lwmovie
 {
+	class lwmCM1VSoftwareReconstructor;
+
+	class lwmCM1VBaseBlockCursor : public lwmIM1VBlockCursor
+	{
+	public:
+		lwmCM1VBaseBlockCursor();
+
+		virtual void CloseMB();
+		virtual void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
+			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back);
+
+		virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag);
+		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex);
+
+		virtual void CommitZero();
+		virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
+		virtual void CommitFull();
+
+	protected:
+		lwmReconMBlock *m_currentMBlock;
+		lwmBlockInfo *m_currentBlockBase;
+		lwmDCTBLOCK *m_currentDCTBlockBase;
+
+		lwmBlockInfo *m_openedReconBlock;
+	};
+
+	
+	class lwmCM1VGridBlockCursor : public lwmCM1VBaseBlockCursor
+	{
+	public:
+		lwmCM1VGridBlockCursor(lwmReconMBlock *mblocks, lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks);
+
+		virtual void OpenMB(lwmSInt32 mbAddress);
+
+	private:
+		lwmReconMBlock *m_mblocks;
+		lwmBlockInfo *m_blocks;
+		lwmDCTBLOCK *m_dctBlocks;
+	};
+
+	class lwmCM1VSelfContainedBlockCursor : public lwmCM1VBaseBlockCursor
+	{
+	public:
+		explicit lwmCM1VSelfContainedBlockCursor(lwmCM1VSoftwareReconstructor *recon);
+
+		virtual void OpenMB(lwmSInt32 mbAddress);
+		virtual void CloseMB();
+
+	private:
+		lwmCM1VSoftwareReconstructor *m_recon;
+		lwmSInt32 m_targetMBAddress;
+
+		lwmReconMBlock m_mblock;
+		lwmBlockInfo m_blocks[6];
+
+		lwmDCTBLOCK m_dctBlocks[6];
+	};
+
 	class lwmCM1VSoftwareReconstructor : public lwmIM1VReconstructor
 	{
 	public:
 		lwmCM1VSoftwareReconstructor();
 		~lwmCM1VSoftwareReconstructor();
 
-		bool Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState);
+		bool Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState, bool useRowJobs);
 
-		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 address);
+		virtual lwmIM1VBlockCursor *CreateBlockCursor();
 
-		virtual void SetMBlockInfo(lwmSInt32 mbAddress, bool skipped, bool mb_motion_forw, bool mb_motion_back, lwmSInt32 recon_right_for, lwmSInt32 recon_down_for, bool full_pel_forw, lwmSInt32 recon_right_back, lwmSInt32 recon_down_back, bool full_pel_back);
-		virtual void SetBlockInfo(lwmSInt32 sbAddress, bool zero_block_flag);
-		virtual void CommitZero(lwmSInt32 sbAddress);
-		virtual void CommitSparse(lwmSInt32 sbAddress, lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
-		virtual void CommitFull(lwmSInt32 sbAddress);
 		virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
 		virtual void WaitForFinish();
 		virtual void PresentFrame(lwmUInt32 workFrame);
@@ -57,6 +111,8 @@ namespace lwmovie
 		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
 
 		virtual void Destroy();
+
+		void STReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmSInt32 mbAddress);
 
 	private:
 		struct STWorkNotifier : public lwmSWorkNotifier
@@ -79,8 +135,6 @@ namespace lwmovie
 		static void PutDCTBlock(const lwmDCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
 		void ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks, lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
 			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv, lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv, lwmCProfileTagSet *profileTags);
-		void ReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, bool halfRes, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
 		static void ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
 			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
 		static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
@@ -88,6 +142,8 @@ namespace lwmovie
 
 		static void STWNJoinFunc(lwmSWorkNotifier *workNotifier);
 		static void STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier);
+
+		bool m_useRowJobs;
 		
 		lwmReconMBlock *m_mblocks;
 		lwmBlockInfo *m_blocks;

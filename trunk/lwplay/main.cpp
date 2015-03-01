@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 
 				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_ReconType, &reconType);
 				frameProvider = lwmCreateSystemMemoryFrameProvider(&myAllocator, movieState);
-				videoRecon = lwmCreateSoftwareVideoReconstructor(movieState, &myAllocator, reconType, frameProvider);
+				videoRecon = lwmCreateSoftwareVideoReconstructor(movieState, &myAllocator, reconType, 0, frameProvider);
 				lwmMovieState_SetVideoReconstructor(movieState, videoRecon);
 
 				lwmUInt32 audioSpeakerLayout;

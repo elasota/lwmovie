@@ -104,7 +104,8 @@ enum lwmEUserFlag
 {
 	lwmUSERFLAG_None				= 0,
 
-	lwmUSERFLAG_ThreadedDeslicer	= (1 << 0)
+	lwmUSERFLAG_ThreadedDeslicer		= (1 << 0),
+	lwmUSERFLAG_ThreadedReconstructor	= (1 << 1),
 };
 
 LWMOVIE_API_LINK void lwmInitialize();
@@ -130,7 +131,7 @@ LWMOVIE_API_LINK void lwmVideoRecon_Destroy(struct lwmIVideoReconstructor *video
 LWMOVIE_API_LINK struct lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(struct lwmSAllocator *alloc, const struct lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(struct lwmSVideoFrameProvider *frameProvider);
 
-LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, struct lwmSVideoFrameProvider *frameProvider);
+LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmUInt32 flags, struct lwmSVideoFrameProvider *frameProvider);
 LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(struct lwmIVideoReconstructor *videoRecon);
 
 LWMOVIE_API_LINK void lwmFlushProfileTags(struct lwmMovieState *movieState, LWMOVIE_API_CLASS lwmCProfileTagSet *tagSet);

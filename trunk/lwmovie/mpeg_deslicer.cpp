@@ -72,7 +72,7 @@ lwmovie::lwmDeslicerJob::lwmDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
 	m_mb_height = mbHeight;
 }
 
-bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon)
+bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, lwmIM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(&m_profileTags, lwmEPROFILETAG_Deslice);
@@ -93,7 +93,7 @@ bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, const mpe
 	while(true)
 	{
 		/* Parse Macroblock. */
-		constants::lwmEParseState parseState = ParseMacroBlock(&bitstream, max_mb_addr, recon, this->GetProfileTags());
+		constants::lwmEParseState parseState = ParseMacroBlock(&bitstream, blockCursor, max_mb_addr, recon, this->GetProfileTags());
 		if(parseState == constants::PARSE_BREAK)
 			break;
 		if(parseState != constants::PARSE_OK)
@@ -177,7 +177,7 @@ bool lwmovie::lwmDeslicerJob::ParseSliceHeader(lwmCBitstream *bitstream)
  *
  *--------------------------------------------------------------
  */
-lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwmCBitstream *bitstream, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags )
+lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwmCBitstream *bitstream, lwmIM1VBlockCursor *blockCursor, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags )
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseBlock);
@@ -230,12 +230,14 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* Copy this to all recons */
 		for (lwmSInt32 i = m_mblock.past_mb_addr + 1; i < m_mblock.mb_address; i++)
 		{
+			blockCursor->OpenMB(i);
 			if(m_picture->code_type == constants::MPEG_P_TYPE)
-				recon->SetMBlockInfo(i, true, true, false, 0, 0, false, 0, 0, false);
+				blockCursor->SetMBlockInfo(true, true, false, 0, 0, false, 0, 0, false);
 			else if(m_picture->code_type == constants::MPEG_B_TYPE)
-				recon->SetMBlockInfo(i, true, m_mblock.bpict_past_forw, m_mblock.bpict_past_back, m_mblock.recon_right_for_prev, m_mblock.recon_down_for_prev, m_picture->full_pel_forw_vector, m_mblock.recon_right_back_prev, m_mblock.recon_down_back_prev, m_picture->full_pel_back_vector);
+				blockCursor->SetMBlockInfo(true, m_mblock.bpict_past_forw, m_mblock.bpict_past_back, m_mblock.recon_right_for_prev, m_mblock.recon_down_for_prev, m_picture->full_pel_forw_vector, m_mblock.recon_right_back_prev, m_mblock.recon_down_back_prev, m_picture->full_pel_back_vector);
 			else
 				return constants::PARSE_SKIP_TO_START_CODE;
+			blockCursor->CloseMB();
 
 			if(i == row_end_mb)
 			{
@@ -430,7 +432,8 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 	else
 		recon_right_for = recon_down_for = recon_right_back = recon_down_back = 0;
 
-	recon->SetMBlockInfo(m_mblock.mb_address, false, mb_motion_forw, mb_motion_back, recon_right_for, recon_down_for, m_picture->full_pel_forw_vector, recon_right_back, recon_down_back, m_picture->full_pel_back_vector);
+	blockCursor->OpenMB(m_mblock.mb_address);
+	blockCursor->SetMBlockInfo(false, mb_motion_forw, mb_motion_back, recon_right_for, recon_down_for, m_picture->full_pel_forw_vector, recon_right_back, recon_down_back, m_picture->full_pel_back_vector);
 
 
 	for (lwmUInt8 mask = 32, i = 0; i < 6; mask >>= 1, i++)
@@ -439,14 +442,15 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* If block exists... */
 		if ((m_mblock.mb_intra) || ((m_mblock.cbp & mask) != 0))
 		{
-			if (!ParseReconBlock(bitstream, i, recon, profileTags))
+			if (!ParseReconBlock(bitstream, blockCursor, i, recon, profileTags))
 				return lwmovie::constants::PARSE_SKIP_TO_START_CODE;
 		}
 		else
 			zero_block_flag = true;
 
-		recon->SetBlockInfo(m_mblock.mb_address * 6 + i, zero_block_flag);
+		blockCursor->SetBlockInfo(i, zero_block_flag);
 	}
+	blockCursor->CloseMB();
 
 	/* If D Type picture, flush marker bit. */
 	if (m_picture->code_type == constants::MPEG_D_TYPE)

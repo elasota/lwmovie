@@ -14,6 +14,7 @@ class lwmCProfileTagSet;
 namespace lwmovie
 {
 	struct lwmIM1VReconstructor;
+	struct lwmIM1VBlockCursor;
 
 	struct lwmDCTBLOCK
 	{
@@ -205,7 +206,7 @@ namespace lwmovie
 	{
 	public:
 		lwmDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight);
-		bool Digest(const mpegSequence *sequenceData, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon);
+		bool Digest(const mpegSequence *sequenceData, lwmIM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon);
 #ifdef LWMOVIE_PROFILE
 		inline lwmCProfileTagSet *GetProfileTags() { return &m_profileTags; }
 #else
@@ -214,10 +215,10 @@ namespace lwmovie
 
 	private:
 		bool ParseSliceHeader(lwmCBitstream *bitstream);
-		lwmovie::constants::lwmEParseState ParseMacroBlock(lwmCBitstream *bitstream, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
+		lwmovie::constants::lwmEParseState ParseMacroBlock(lwmCBitstream *bitstream, lwmIM1VBlockCursor *blockCursor, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 		void ComputeForwVector(lwmSInt32 *recon_right_for_ptr, lwmSInt32 *recon_down_for_ptr);
 		void ComputeBackVector(lwmSInt32 *recon_right_back_ptr, lwmSInt32 *recon_down_back_ptr);
-		bool ParseReconBlock(lwmCBitstream *bitstream, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
+		bool ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VBlockCursor *blockCursor, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 		void DecodeDCTCoeffFirst(lwmCBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 		void DecodeDCTCoeffNext(lwmCBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 		void DecodeDCTCoeff(lwmCBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel);
@@ -273,10 +274,13 @@ namespace lwmovie
 			SDeslicerJobStackNode	*m_next;
 			lwmIM1VReconstructor	*m_recon;
 			bool					m_memPooled;
+			lwmIM1VBlockCursor		*m_blockCursor;
+			lwmSAllocator			*m_alloc;
 
 			lwmUInt8				m_dataBytes[1];
 
-			SDeslicerJobStackNode(lwmUInt32 mbWidth, lwmUInt32 mbHeight);
+			SDeslicerJobStackNode(lwmSAllocator *alloc, lwmUInt32 mbWidth, lwmUInt32 mbHeight);
+			~SDeslicerJobStackNode();
 		};
 
 		struct SDeslicerMemoryPool
@@ -319,6 +323,8 @@ namespace lwmovie
 
 		lwmSAllocator		*m_alloc;
 		lwmDeslicerJob		m_stDeslicerJob;
+		lwmIM1VBlockCursor	*m_stBlockCursor;
+
 
 		lwmIM1VReconstructor	*m_recon;
 
@@ -334,7 +340,6 @@ namespace lwmovie
 
 		lwmovie::constants::lwmEParseState ParseSeqHead_MPEG(lwmCBitstream *bitstream);
 		lwmovie::constants::lwmEParseState ParsePicture(lwmCBitstream *bitstream);
-		bool ParseReconBlock(lwmSInt32 n, lwmIM1VReconstructor *recon);
 		lwmovie::constants::lwmEParseState ParseMacroBlock(lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon);
 
 		bool SetupPictImages(lwmUInt32 w, lwmUInt32 h);
