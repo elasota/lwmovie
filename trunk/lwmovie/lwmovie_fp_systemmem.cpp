@@ -60,7 +60,7 @@ lwmovie::lwmCSystemMemFrameProvider::lwmCSystemMemFrameProvider(lwmSAllocator *a
 lwmovie::lwmCSystemMemFrameProvider::~lwmCSystemMemFrameProvider()
 {
 	if(m_frameBytes)
-		m_alloc->freeFunc(m_alloc, m_frameBytes);
+		m_alloc->Free(m_frameBytes);
 }
 
 int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat)
@@ -96,7 +96,8 @@ int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames,
 
 	m_frameSize = channelOffsets[numChannels];
 
-	m_frameBytes = static_cast<lwmUInt8*>(m_alloc->allocFunc(m_alloc, m_frameSize * (numRWFrames + numWriteOnlyFrames)));
+	// TODO: Overflow check
+	m_frameBytes = m_alloc->NAlloc<lwmUInt8>(m_frameSize * (numRWFrames + numWriteOnlyFrames));
 	if(!m_frameBytes)
 		return 0;
 
@@ -126,13 +127,13 @@ void lwmovie::lwmCSystemMemFrameProvider::Destroy()
 	lwmCSystemMemFrameProvider *self = this;
 	lwmSAllocator *alloc = self->m_alloc;
 	self->~lwmCSystemMemFrameProvider();
-	alloc->freeFunc(alloc, self);
+	alloc->Free(self);
 }
 
 
 LWMOVIE_API_LINK lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState)
 {
-	lwmovie::lwmCSystemMemFrameProvider *fp = static_cast<lwmovie::lwmCSystemMemFrameProvider*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCSystemMemFrameProvider)));
+	lwmovie::lwmCSystemMemFrameProvider *fp = alloc->NAlloc<lwmovie::lwmCSystemMemFrameProvider>(1);
 	if(!fp)
 		return NULL;
 	new (fp) lwmovie::lwmCSystemMemFrameProvider(alloc);

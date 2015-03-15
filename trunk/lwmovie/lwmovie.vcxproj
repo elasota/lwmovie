@@ -71,6 +71,7 @@
     <ClCompile Include="lwmovie_adpcm.cpp" />
     <ClCompile Include="lwmovie_adpcm_decoder.cpp" />
     <ClCompile Include="lwmovie_audiobuffer.cpp" />
+    <ClCompile Include="lwmovie_audiocodec.cpp" />
     <ClCompile Include="lwmovie_bitstream.cpp" />
     <ClCompile Include="lwmovie_celt_decoder.cpp" />
     <ClCompile Include="lwmovie_decodedct.cpp" />
@@ -97,6 +98,7 @@
     <ClInclude Include="lwmovie_adpcm_decoder.hpp" />
     <ClInclude Include="lwmovie_api.hpp" />
     <ClInclude Include="lwmovie_audiobuffer.hpp" />
+    <ClInclude Include="lwmovie_audiocodec.hpp" />
     <ClInclude Include="lwmovie_bits.hpp" />
     <ClInclude Include="lwmovie_bitstream.hpp" />
     <ClInclude Include="lwmovie_celt_decoder.hpp" />

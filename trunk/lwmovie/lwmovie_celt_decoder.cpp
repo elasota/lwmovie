@@ -24,7 +24,7 @@ lwmovie::lwmCCELTDecoder::~lwmCCELTDecoder()
 		celt_mode_destroy(m_celtMode);
 }
 
-bool lwmovie::lwmCCELTDecoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
+bool lwmovie::lwmCCELTDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo)
 {
 	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
 		m_numChannels = 1;
@@ -33,11 +33,11 @@ bool lwmovie::lwmCCELTDecoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
 	else
 		return false;	// Unsupported channel layout
 
-	if(!this->m_audioBuffer.Init(m_alloc, audioStreamInfo->audioReadAhead, m_numChannels))
+	if(!this->m_audioBuffer.Init(m_alloc, audioCommonInfo->audioReadAhead, m_numChannels))
 		return false;
 
 	int errorCode;
-	m_celtMode = celt_mode_create(m_alloc, audioStreamInfo->sampleRate, FRAME_SIZE, &errorCode);
+	m_celtMode = celt_mode_create(m_alloc, audioCommonInfo->sampleRate, FRAME_SIZE, &errorCode);
 	if(!m_celtMode)
 		return false;
 	m_celtDecoder = celt_decoder_create_custom(m_celtMode, m_numChannels, &errorCode);

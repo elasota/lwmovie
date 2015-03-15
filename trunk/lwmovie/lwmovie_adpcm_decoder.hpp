@@ -2,9 +2,11 @@
 #define __LWMOVIE_ADPCM_DECODER_HPP__
 
 #include "lwmovie_audiobuffer.hpp"
+#include "lwmovie_audiocodec.hpp"
 
 struct lwmSAllocator;
 struct lwmAudioStreamInfo;
+struct lwmMovieHeader;
 
 namespace lwmovie
 {
@@ -16,12 +18,12 @@ namespace lwmovie
 
 namespace lwmovie
 {
-	class lwmCADPCMDecoder
+	class lwmCADPCMDecoder : public lwmCAudioCodec
 	{
 	public:
 		explicit lwmCADPCMDecoder(lwmSAllocator *alloc);
 		~lwmCADPCMDecoder();
-		bool Init(const lwmAudioStreamInfo *audioStreamInfo);
+		bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo,const lwmAudioStreamInfo *audioStreamInfo);
 		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
 		lwmCAudioBuffer *GetAudioBuffer();
 

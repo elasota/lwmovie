@@ -2,20 +2,22 @@
 #define __LWMOVIE_CELT_DECODER_HPP__
 
 #include "lwmovie_audiobuffer.hpp"
+#include "lwmovie_audiocodec.hpp"
 
 struct lwmSAllocator;
 struct lwmAudioStreamInfo;
+struct lwmMovieHeader;
 struct CELTMode;
 struct CELTDecoder;
 
 namespace lwmovie
 {
-	class lwmCCELTDecoder
+	class lwmCCELTDecoder : public lwmCAudioCodec
 	{
 	public:
 		explicit lwmCCELTDecoder(lwmSAllocator *alloc);
 		~lwmCCELTDecoder();
-		bool Init(const lwmAudioStreamInfo *audioStreamInfo);
+		bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo);
 		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
 		lwmCAudioBuffer *GetAudioBuffer();
 

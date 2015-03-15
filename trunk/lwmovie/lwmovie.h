@@ -111,7 +111,10 @@ enum lwmEUserFlag
 LWMOVIE_API_LINK void lwmInitialize();
 LWMOVIE_API_LINK struct lwmMovieState *lwmCreateMovieState(struct lwmSAllocator *alloc, lwmUInt32 userFlags);
 LWMOVIE_API_LINK void lwmMovieState_FeedData(struct lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested);
-LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *output);
+LWMOVIE_API_LINK lwmUInt8 lwmMovieState_GetAudioStreamCount(const struct lwmMovieState *movieState);
+LWMOVIE_API_LINK int lwmMovieState_SetAudioStreamEnabled(struct lwmMovieState *movieState, lwmUInt8 streamIndex, int enable);
+LWMOVIE_API_LINK int lwmMovieState_GetCommonParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 commonParameterU32, lwmUInt32 *output);
+LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 *output);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(struct lwmMovieState *movieState, struct lwmIVideoReconstructor *recon);
 LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(struct lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(struct lwmMovieState *movieState, struct lwmSWorkNotifier *videoDigestWorkNotifier);
@@ -120,7 +123,7 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(struct lwmMovieState *movieState);
 
 LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(struct lwmMovieState *movieState);
 LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(struct lwmMovieState *movieState);
-LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(struct lwmMovieState *movieState, void *samples, lwmUInt32 numSamples);
+LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(struct lwmMovieState *movieState, lwmUInt8 streamIndex, void *samples, lwmUInt32 numSamples);
 LWMOVIE_API_LINK void lwmMovieState_NotifyAudioPlaybackUnderrun(struct lwmMovieState *movieState);
 
 LWMOVIE_API_LINK void lwmVideoRecon_Participate(struct lwmIVideoReconstructor *videoRecon);

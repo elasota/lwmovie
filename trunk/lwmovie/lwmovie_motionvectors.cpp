@@ -179,6 +179,6 @@ lwmovie::lwmVidStream::SDeslicerJobStackNode::~SDeslicerJobStackNode()
 	if(m_blockCursor)
 	{
 		m_blockCursor->~lwmIM1VBlockCursor();
-		m_alloc->freeFunc(m_alloc, m_blockCursor);
+		m_alloc->Free(m_blockCursor);
 	}
 }

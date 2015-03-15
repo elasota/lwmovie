@@ -21,7 +21,7 @@ static void myFree(lwmSAllocator *alloc, void *ptr)
 	free(ptr);
 }
 
-void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond)
+void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr)
 {
 	CRIFFDataList *rootAtom = static_cast<CRIFFDataList*>(lwmovie::riff::ParseAtom(inFile));
 	CRIFFDataChunk *fmtAtom = rootAtom->FindDataChild(SFourCC('f', 'm', 't', ' '));
@@ -51,17 +51,19 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 		pkgHeader.largestPacketSize = 0;
 		pkgHeader.longestFrameReadahead = 0;
 
+		lwmAudioCommonInfo aci;
+		aci.numAudioStreams = 1;
+		aci.sampleRate = wavFormat.sampleRate;
+
 		lwmAudioStreamInfo asi;
-		asi.audioReadAhead = 0;
-		asi.sampleRate = wavFormat.sampleRate;
 		asi.speakerLayout = lwmSPEAKERLAYOUT_Unknown;
 		if(wavFormat.numChannels == 1)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Mono;
 		if(wavFormat.numChannels == 2)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Stereo_LR;
-		asi.startTimeSamples = 128;
 
 		lwmWritePlanToFile(pkgHeader, outFile);
+		lwmWritePlanToFile(aci, outFile);
 		lwmWritePlanToFile(asi, outFile);
 	}
 
@@ -74,7 +76,8 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 		CELTEncoder *encoder = celt_encoder_create_custom(mode, wavFormat.numChannels, &errorCode);
 		if(encoder)
 		{
-			celt_encoder_ctl(encoder, CELT_SET_VBR(1));
+			int vbrFlag = (vbr ? 0 : 1);
+			celt_encoder_ctl(encoder, CELT_SET_VBR(vbrFlag));
 			celt_encoder_ctl(encoder, CELT_SET_BITRATE(bitsPerSecond));
 
 			inFile->Seek(dataAtom->FileOffset(), lwmOSFile::SM_Start);
@@ -147,6 +150,7 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 				{
 					lwmPacketHeader pktHeader;
 					lwmPacketHeaderFull pktHeaderFull;
+					pktHeaderFull.streamIndex = 0;
 					pktHeaderFull.packetSize = static_cast<lwmUInt32>(numEncoded);
 					pktHeader.packetTypeAndFlags = lwmEPT_Audio_Frame;
 
@@ -180,6 +184,7 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 
 						lwmPacketHeader syncPacket;
 						lwmPacketHeaderFull syncPacketFull;
+						syncPacketFull.streamIndex = 0;
 						syncPacketFull.packetSize = lwmPlanHandler<lwmAudioSynchronizationPoint>::SIZE;
 						syncPacket.packetTypeAndFlags = lwmEPT_Audio_Synchronization;
 

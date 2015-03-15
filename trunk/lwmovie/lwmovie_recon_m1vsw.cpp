@@ -47,18 +47,18 @@ lwmovie::lwmCM1VSoftwareReconstructor::~lwmCM1VSoftwareReconstructor()
 {
 	this->WaitForFinish();
 	if(m_mblocks)
-		m_alloc->freeFunc(m_alloc, m_mblocks);
+		m_alloc->Free(m_mblocks);
 	if(m_blocks)
-		m_alloc->freeFunc(m_alloc, m_blocks);
+		m_alloc->Free(m_blocks);
 	if(m_dctBlocks)
-		m_alloc->freeFunc(m_alloc, m_dctBlocks);
+		m_alloc->Free(m_dctBlocks);
 	if(m_rowCommitCounts)
-		m_alloc->freeFunc(m_alloc, m_rowCommitCounts);
+		m_alloc->Free(m_rowCommitCounts);
 	if(m_workRowUsers)
-		m_alloc->freeFunc(m_alloc, m_workRowUsers);
+		m_alloc->Free(m_workRowUsers);
 #ifdef LWMOVIE_PROFILE
 	if(m_workRowProfileTags)
-		m_alloc->freeFunc(m_alloc, m_workRowProfileTags);
+		m_alloc->Free(m_workRowProfileTags);
 #endif
 }
 
@@ -66,8 +66,8 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 {
 	lwmUInt32 width, height;
 
-	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Width, &width);
-	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Height, &height);
+	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &width);
+	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &height);
 
 	lwmUInt32 mbWidth = (width + 15) / 16;
 	lwmUInt32 mbHeight = (height + 15) / 16;
@@ -84,11 +84,11 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 
 	if(m_useRowJobs)
 	{
-		m_mblocks = static_cast<lwmReconMBlock*>(m_alloc->allocFunc(m_alloc, sizeof(lwmReconMBlock) * numMB));
-		m_blocks = static_cast<lwmBlockInfo*>(m_alloc->allocFunc(m_alloc, sizeof(lwmBlockInfo) * numMB * 6));
-		m_dctBlocks = static_cast<lwmDCTBLOCK*>(m_alloc->allocFunc(m_alloc, sizeof(lwmDCTBLOCK) * numMB * 6));
-		m_rowCommitCounts = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
-		m_workRowUsers = static_cast<lwmAtomicInt*>(m_alloc->allocFunc(m_alloc, mbHeight * sizeof(lwmAtomicInt)));
+		m_mblocks = m_alloc->NAlloc<lwmReconMBlock>(numMB);
+		m_blocks = m_alloc->NAlloc<lwmBlockInfo>(numMB * 6);
+		m_dctBlocks = m_alloc->NAlloc<lwmDCTBLOCK>(numMB * 6);
+		m_rowCommitCounts = m_alloc->NAlloc<lwmAtomicInt>(mbHeight);
+		m_workRowUsers = m_alloc->NAlloc<lwmAtomicInt>(mbHeight);
 	}
 
 #ifdef LWMOVIE_PROFILE
@@ -340,7 +340,7 @@ lwmovie::lwmIM1VBlockCursor *lwmovie::lwmCM1VSoftwareReconstructor::CreateBlockC
 {
 	if(!m_useRowJobs)
 	{
-		lwmCM1VSelfContainedBlockCursor *blockCursor = static_cast<lwmCM1VSelfContainedBlockCursor*>(m_alloc->allocFunc(m_alloc, sizeof(lwmCM1VSelfContainedBlockCursor)));
+		lwmCM1VSelfContainedBlockCursor *blockCursor = m_alloc->NAlloc<lwmCM1VSelfContainedBlockCursor>(1);
 		if(blockCursor)
 		{
 			new (blockCursor) lwmCM1VSelfContainedBlockCursor(this);
@@ -350,7 +350,7 @@ lwmovie::lwmIM1VBlockCursor *lwmovie::lwmCM1VSoftwareReconstructor::CreateBlockC
 			return NULL;
 	}
 
-	lwmCM1VGridBlockCursor *blockCursor = static_cast<lwmCM1VGridBlockCursor*>(m_alloc->allocFunc(m_alloc, sizeof(lwmCM1VGridBlockCursor)));
+	lwmCM1VGridBlockCursor *blockCursor = m_alloc->NAlloc<lwmCM1VGridBlockCursor>(1);
 	if(blockCursor)
 	{
 		new (blockCursor) lwmCM1VGridBlockCursor(m_mblocks, m_blocks, m_dctBlocks);
@@ -386,7 +386,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Destroy()
 	lwmSAllocator *alloc = m_alloc;
 	lwmCM1VSoftwareReconstructor *self = this;
 	self->~lwmCM1VSoftwareReconstructor();
-	alloc->freeFunc(alloc, self);
+	alloc->Free(self);
 }
 
 lwmUInt32 lwmovie::lwmCM1VSoftwareReconstructor::GetWorkFrameIndex() const

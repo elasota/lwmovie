@@ -301,7 +301,7 @@ lwmovie::lwmVidStream::~lwmVidStream()
 	if(m_stBlockCursor)
 	{
 		m_stBlockCursor->~lwmIM1VBlockCursor();
-		m_alloc->freeFunc(m_alloc, m_stBlockCursor);
+		m_alloc->Free(m_stBlockCursor);
 	}
 }
 
@@ -358,14 +358,14 @@ void lwmovie::lwmVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 pac
 	if(!memBuf)
 	{
 		pooled = false;
-		memBuf = m_alloc->allocFunc(m_alloc, stackNodeSize);
+		memBuf = m_alloc->NAlloc<lwmUInt8>(stackNodeSize);
 	}
 	
 	if(memBuf == NULL)
 	{
 		m_stDeslicerJob.Digest(&m_sequence, blockCursor, &m_picture, bytes, packetSize, recon);
 		blockCursor->~lwmIM1VBlockCursor();
-		m_alloc->freeFunc(m_alloc, blockCursor);
+		m_alloc->Free(blockCursor);
 		return;
 	}
 
@@ -405,7 +405,7 @@ void lwmovie::lwmVidStream::DestroyDeslicerJobs()
 		if(!jobNode->m_memPooled)
 		{
 			jobNode->~SDeslicerJobStackNode();
-			m_alloc->freeFunc(m_alloc, jobNode);
+			m_alloc->Free(jobNode);
 		}
 		else
 			jobNode->~SDeslicerJobStackNode();
@@ -538,8 +538,8 @@ void lwmovie::lwmVidStream::SDeslicerMemoryPool::Reset(lwmSAllocator *alloc)
 	if(nextCapacity > memCapacity)
 	{
 		if(memBytes)
-			alloc->freeFunc(alloc, memBytes);
-		memBytes = alloc->allocFunc(alloc, nextCapacity);
+			alloc->Free(memBytes);
+		memBytes = alloc->NAlloc<lwmUInt8>(nextCapacity);
 		if(!memBytes)
 			memCapacity = 0;
 		else
@@ -553,7 +553,7 @@ void lwmovie::lwmVidStream::SDeslicerMemoryPool::Reset(lwmSAllocator *alloc)
 void lwmovie::lwmVidStream::SDeslicerMemoryPool::Destroy(lwmSAllocator *alloc)
 {
 	if(memBytes)
-		alloc->freeFunc(alloc, memBytes);
+		alloc->Free(memBytes);
 }
 
 void lwmovie::lwmVidStream::FlushProfileTags(lwmCProfileTagSet *tagSet)

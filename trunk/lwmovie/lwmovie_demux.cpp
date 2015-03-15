@@ -52,7 +52,8 @@ static void lwmPassThroughJoin(void *opaque)
 enum lwmDemuxState
 {
 	lwmDEMUX_MovieHeader,
-	lwmDEMUX_AudioHeader,
+	lwmDEMUX_AudioCommonHeader,
+	lwmDEMUX_AudioStreamHeader,
 	lwmDEMUX_VideoHeader,
 	lwmDEMUX_InitDecoding,
 	lwmDEMUX_PacketHeader,
@@ -68,20 +69,23 @@ struct lwmMovieState
 {
 	lwmMovieHeader movieInfo;
 	lwmVideoStreamInfo videoInfo;
-	lwmAudioStreamInfo audioInfo;
+	lwmAudioCommonInfo audioCommonInfo;
+	lwmAudioStreamInfo *audioStreamInfos;
 	lwmPacketHeader packetInfo;
 
 	lwmUInt8 pkgHeaderBytes[lwmPlanHandler<lwmMovieHeader>::SIZE];
 	lwmUInt8 videoInfoBytes[lwmPlanHandler<lwmVideoStreamInfo>::SIZE];
-	lwmUInt8 audioInfoBytes[lwmPlanHandler<lwmAudioStreamInfo>::SIZE];
+	lwmUInt8 audioCommonInfoBytes[lwmPlanHandler<lwmAudioCommonInfo>::SIZE];
+	lwmUInt8 audioStreamInfoBytes[lwmPlanHandler<lwmAudioStreamInfo>::SIZE];
 	lwmUInt8 packetHeaderBytes[lwmPlanHandler<lwmPacketHeader>::SIZE];
 	lwmUInt8 packetHeaderFullBytes[lwmPlanHandler<lwmPacketHeaderFull>::SIZE];
 	lwmUInt8 packetHeaderCompactBytes[lwmPlanHandler<lwmPacketHeaderCompact>::SIZE];
 
 	lwmUInt8 *packetDataBytesEscaped;
 	lwmUInt8 *packetDataBytes;
-
 	lwmUInt32 packetSize;
+	lwmUInt8 packetStreamIndex;
+
 	lwmFillableBuffer headerFillable;
 	lwmFillableBuffer videoFillable;
 	lwmFillableBuffer audioFillable;
@@ -92,67 +96,66 @@ struct lwmMovieState
 	lwmFillableBuffer packetDataFillable;
 
 	lwmDemuxState demuxState;
+	lwmUInt32 numParsedAudioHeaders;
 
 	lwmSAllocator *alloc;
 	lwmUInt32 userFlags;
 
 	bool isAudioSynchronized;
 	bool needVideoStreamParameters;
-	bool needAudioStreamParameters;
+	//bool needAudioStreamParameters;
 
 	lwmUInt32 streamSyncPeriods[lwmSTREAMTYPE_Count];
 
 	lwmSWorkNotifier *videoDigestWorkNotifier;
 	lwmIVideoReconstructor *videoReconstructor;
 	lwmovie::lwmVidStream *m1vDecoder;
-	lwmovie::lwmCMP2Decoder *mp2Decoder;
-	lwmovie::lwmCCELTDecoder *celtDecoder;
-	lwmovie::lwmCADPCMDecoder *adpcmDecoder;
+	lwmovie::lwmCAudioCodec **audioDecoders;
 
 	lwmMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
 	void DesyncAudio();
 
-	lwmCAudioBuffer *GetAudioBuffer() const;
+	lwmCAudioBuffer *GetAudioBuffer(lwmLargeUInt audioStreamIndex) const;
 };
 
 lwmMovieState::lwmMovieState(lwmSAllocator *pAlloc, lwmUInt32 pUserFlags)
 	: demuxState(lwmDEMUX_MovieHeader)
+	, numParsedAudioHeaders(0)
 	, packetDataBytesEscaped(NULL)
 	, packetDataBytes(NULL)
 	, userFlags(pUserFlags)
 	, videoDigestWorkNotifier(NULL)
 	, alloc(pAlloc)
-	, mp2Decoder(NULL)
 	, m1vDecoder(NULL)
-	, celtDecoder(NULL)
-	, adpcmDecoder(NULL)
+	, audioDecoders(NULL)
+	, audioStreamInfos(NULL)
 	, isAudioSynchronized(false)
 	, needVideoStreamParameters(false)
-	, needAudioStreamParameters(false)
+	//, needAudioStreamParameters(false)
 {
 	this->headerFillable.Init(this->pkgHeaderBytes);
 	this->videoFillable.Init(this->videoInfoBytes);
-	this->audioFillable.Init(this->audioInfoBytes);
+	this->audioFillable.Init(this->audioCommonInfoBytes);
 }
 
 void lwmMovieState::DesyncAudio()
 {
 	this->isAudioSynchronized = false;
-	if(lwmCAudioBuffer *audioBuffer = this->GetAudioBuffer())
-		audioBuffer->ClearAll();
+	if(movieInfo.audioStreamType != lwmAST_None)
+		for(lwmFastUInt8 i=0;i<audioCommonInfo.numAudioStreams;i++)
+			if(lwmCAudioBuffer *audioBuffer = this->GetAudioBuffer(i))
+				audioBuffer->ClearAll();
 }
 
-lwmCAudioBuffer *lwmMovieState::GetAudioBuffer() const
+lwmCAudioBuffer *lwmMovieState::GetAudioBuffer(lwmLargeUInt streamIndex) const
 {
-	if(this->mp2Decoder)
-		return this->mp2Decoder->GetAudioBuffer();
-	if(this->celtDecoder)
-		return this->celtDecoder->GetAudioBuffer();
-	if(this->adpcmDecoder)
-		return this->adpcmDecoder->GetAudioBuffer();
+	if(this->audioDecoders && streamIndex < this->audioCommonInfo.numAudioStreams)
+	{
+		if(lwmovie::lwmCAudioCodec *codec = this->audioDecoders[streamIndex])
+			return codec->GetAudioBuffer();
+	}
 	return NULL;
 }
-
 
 static void UnescapePacket(const void *inBuffer, void *outBuffer, lwmUInt32 inSize, lwmUInt32 *pOutSize)
 {
@@ -205,8 +208,8 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 
 	if(movieState->needVideoStreamParameters)
 		expectVSP = true;
-	else if(movieState->needAudioStreamParameters)
-		expectASP = true;
+	//else if(movieState->needAudioStreamParameters)
+	//	expectASP = true;
 
 	if((expectVSP && packetType != lwmEPT_Video_StreamParameters) || (expectASP && packetType != lwmEPT_Audio_StreamParameters))
 	{
@@ -284,18 +287,15 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 		break;
 	case lwmEPT_Audio_Frame:
 		{
-			if(movieState->movieInfo.audioStreamType == lwmAST_None)
+			if(movieState->movieInfo.audioStreamType == lwmAST_None || movieState->packetStreamIndex >= movieState->audioCommonInfo.numAudioStreams)
 				*outResult = lwmDIGEST_Error;
 			else
 			{
 				bool overrun = false;
 				bool mustDesync = false;
+				lwmUInt8 streamIndex = movieState->packetStreamIndex;
 
-				if(
-					(movieState->mp2Decoder && !movieState->mp2Decoder->DigestDataPacket(packetData, packetSize, overrun))
-					|| (movieState->celtDecoder && !movieState->celtDecoder->DigestDataPacket(packetData, packetSize, overrun))
-					|| (movieState->adpcmDecoder && !movieState->adpcmDecoder->DigestDataPacket(packetData, packetSize, overrun))
-					)
+				if(movieState->audioDecoders && movieState->audioDecoders[streamIndex] && !movieState->audioDecoders[streamIndex]->DigestDataPacket(packetData, packetSize, overrun))
 				{
 					*outResult = lwmDIGEST_Error;
 					mustDesync = true;
@@ -319,24 +319,44 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 			}
 			else
 			{
-				lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer();
-
 				lwmAudioSynchronizationPoint syncPoint;
 				if(packetSize == lwmPlanHandler<lwmAudioSynchronizationPoint>::SIZE && 
 					lwmPlanHandler<lwmAudioSynchronizationPoint>::Read(syncPoint, packetData))
 				{
+					lwmLargeUInt numAudioStreams = movieState->audioCommonInfo.numAudioStreams;
+
 					if(movieState->isAudioSynchronized)
 					{
 						lwmUInt32 oldPeriod = movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio];
-						if(syncPoint.audioPeriod < oldPeriod || syncPoint.audioPeriod - oldPeriod != audioBuffer->GetNumUncommittedSamples())
+						bool needSoftDesync = false;
+
+						for(lwmLargeUInt i=0;i<numAudioStreams;i++)
+						{
+							lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(i);
+							if(audioBuffer && (syncPoint.audioPeriod < oldPeriod || syncPoint.audioPeriod - oldPeriod != audioBuffer->GetNumUncommittedSamples()))
+							{
+								needSoftDesync = true;
+								break;
+							}
+						}
+
+						if(needSoftDesync)
 						{
 							// Desynchronized, but new samples are still OK
 							movieState->isAudioSynchronized = false;
-							audioBuffer->ClearCommittedSamples();
+							for(lwmLargeUInt i=0;i<numAudioStreams;i++)
+							{
+								if(lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(i))
+									audioBuffer->ClearCommittedSamples();
+							}
 						}
 					}
-
-					audioBuffer->CommitSamples();
+					
+					for(lwmLargeUInt i=0;i<numAudioStreams;i++)
+					{
+						if(lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(i))
+							audioBuffer->CommitSamples();
+					}
 					movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio] = syncPoint.audioPeriod;
 					*outResult = lwmDIGEST_Worked;
 				}
@@ -355,6 +375,41 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 	};
 }
 
+class lwmCAudioCodecRegistry
+{
+private:
+	template<class T>
+	static lwmovie::lwmCAudioCodec *CreateAudioCodecTpl(lwmSAllocator *alloc, const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo)
+	{
+		T *codec = alloc->NAlloc<T>(1);
+		if(!codec)
+			return NULL;
+		new (codec) T(alloc);
+		if(!codec->Init(movieHeader, audioCommonInfo, audioStreamInfo))
+		{
+			codec->~T();
+			alloc->Free(codec);
+			return NULL;
+		}
+		return codec;
+	}
+	
+public:
+	static lwmovie::lwmCAudioCodec *CreateAudioCodec(lwmEAudioStreamType codecType, lwmSAllocator *alloc, const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo)
+	{
+		switch(codecType)
+		{
+		case lwmAST_MP2:
+			return CreateAudioCodecTpl<lwmovie::lwmCMP2Decoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
+		case lwmAST_CELT_0_11_1:
+			return CreateAudioCodecTpl<lwmovie::lwmCCELTDecoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
+		case lwmAST_ADPCM:
+			return CreateAudioCodecTpl<lwmovie::lwmCADPCMDecoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
+		};
+		return false;
+	}
+};
+
 static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 {
 	switch(movieState->movieInfo.videoStreamType)
@@ -368,7 +423,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 				goto cleanup;
 			if(movieState->videoInfo.videoHeight > 4095)
 				goto cleanup;
-			movieState->m1vDecoder = static_cast<lwmovie::lwmVidStream*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmVidStream)));
+			movieState->m1vDecoder = alloc->NAlloc<lwmovie::lwmVidStream>(1);
 			if(!movieState->m1vDecoder)
 				goto cleanup;
 			new (movieState->m1vDecoder) lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
@@ -385,28 +440,11 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 		// TODO: Test
 		break;
 	case lwmAST_MP2:
-		movieState->mp2Decoder = static_cast<lwmovie::lwmCMP2Decoder*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCMP2Decoder)));
-		if(!movieState->mp2Decoder)
-			goto cleanup;
-		new (movieState->mp2Decoder) lwmovie::lwmCMP2Decoder(alloc);
-		if(!movieState->mp2Decoder->Init(&movieState->audioInfo))
-			goto cleanup;
-		break;
 	case lwmAST_CELT_0_11_1:
-		movieState->celtDecoder = static_cast<lwmovie::lwmCCELTDecoder*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCCELTDecoder)));
-		if(!movieState->celtDecoder)
-			goto cleanup;
-		new (movieState->celtDecoder) lwmovie::lwmCCELTDecoder(alloc);
-		if(!movieState->celtDecoder->Init(&movieState->audioInfo))
-			goto cleanup;
-		break;
 	case lwmAST_ADPCM:
-		movieState->adpcmDecoder = static_cast<lwmovie::lwmCADPCMDecoder*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCADPCMDecoder)));
-		if(!movieState->adpcmDecoder)
-			goto cleanup;
-		new (movieState->adpcmDecoder) lwmovie::lwmCADPCMDecoder(alloc);
-		if(!movieState->adpcmDecoder->Init(&movieState->audioInfo))
-			goto cleanup;
+		movieState->audioDecoders = alloc->NAlloc<lwmovie::lwmCAudioCodec*>(movieState->audioCommonInfo.numAudioStreams);
+		for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)
+			movieState->audioDecoders[i] = NULL;
 		break;
 	default:
 		goto cleanup;
@@ -422,7 +460,7 @@ cleanup:
 
 LWMOVIE_API_LINK lwmMovieState *lwmCreateMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags)
 {
-	lwmMovieState *movieState = static_cast<lwmMovieState *>(alloc->allocFunc(alloc, sizeof(lwmMovieState)));
+	lwmMovieState *movieState = alloc->NAlloc<lwmMovieState>(1);
 
 	if(!movieState)
 		return NULL;
@@ -446,6 +484,7 @@ repeatFeed:;
 				if(lwmPlanHandler<lwmMovieHeader>::Read(movieState->movieInfo, movieState->pkgHeaderBytes)
 					&& movieState->movieInfo.largestPacketSize > 0)
 				{
+					// Determine next state
 					if(movieState->movieInfo.videoStreamType != lwmVST_None)
 					{
 						movieState->demuxState = lwmDEMUX_VideoHeader;
@@ -453,7 +492,7 @@ repeatFeed:;
 					}
 					else if(movieState->movieInfo.audioStreamType != lwmAST_None)
 					{
-						movieState->demuxState = lwmDEMUX_AudioHeader;
+						movieState->demuxState = lwmDEMUX_AudioCommonHeader;
 						goto repeatFeed;
 					}
 					else
@@ -476,7 +515,7 @@ repeatFeed:;
 				{
 					if(movieState->movieInfo.audioStreamType != lwmAST_None)
 					{
-						movieState->demuxState = lwmDEMUX_AudioHeader;
+						movieState->demuxState = lwmDEMUX_AudioCommonHeader;
 						goto repeatFeed;
 					}
 					else
@@ -491,13 +530,44 @@ repeatFeed:;
 			return;
 		}
 		break;
-	case lwmDEMUX_AudioHeader:
+	case lwmDEMUX_AudioCommonHeader:
 		{
 			if(movieState->audioFillable.FeedData(&bytes, &bytesAvailable))
 			{
-				if(lwmPlanHandler<lwmAudioStreamInfo>::Read(movieState->audioInfo, movieState->audioInfoBytes))
+				if(lwmPlanHandler<lwmAudioCommonInfo>::Read(movieState->audioCommonInfo, movieState->audioCommonInfoBytes))
 				{
-					movieState->demuxState = lwmDEMUX_InitDecoding;
+					movieState->audioStreamInfos = movieState->alloc->NAlloc<lwmAudioStreamInfo>(movieState->audioCommonInfo.numAudioStreams);
+
+					if(movieState->audioStreamInfos)
+					{
+						movieState->audioFillable.Init(movieState->audioStreamInfoBytes);
+						movieState->numParsedAudioHeaders = 0;
+						movieState->demuxState = lwmDEMUX_AudioStreamHeader;
+					}
+					else
+						movieState->demuxState = lwmDEMUX_FatalError;
+				}
+				else
+					movieState->demuxState = lwmDEMUX_FatalError;
+			}
+
+			*outResult = lwmDIGEST_Nothing;
+			*outBytesDigested = numBytes - bytesAvailable;
+			return;
+		}
+	case lwmDEMUX_AudioStreamHeader:
+		{
+			if(movieState->audioFillable.FeedData(&bytes, &bytesAvailable))
+			{
+				if(lwmPlanHandler<lwmAudioStreamInfo>::Read(movieState->audioStreamInfos[movieState->numParsedAudioHeaders], movieState->audioStreamInfoBytes))
+				{
+					if((++movieState->numParsedAudioHeaders) == movieState->audioCommonInfo.numAudioStreams)
+						movieState->demuxState = lwmDEMUX_InitDecoding;
+					else
+					{
+						movieState->audioFillable.Init(movieState->audioStreamInfoBytes);
+						movieState->demuxState = lwmDEMUX_AudioStreamHeader;
+					}
 					goto repeatFeed;
 				}
 				else
@@ -511,8 +581,8 @@ repeatFeed:;
 		break;
 	case lwmDEMUX_InitDecoding:
 		{
-			movieState->packetDataBytesEscaped = static_cast<lwmUInt8*>(movieState->alloc->allocFunc(movieState->alloc, movieState->movieInfo.largestPacketSize));
-			movieState->packetDataBytes = static_cast<lwmUInt8*>(movieState->alloc->allocFunc(movieState->alloc, movieState->movieInfo.largestPacketSize));
+			movieState->packetDataBytesEscaped = movieState->alloc->NAlloc<lwmUInt8>(movieState->movieInfo.largestPacketSize);
+			movieState->packetDataBytes = movieState->alloc->NAlloc<lwmUInt8>(movieState->movieInfo.largestPacketSize);
 			movieState->packetHeaderFillable.Init(movieState->packetHeaderBytes);
 
 			if(movieState->packetDataBytesEscaped == NULL || movieState->packetDataBytes == NULL)
@@ -590,6 +660,7 @@ repeatFeed:;
 					(compactHeader.packetSize & 0xfffe) != 0)
 				{
 					movieState->packetSize = compactHeader.packetSize >> 1;
+					movieState->packetStreamIndex = 0;
 					movieState->demuxState = lwmDEMUX_PacketStart;
 					goto repeatFeed;
 				}
@@ -609,6 +680,7 @@ repeatFeed:;
 				if(lwmPlanHandler<lwmPacketHeaderFull>::Read(fullHeader, movieState->packetHeaderFullBytes))
 				{
 					movieState->packetSize = fullHeader.packetSize;
+					movieState->packetStreamIndex = fullHeader.streamIndex;
 					movieState->demuxState = lwmDEMUX_PacketStart;
 					goto repeatFeed;
 				}
@@ -644,13 +716,61 @@ repeatFeed:;
 	};
 }
 
+LWMOVIE_API_LINK lwmUInt8 lwmMovieState_GetAudioStreamCount(const lwmMovieState *movieState)
+{
+	if(movieState->movieInfo.audioStreamType == lwmAST_None)
+		return 0;
+	return movieState->audioCommonInfo.numAudioStreams;
+}
 
-LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 streamParameterU32, lwmUInt32 *outValue)
+LWMOVIE_API_LINK int lwmMovieState_SetAudioStreamEnabled(struct lwmMovieState *movieState, lwmUInt8 streamIndex, int enable)
+{
+	if(movieState->movieInfo.audioStreamType == lwmAST_None)
+		return 0;
+	if(streamIndex >= movieState->audioCommonInfo.numAudioStreams)
+		return 0;
+
+	if(enable != 0)
+	{
+		if(movieState->audioDecoders[streamIndex] == NULL)
+		{
+			lwmovie::lwmCAudioCodec *codec = lwmCAudioCodecRegistry::CreateAudioCodec(movieState->movieInfo.audioStreamType, movieState->alloc, &movieState->movieInfo, &movieState->audioCommonInfo, movieState->audioStreamInfos + streamIndex);
+			if(codec)
+			{
+				movieState->DesyncAudio();
+				movieState->audioDecoders[streamIndex] = codec;
+				return 1;
+			}
+			else
+				return 0;
+		}
+		else
+			return 1;	// Codec already enabled
+	}
+	else
+	{
+		// Disable
+		if(movieState->audioDecoders[streamIndex] != NULL)
+		{
+			movieState->audioDecoders[streamIndex]->~lwmCAudioCodec();
+			movieState->alloc->Free(movieState->audioDecoders[streamIndex]);
+			movieState->audioDecoders[streamIndex] = NULL;
+
+			// Desyncing audio isn't necessary
+		}
+		return 1;
+	}
+}
+
+LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 *outValue)
 {
 	switch(streamType)
 	{
 	case lwmSTREAMTYPE_Video:
 		{
+			if(streamIndex != 0)
+				return 0;
+
 			switch(streamParameterU32)
 			{
 			case lwmSTREAMPARAM_U32_Width:
@@ -689,14 +809,16 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 		{
 			if(movieState->movieInfo.audioStreamType == lwmAST_None)
 				return 0;
+			if(streamIndex >= movieState->audioCommonInfo.numAudioStreams)
+				return 0;
 
 			switch(streamParameterU32)
 			{
 			case lwmSTREAMPARAM_U32_SampleRate:
-				*outValue = movieState->audioInfo.sampleRate;
+				*outValue = movieState->audioCommonInfo.sampleRate;
 				return 1;
 			case lwmSTREAMPARAM_U32_SpeakerLayout:
-				*outValue = movieState->audioInfo.speakerLayout;
+				*outValue = movieState->audioStreamInfos[streamIndex].speakerLayout;
 				return 1;
 			default:
 				return 0;
@@ -714,7 +836,7 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwm
 	case lwmRC_MPEG1Video:
 		{
 			bool useRowThreading = ((flags & lwmUSERFLAG_ThreadedReconstructor) != 0);
-			lwmovie::lwmCM1VSoftwareReconstructor *recon = static_cast<lwmovie::lwmCM1VSoftwareReconstructor*>(alloc->allocFunc(alloc, sizeof(lwmovie::lwmCM1VSoftwareReconstructor)));
+			lwmovie::lwmCM1VSoftwareReconstructor *recon = alloc->NAlloc<lwmovie::lwmCM1VSoftwareReconstructor>(1);
 			if(!recon)
 				return NULL;
 			new (recon) lwmovie::lwmCM1VSoftwareReconstructor();
@@ -752,30 +874,30 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 {
 	lwmSAllocator *alloc = movieState->alloc;
 	if(movieState->packetDataBytesEscaped)
-		alloc->freeFunc(alloc, movieState->packetDataBytesEscaped);
+		alloc->Free(movieState->packetDataBytesEscaped);
 	if(movieState->packetDataBytes)
-		alloc->freeFunc(alloc, movieState->packetDataBytes);
+		alloc->Free(movieState->packetDataBytes);
 	if(movieState->m1vDecoder)
 	{
 		movieState->m1vDecoder->~lwmVidStream();
-		alloc->freeFunc(alloc, movieState->m1vDecoder);
+		alloc->Free(movieState->m1vDecoder);
 	}
-	if(movieState->mp2Decoder)
+	if(movieState->audioDecoders)
 	{
-		movieState->mp2Decoder->~lwmCMP2Decoder();
-		alloc->freeFunc(alloc, movieState->mp2Decoder);
+		for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)
+		{
+			lwmovie::lwmCAudioCodec *audioDecoder = movieState->audioDecoders[i];
+			if(audioDecoder)
+			{
+				audioDecoder->~lwmCAudioCodec();
+				alloc->Free(audioDecoder);
+			}
+		}
+		alloc->Free(movieState->audioDecoders);
 	}
-	if(movieState->celtDecoder)
-	{
-		movieState->celtDecoder->~lwmCCELTDecoder();
-		alloc->freeFunc(alloc, movieState->celtDecoder);
-	}
-	if(movieState->adpcmDecoder)
-	{
-		movieState->adpcmDecoder->~lwmCADPCMDecoder();
-		alloc->freeFunc(alloc, movieState->adpcmDecoder);
-	}
-	alloc->freeFunc(alloc, movieState);
+	if(movieState->audioStreamInfos)
+		alloc->Free(movieState->audioStreamInfos);
+	alloc->Free(movieState);
 }
 
 
@@ -817,7 +939,7 @@ LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movie
 	lwmUInt64 timeCalc = static_cast<lwmUInt64>(movieState->streamSyncPeriods[lwmSTREAMTYPE_Video] - 1) * movieState->videoInfo.periodsPerSecondDenom;
 	if(timeCalc > static_cast<lwmUInt32>(0xffffffff))
 		return 0;	// Too big
-	timeCalc *= movieState->audioInfo.sampleRate;
+	timeCalc *= movieState->audioCommonInfo.sampleRate;
 	timeCalc /= movieState->videoInfo.periodsPerSecondNum;
 
 	if(timeCalc > static_cast<lwmUInt32>(0xffffffff))
@@ -825,11 +947,37 @@ LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movie
 
 	lwmUInt32 audioTime = static_cast<lwmUInt32>(timeCalc);
 
-	lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer();
-	// If decoded samples are below the 0 point, trim them.  This is normal due to algorithmic start delay.
-	if(audioBuffer->GetNumCommittedSamples() > movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio])
-		audioBuffer->SkipSamples(audioBuffer->GetNumCommittedSamples() - movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio]);
-	lwmUInt32 audioBufferStartPoint = movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio] - audioBuffer->GetNumCommittedSamples();
+	lwmLargeUInt numAudioStreams = movieState->audioCommonInfo.numAudioStreams;
+	lwmCAudioBuffer *firstAudioBuffer = NULL;
+	
+	for(lwmLargeUInt i=0;i<numAudioStreams;i++)
+	{
+		if(movieState->audioDecoders[i])
+		{
+			firstAudioBuffer = movieState->audioDecoders[i]->GetAudioBuffer();
+			break;
+		}
+	}
+
+	// No streams enabled
+	if(!firstAudioBuffer)
+		return 0;
+
+	lwmUInt32 numCommittedSamples = firstAudioBuffer->GetNumCommittedSamples();
+	for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)
+	{
+		lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(i);
+		if(!audioBuffer)
+			continue;
+
+		if(audioBuffer->GetNumCommittedSamples() != numCommittedSamples)
+			return 0;	// TODO: Assert.  This should never happen, audio sync packets with inconsistent commit counts should desync.
+
+		// If decoded samples are below the 0 point, trim them.  This is normal due to algorithmic start delay.
+		if(numCommittedSamples > movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio])
+			audioBuffer->SkipSamples(numCommittedSamples - movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio]);
+	}
+	lwmUInt32 audioBufferStartPoint = movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio] - numCommittedSamples;
 
 	if(audioBufferStartPoint > audioTime)
 		return 0;	// Audio starts in the future
@@ -837,19 +985,31 @@ LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movie
 		return 0;	// Audio ends in the past
 
 	// Audio starts immediately or in the past, trim any preceding samples and complete
-	audioBuffer->SkipSamples(audioTime - audioBufferStartPoint);
+	if(audioTime != audioBufferStartPoint)
+	{
+		for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)
+		{
+			if(lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(i))
+				audioBuffer->SkipSamples(audioTime - audioBufferStartPoint);
+		}
+	}
 	movieState->isAudioSynchronized = true;
 	return 1;
 }
 
-LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(lwmMovieState *movieState, void *samples, lwmUInt32 numSamples)
+LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(lwmMovieState *movieState, lwmUInt8 streamIndex, void *samples, lwmUInt32 numSamples)
 {
 	if(!movieState->isAudioSynchronized)
 		return 0;
 	if(movieState->movieInfo.audioStreamType == lwmAST_None)
 		return 0;
+	if(streamIndex >= movieState->audioCommonInfo.numAudioStreams)
+		return 0;
+	lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(streamIndex);
+	if(!audioBuffer)
+		return 0;
 
-	return movieState->GetAudioBuffer()->ReadCommittedSamples(samples, numSamples);
+	return audioBuffer->ReadCommittedSamples(samples, numSamples);
 }
 
 LWMOVIE_API_LINK void lwmMovieState_NotifyAudioPlaybackUnderrun(lwmMovieState *movieState)

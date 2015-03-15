@@ -55,17 +55,19 @@ void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile)
 		pkgHeader.largestPacketSize = 0;
 		pkgHeader.longestFrameReadahead = 0;
 
+		lwmAudioCommonInfo aci;
+		aci.sampleRate = wavFormat.sampleRate;
+		aci.numAudioStreams = 1;
+
 		lwmAudioStreamInfo asi;
-		asi.audioReadAhead = 0;
-		asi.sampleRate = wavFormat.sampleRate;
 		asi.speakerLayout = lwmSPEAKERLAYOUT_Unknown;
 		if(wavFormat.numChannels == 1)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Mono;
 		if(wavFormat.numChannels == 2)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Stereo_LR;
-		asi.startTimeSamples = 0;
 
 		lwmWritePlanToFile(pkgHeader, outFile);
+		lwmWritePlanToFile(aci, outFile);
 		lwmWritePlanToFile(asi, outFile);
 	}
 

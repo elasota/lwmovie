@@ -126,6 +126,7 @@ static void ConvertPacket(lwmEPacketType packetType, bool includeCode, videoTagL
 	lwmPacketHeader packetHeader;
 	lwmPacketHeaderFull packetHeaderFull;
 	packetHeader.packetTypeAndFlags = packetType;
+	packetHeaderFull.streamIndex = 0;
 	packetHeaderFull.packetSize = static_cast<lwmUInt32>(scanLink->packetSize - 4);
 	if(includeCode)
 		packetHeaderFull.packetSize += 1;
@@ -170,6 +171,7 @@ void EmitFrameSync(lwmOSFile *outFile, lwmUInt32 frameNumber, bool isRandomAcces
 	lwmPacketHeader packetHeader;
 	lwmPacketHeaderFull packetHeaderFull;
 	packetHeaderFull.packetSize = sizeof(packetData);
+	packetHeaderFull.streamIndex = 0;
 	packetHeader.packetTypeAndFlags = lwmEPT_Video_Synchronization;
 
 	lwmWritePlanToFile(packetHeader, outFile);
