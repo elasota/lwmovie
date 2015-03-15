@@ -30,6 +30,22 @@ struct lwmSAllocator
 {
 	void *(*allocFunc)(struct lwmSAllocator *alloc, lwmLargeUInt sz);
 	void (*freeFunc)(struct lwmSAllocator *alloc, void *ptr);
+
+#ifdef __cplusplus
+	template<class T>
+	inline T *NAlloc(lwmLargeUInt count)
+	{
+		lwmLargeUInt liMax = ~static_cast<lwmLargeUInt>(0);
+		if(liMax / sizeof(T) < count)
+			return NULL;
+		return static_cast<T*>(allocFunc(this, sizeof(T) * count));
+	}
+
+	inline void Free(void *ptr)
+	{
+		freeFunc(this, ptr);
+	}
+#endif
 };
 
 struct lwmSWorkNotifier

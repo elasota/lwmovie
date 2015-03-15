@@ -3,18 +3,20 @@
 
 #include "../mp2dec2/lwmovie_layer2_decodestate.hpp"
 #include "lwmovie_audiobuffer.hpp"
+#include "lwmovie_audiocodec.hpp"
 
 struct lwmSAllocator;
 struct lwmAudioStreamInfo;
+struct lwmMovieHeader;
 
 namespace lwmovie
 {
-	class lwmCMP2Decoder
+	class lwmCMP2Decoder : public lwmCAudioCodec
 	{
 	public:
 		explicit lwmCMP2Decoder(lwmSAllocator *alloc);
 		~lwmCMP2Decoder();
-		bool Init(const lwmAudioStreamInfo *audioStreamInfo);
+		bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo);
 		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
 		lwmCAudioBuffer *GetAudioBuffer();
 

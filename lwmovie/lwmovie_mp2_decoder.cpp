@@ -13,7 +13,7 @@ lwmovie::lwmCMP2Decoder::~lwmCMP2Decoder()
 {
 }
 
-bool lwmovie::lwmCMP2Decoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
+bool lwmovie::lwmCMP2Decoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo)
 {
 	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
 		m_numChannels = 1;
@@ -22,7 +22,7 @@ bool lwmovie::lwmCMP2Decoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
 	else
 		return false;	// Unsupported channel layout
 
-	if(!this->m_audioBuffer.Init(m_alloc, audioStreamInfo->audioReadAhead, m_numChannels))
+	if(!this->m_audioBuffer.Init(m_alloc, commonInfo->audioReadAhead, m_numChannels))
 		return false;
 
 	return true;

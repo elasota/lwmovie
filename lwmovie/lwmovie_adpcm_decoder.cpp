@@ -17,10 +17,10 @@ lwmovie::lwmCADPCMDecoder::lwmCADPCMDecoder(lwmSAllocator *alloc)
 lwmovie::lwmCADPCMDecoder::~lwmCADPCMDecoder()
 {
 	if(m_predictors)
-		m_alloc->freeFunc(m_alloc, m_predictors);
+		m_alloc->Free(m_predictors);
 }
 
-bool lwmovie::lwmCADPCMDecoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
+bool lwmovie::lwmCADPCMDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo)
 {
 	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
 		m_numChannels = 1;
@@ -29,10 +29,10 @@ bool lwmovie::lwmCADPCMDecoder::Init(const lwmAudioStreamInfo *audioStreamInfo)
 	else
 		return false;	// Unsupported channel layout
 
-	if(!this->m_audioBuffer.Init(m_alloc, audioStreamInfo->audioReadAhead, m_numChannels))
+	if(!this->m_audioBuffer.Init(m_alloc, commonInfo->audioReadAhead, m_numChannels))
 		return false;
 
-	m_predictors = static_cast<adpcm::SPredictorState*>(m_alloc->allocFunc(m_alloc, sizeof(adpcm::SPredictorState) * m_numChannels));
+	m_predictors = m_alloc->NAlloc<adpcm::SPredictorState>(m_numChannels);
 	if(!m_predictors)
 		return false;
 

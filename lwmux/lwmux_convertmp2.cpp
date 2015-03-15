@@ -4,7 +4,7 @@
 #include "lwmux_osfile.hpp"
 #include "lwmux_escape.hpp"
 
-static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &outIsPadded, bool &outHasChecksum, lwmUInt32 &outFrameSize)
+static bool DecodeMP2Header(lwmAudioCommonInfo &aci, lwmAudioStreamInfo &asi, const void *data, bool &outIsPadded, bool &outHasChecksum, lwmUInt32 &outFrameSize)
 {
 	static const lwmUInt32 MP2_SAMPLERATE[2][3] =
 	{
@@ -50,15 +50,13 @@ static bool DecodeMP2Header(lwmAudioStreamInfo &asi, const void *data, bool &out
 		numChannels = asi.speakerLayout = lwmSPEAKERLAYOUT_Stereo_LR;
 	else
 		numChannels = asi.speakerLayout = lwmSPEAKERLAYOUT_Mono;
-	asi.audioReadAhead = 0;
-	asi.startTimeSamples = 480;
-	asi.sampleRate = MP2_SAMPLERATE[mpegVersion][samplerateIndex];
+	aci.sampleRate = MP2_SAMPLERATE[mpegVersion][samplerateIndex];
 
 	lwmUInt32 bitrateKbps = MP2_BITRATE_KBPS[mpegVersion][bitrateIndex];
 	
 	// 1152 * 1000 / 8
 	// totalBitrate * 1000 * 1152 / sampleRate
-	lwmUInt32 frameBytes = (static_cast<lwmUInt32>(bitrateKbps) * (1000*1152/8) / asi.sampleRate) - 4;
+	lwmUInt32 frameBytes = (static_cast<lwmUInt32>(bitrateKbps) * (1000*1152/8) / aci.sampleRate) - 4;
 	if(padding != 0)
 		frameBytes++;
 	if(protection == 0)
@@ -84,11 +82,12 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 		if(!mpegFile->ReadBytes(frameHeader, 4))
 			break;
 		lwmAudioStreamInfo asi;
+		lwmAudioCommonInfo aci;
 		lwmUInt32 inFrameSize;
 		lwmUInt32 outFrameSize;
 		bool isPadded;
 		bool hasChecksum;
-		if(!DecodeMP2Header(asi, frameHeader, isPadded, hasChecksum, inFrameSize))
+		if(!DecodeMP2Header(aci, asi, frameHeader, isPadded, hasChecksum, inFrameSize))
 		{
 			fprintf(stderr, "FATAL ERROR: MP2 frame decode failed");
 			return;
@@ -102,8 +101,10 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 			pkgHeader.numTOC = 0;
 			pkgHeader.largestPacketSize = 0;
 			pkgHeader.longestFrameReadahead = 0;
+			aci.numAudioStreams = 1;
 
 			lwmWritePlanToFile(pkgHeader, outFile);
+			lwmWritePlanToFile(aci, outFile);
 			lwmWritePlanToFile(asi, outFile);
 			firstFrame = false;
 		}
@@ -116,6 +117,7 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 
 		lwmPacketHeader pktHeader;
 		lwmPacketHeaderFull pktHeaderFull;
+		pktHeaderFull.streamIndex = 0;
 		pktHeaderFull.packetSize = 4 + outFrameSize;
 		pktHeader.packetTypeAndFlags = lwmEPT_Audio_Frame;
 
@@ -165,6 +167,7 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 
 			lwmPacketHeader syncPacket;
 			lwmPacketHeaderFull syncPacketFull;
+			syncPacketFull.streamIndex = 0;
 			syncPacketFull.packetSize = lwmPlanHandler<lwmAudioSynchronizationPoint>::SIZE;
 			syncPacket.packetTypeAndFlags = lwmEPT_Audio_Synchronization;
 

@@ -1,0 +1,5 @@
+lwmux importm1v <input.m1v> <output> - Imports MPEG-1 video and writes an lwmovie video stream.  This does not currently support multiplexed MPEG videos, you must demux the video and convert only the video.
+lwmux importmp2 <input.mp2> <output> - Imports MPEG-1 layer II audio and writes an lwmovie audio stream.  This does not currently support multiplexed MPEG videos.
+lwmux importwav_celt <bits per second> <input.wav> <output> - Imports a mono or stereo PCM WAV, encodes it using CELT, and writes an lwmovie audio stream.
+lwmux importwav_adpcm <input.wav> <output> - Imports a mono or stereo PCM WAV, encodes it to 4-bit ADPCM, and writes an lwmovie audio stream.  Note that lwmovie's ADPCM codec is not compatible with the WAV IMA ADPCM codec, so it requires uncompressed input.
+lwmux finalize <video input> <output> <audio readahead samples> <number of audio streams> [<audio filename> ...] - Finalizes a video, adding hinting information and multiplexing audio in.

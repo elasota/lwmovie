@@ -65,8 +65,8 @@ LWM_DECLARE_PLAN_SENTINEL			(1, lwmMovieHeader, lwmUInt32, lwmVERSION);
 LWM_DECLARE_PLAN_SENTINEL			(2, lwmMovieHeader, lwmUInt8, 0xff);
 LWM_DECLARE_PLAN_ENUM_MEMBER		(3, lwmMovieHeader, lwmEVideoStreamType, lwmVST_Count, lwmUInt8, videoStreamType);
 LWM_DECLARE_PLAN_ENUM_MEMBER		(4, lwmMovieHeader, lwmEAudioStreamType, lwmAST_Count, lwmUInt8, audioStreamType);
-LWM_DECLARE_PLAN_MEMBER				(5, lwmMovieHeader, lwmUInt16, numTOC);
-LWM_DECLARE_PLAN_MEMBER				(6, lwmMovieHeader, lwmUInt32, largestPacketSize);
+LWM_DECLARE_PLAN_MEMBER				(5, lwmMovieHeader, lwmUInt32, largestPacketSize);
+LWM_DECLARE_PLAN_MEMBER				(6, lwmMovieHeader, lwmUInt16, numTOC);
 LWM_DECLARE_PLAN_MEMBER				(7, lwmMovieHeader, lwmUInt32, longestFrameReadahead);
 LWM_DECLARE_PLAN(lwmMovieHeader);
 
@@ -83,19 +83,23 @@ LWM_DECLARE_PLAN_MEMBER_NONZERO(2, lwmVideoStreamInfo, lwmUInt32, periodsPerSeco
 LWM_DECLARE_PLAN_MEMBER_NONZERO(3, lwmVideoStreamInfo, lwmUInt16, periodsPerSecondDenom);
 LWM_DECLARE_PLAN(lwmVideoStreamInfo);
 
+struct lwmAudioCommonInfo
+{
+	lwmUInt32			sampleRate;
+	lwmUInt32			audioReadAhead;
+	lwmUInt8			numAudioStreams;
+};
+LWM_DECLARE_PLAN_MEMBER_NONZERO	(0, lwmAudioCommonInfo, lwmUInt32, sampleRate);
+LWM_DECLARE_PLAN_MEMBER			(1, lwmAudioCommonInfo, lwmUInt32, audioReadAhead);
+LWM_DECLARE_PLAN_MEMBER_NONZERO	(2, lwmAudioCommonInfo, lwmUInt8, numAudioStreams);
+LWM_DECLARE_PLAN(lwmAudioCommonInfo);
+
 
 struct lwmAudioStreamInfo
 {
-
-	lwmUInt32			sampleRate;
 	lwmESpeakerLayout	speakerLayout;
-	lwmUInt32			audioReadAhead;
-	lwmUInt16			startTimeSamples;	// Number of initial samples that should be discarded during playback
 };
-LWM_DECLARE_PLAN_MEMBER_NONZERO	(0, lwmAudioStreamInfo, lwmUInt32, sampleRate);
-LWM_DECLARE_PLAN_ENUM_MEMBER	(1, lwmAudioStreamInfo, lwmESpeakerLayout, lwmSPEAKERLAYOUT_Count, lwmUInt8, speakerLayout);
-LWM_DECLARE_PLAN_MEMBER			(2, lwmAudioStreamInfo, lwmUInt32, audioReadAhead);
-LWM_DECLARE_PLAN_MEMBER			(3, lwmAudioStreamInfo, lwmUInt16, startTimeSamples);
+LWM_DECLARE_PLAN_ENUM_MEMBER	(0, lwmAudioStreamInfo, lwmESpeakerLayout, lwmSPEAKERLAYOUT_Count, lwmUInt8, speakerLayout);
 LWM_DECLARE_PLAN(lwmAudioStreamInfo);
 
 enum lwmEPacketType
@@ -133,8 +137,10 @@ LWM_DECLARE_PLAN(lwmPacketHeader);
 struct lwmPacketHeaderFull
 {
 	lwmUInt32		packetSize;
+	lwmUInt8		streamIndex;
 };
 LWM_DECLARE_PLAN_MEMBER_NONZERO	(0, lwmPacketHeaderFull, lwmUInt32, packetSize);
+LWM_DECLARE_PLAN_MEMBER			(1, lwmPacketHeaderFull, lwmUInt8, streamIndex);
 LWM_DECLARE_PLAN(lwmPacketHeaderFull);
 
 struct lwmPacketHeaderCompact

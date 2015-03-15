@@ -1,20 +1,10 @@
 == Encoding videos for lwmovie ==
-Authoring with lwmovie requires three steps:
-1.) Encode the source video and audio using tools of your choice
-2.) Import the source streams into raw lwmovie streams
-3.) Finalize the video, which combines input streams also adds hinting data necessary to decode the video.
+You should use the provided "lwfe" application to encode your videos.  If you'd prefer more advanced options, please see CommandLineOptions.txt.
 
---- Importing streams ---
-All importation is done with the "lwmux" utility.
+Encoding with lwfe will convert videos to an intermediate file (.lwiv for video, .lwia for audio), which can then be combined into an output (.lwmv) file.
 
-lwmux importm1v <input.m1v> <output> - Imports MPEG-1 video and writes an lwmovie video stream.  This does not currently support multiplexed MPEG videos, you must demux the video and convert only the video.
-lwmux importmp2 <input.mp2> <output> - Imports MPEG-1 layer II audio and writes an lwmovie audio stream.  This does not currently support multiplexed MPEG videos.
-lwmux importwav_celt <bits per second> <input.wav> <output> - Imports a mono or stereo PCM WAV, encodes it using CELT, and writes an lwmovie audio stream.
-lwmux importwav_adpcm <input.wav> <output> - Imports a mono or stereo PCM WAV, encodes it to 4-bit ADPCM, and writes an lwmovie audio stream.  Note that lwmovie's ADPCM codec is not compatible with the WAV IMA ADPCM codec, so it requires uncompressed input.
 
---- Multiplexing lwmovie streams ---
-lwmux finalize <number of audio readahead samples> <audio> <video> <output> - Multiplexes an audio and video stream into a finished lwmovie.  You can enter "-" as the filename for a stream to omit the stream.  This does not currently support extracting streams from already-finalized lwmovies.
-
+If you need to run the lwmovie utilities from a command line, please see CommandLineOptions.txt.
 
 
 === Decoding videos with lwmovie ===
@@ -33,7 +23,7 @@ Result codes and expected handling:
 lwmDIGEST_Initialize - Indicates that lwmovie has finished parsing the stream header.  When this is returned, you should create a video reconstructor and assign it to the video using lwmMovieState_SetVideoReconstructor.  You can also access stream parameters at this point.  No further processing should be performed on the video until a reconstructor is assigned.
 lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation and is awaiting more data.  If there is no more data to feed, then movie decoding is complete.
 lwmDIGEST_Worked - Indicates that lwmovie has performed some internal work, even if it hasn't digested any data.
-lwmDIGEST_FatalError - Indicates that lwmovie encountered an error and is unable to continue processing.
+lwmDIGEST_Error - Indicates that lwmovie encountered an error and is unable to continue processing.
 lwmDIGEST_VideoSync - Indicates that a new video frame is available.
 
 === Accessing video stream information ===
@@ -88,6 +78,9 @@ lwmovie's audio decoding process uses a synchronization mechanism to ensure that
 Audio is in either a synchronized or unsynchronized state.  If audio is synchronized, then it means that audio playback started at the point that it became synchronized and any samples read have been queued for playback consecutively.
 
 The recommended process for retrieving audio samples should be:
+- When an lwmDIGEST_Initialize event is returned:
+    - Determine how many audio streams exist using lwmMovieState_GetAudioStreamCount
+    - Enable any audio streams that you want to decode using lwmMovieState_SetAudioStreamEnabled
 - When a video sync occurs:
     - Call lwmMovieState_IsAudioPlaybackSynchronized to determine if audio is synchronized
     - If audio is synchronized:
@@ -113,7 +106,8 @@ NOTE:
 - lwmMovieState_IsAudioPlaybackSynchronized: Returns 1 if audio playback is synchronized, 0 if not.
 - lwmMovieState_SynchronizeAudioPlayback: Synchronizes playback of audio with the most recent video time.  This should only be called if audio samples retrieved using lwmMovieState_ReadAudioSamples can be played back immediately.
 - lwmMovieState_NotifyAudioPlaybackUnderrun: Unsynchronizes audio, allowing the audio decode system to resynchronize at a future point in time.
-
+- lwmMovieState_GetAudioStreamCount: Returns the number of audio streams.
+- lwmMovieState_SetAudioStreamEnabled: Enables playback of an audio stream if a non-zero number is passed to the "enable" parameter, or disables playback if zero is passed.  Enabling a stream will desynchronize audio.  Returns a non-zero number if the enable or disable operation succeeded, or 0 if a problem occurred (i.e. insufficient memory, .
 
 === Cleaning up ===
 To destroy a movie state, call lwmMovieState_Destroy and pass the movie state.

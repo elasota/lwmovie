@@ -157,6 +157,7 @@ int main(int argc, char **argv)
 	lwplay::CAudioQueue *audioQueue = NULL;
 	lwmUInt32 vidWidth, vidHeight, fpsNum, fpsDenom;
 
+	bool playingAudio = false;
 	SDL_AudioSpec wantAudio, haveAudio;
 	SDL_AudioDeviceID audioDeviceID;
 
@@ -187,42 +188,53 @@ int main(int argc, char **argv)
 		case lwmDIGEST_Initialize:
 			{
 				lwmUInt32 reconType;
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Width, &vidWidth);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_Height, &vidHeight);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &vidWidth);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &vidHeight);
 				
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_PPSNumerator, &fpsNum);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_PPSDenominator, &fpsDenom);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_PPSNumerator, &fpsNum);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_PPSDenominator, &fpsDenom);
 
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, lwmSTREAMPARAM_U32_ReconType, &reconType);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
 				frameProvider = lwmCreateSystemMemoryFrameProvider(&myAllocator, movieState);
 				videoRecon = lwmCreateSoftwareVideoReconstructor(movieState, &myAllocator, reconType, 0, frameProvider);
 				lwmMovieState_SetVideoReconstructor(movieState, videoRecon);
 
 				lwmUInt32 audioSpeakerLayout;
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Audio, lwmSTREAMPARAM_U32_SampleRate, &audioSampleRate);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Audio, lwmSTREAMPARAM_U32_SpeakerLayout, &audioSpeakerLayout);
-
 				int neededChannels = 0;
-				if(audioSpeakerLayout == lwmSPEAKERLAYOUT_Mono)
-				{
-					sampleSizeBytes = 2;
-					neededChannels = 1;
-				}
-				else if(audioSpeakerLayout == lwmSPEAKERLAYOUT_Stereo_LR)
-				{
-					neededChannels = 2;
-					sampleSizeBytes = 4;
-				}
+				lwmUInt8 audioStreamCount = lwmMovieState_GetAudioStreamCount(movieState);
 
-				SDL_zero(wantAudio);
-				wantAudio.freq = static_cast<int>(audioSampleRate);
-				wantAudio.channels = static_cast<int>(neededChannels);
-				wantAudio.format = AUDIO_S16SYS;
-				wantAudio.samples = 512;
-				wantAudio.userdata = audioQueue = new lwplay::CAudioQueue(sampleSizeBytes * 8192);
-				wantAudio.callback = lwplay::CAudioQueue::StaticPullFromSDL;
-				audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &wantAudio, &haveAudio, 0);
-				SDL_PauseAudioDevice(audioDeviceID, 0);
+				if(audioStreamCount)
+				{
+					// Activate audio stream 0
+					if(lwmMovieState_SetAudioStreamEnabled(movieState, 0, 1))
+					{
+						lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Audio, 0, lwmSTREAMPARAM_U32_SampleRate, &audioSampleRate);
+						lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Audio, 0, lwmSTREAMPARAM_U32_SpeakerLayout, &audioSpeakerLayout);
+
+						if(audioSpeakerLayout == lwmSPEAKERLAYOUT_Mono)
+						{
+							sampleSizeBytes = 2;
+							neededChannels = 1;
+						}
+						else if(audioSpeakerLayout == lwmSPEAKERLAYOUT_Stereo_LR)
+						{
+							neededChannels = 2;
+							sampleSizeBytes = 4;
+						}
+
+						SDL_zero(wantAudio);
+						wantAudio.freq = static_cast<int>(audioSampleRate);
+						wantAudio.channels = static_cast<int>(neededChannels);
+						wantAudio.format = AUDIO_S16SYS;
+						wantAudio.samples = 512;
+						wantAudio.userdata = audioQueue = new lwplay::CAudioQueue(sampleSizeBytes * 8192);
+						wantAudio.callback = lwplay::CAudioQueue::StaticPullFromSDL;
+						audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &wantAudio, &haveAudio, 0);
+						SDL_PauseAudioDevice(audioDeviceID, 0);
+
+						playingAudio = true;
+					}
+				}
 
 				// TODO: Check for failures
 				window = SDL_CreateWindow("lwplay", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, static_cast<int>(vidWidth), static_cast<int>(vidHeight), 0);
@@ -289,7 +301,7 @@ int main(int argc, char **argv)
 
 				frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
 
-				if(sampleSizeBytes > 0)
+				if(playingAudio)
 				{
 					bool canQueueSamples = false;
 					SDL_LockAudioDevice(audioDeviceID);
@@ -323,7 +335,7 @@ int main(int argc, char **argv)
 					if(canQueueSamples)
 					{
 						void *dest = audioQueue->GetQueuePoint();
-						lwmUInt32 numSamplesRead = lwmMovieState_ReadAudioSamples(movieState, dest, audioQueue->NumBytesAvailable() / sampleSizeBytes);
+						lwmUInt32 numSamplesRead = lwmMovieState_ReadAudioSamples(movieState, 0, dest, audioQueue->NumBytesAvailable() / sampleSizeBytes);
 						audioQueue->CommitQueuedData(numSamplesRead * sampleSizeBytes);
 					}
 					SDL_UnlockAudioDevice(audioDeviceID);
@@ -348,7 +360,8 @@ exitMovieLoop:
 	lwmIVideoReconstructor_Destroy(videoRecon);
 	lwmSVideoFrameProvider_Destroy(frameProvider);
 
-	SDL_CloseAudioDevice(audioDeviceID);
+	if(playingAudio)
+		SDL_CloseAudioDevice(audioDeviceID);
 	if(audioQueue)
 		delete audioQueue;
 	SDL_Quit();

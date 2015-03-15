@@ -22,7 +22,7 @@ lwmCAudioBuffer::lwmCAudioBuffer(lwmSAllocator *alloc)
 lwmCAudioBuffer::~lwmCAudioBuffer()
 {
 	if(m_samples)
-		m_alloc->freeFunc(m_alloc, m_samples);
+		m_alloc->Free(m_samples);
 }
 
 
@@ -33,7 +33,7 @@ bool lwmCAudioBuffer::Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 
 	if(intMax / m_sampleSizeBytes < numSamples)
 		return false;	// Overflow
 	m_alloc = alloc;
-	m_samples = alloc->allocFunc(alloc, m_sampleSizeBytes * numSamples);
+	m_samples = alloc->NAlloc<lwmUInt8>(m_sampleSizeBytes * numSamples);
 	m_numChannels = numChannels;
 	m_capacity = numSamples;
 	if(m_samples == NULL)
