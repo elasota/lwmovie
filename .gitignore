@@ -1,0 +1,8 @@
+lwfe/bin/Debug
+lwfe/bin/Release
+lwfe/obj
+Debug
+Release
+*.user
+*.sdf
+*.suo
