@@ -23,47 +23,52 @@
 #include <string.h>
 #include "../common/lwmovie_coretypes.h"
 #include "lwmovie_videotypes.hpp"
-
-void j_rev_dct_sse2( lwmSInt16 data[64] );
+#include "lwmovie_idct.hpp"
 
 namespace lwmovie
 {
-	class lwmSparseIDCTContainer
+	namespace idct
 	{
-	public:
-		lwmSparseIDCTContainer()
+		class SparseIDCTContainer
 		{
-			lwmUInt8 *sbData = m_sparseBlockData + 15;
-			lwmLargeSInt diff = sbData - static_cast<const lwmUInt8 *>(NULL);
-			sbData -= (diff & 0xf);
-			m_sparseBlocks = reinterpret_cast<lwmDCTBLOCK*>(sbData);
-
-			for(int i=0;i<64;i++)
+		public:
+			void Init()
 			{
-				m_sparseBlocks[i].FastZeroFill();
-				m_sparseBlocks[i].data[i] = 256;
-				j_rev_dct_sse2(m_sparseBlocks[i].data);
+				lwmUInt8 *sbData = m_sparseBlockData + 15;
+				lwmLargeSInt diff = sbData - static_cast<const lwmUInt8 *>(NULL);
+				sbData -= (diff & 0xf);
+				m_sparseBlocks = reinterpret_cast<lwmDCTBLOCK*>(sbData);
+
+				for(int i=0;i<64;i++)
+				{
+					m_sparseBlocks[i].FastZeroFill();
+					m_sparseBlocks[i].data[i] = 256;
+					IDCT(m_sparseBlocks[i].data);
+				}
 			}
-		}
 
-		inline lwmDCTBLOCK *GetSparseBlock(lwmFastUInt8 index)
-		{
-			return m_sparseBlocks + index;
-		}
+			inline lwmDCTBLOCK *GetSparseBlock(lwmFastUInt8 index)
+			{
+				return m_sparseBlocks + index;
+			}
 
-		static lwmSparseIDCTContainer staticInstance;
+			static SparseIDCTContainer staticInstance;
 
-	private:
-		lwmUInt8 m_sparseBlockData[sizeof(lwmDCTBLOCK) * 64 + 15];
-		lwmDCTBLOCK *m_sparseBlocks;
-	};
+		private:
+			lwmUInt8 m_sparseBlockData[sizeof(lwmDCTBLOCK) * 64 + 15];
+			lwmDCTBLOCK *m_sparseBlocks;
+		};
+	}
 }
 
+lwmovie::idct::SparseIDCTContainer lwmovie::idct::SparseIDCTContainer::staticInstance;
 
-lwmovie::lwmSparseIDCTContainer lwmovie::lwmSparseIDCTContainer::staticInstance;
+void lwmovie::idct::Initialize()
+{
+	SparseIDCTContainer::staticInstance.Init();
+}
 
-
-void j_rev_dct_sse2_sparseDC( lwmSInt16 data[64], lwmSInt16 value )
+void lwmovie::idct::IDCT_SparseDC( lwmSInt16 data[64], lwmSInt16 value )
 {
 	__m128i fill = _mm_setzero_si128();
 	fill = _mm_insert_epi16(fill, static_cast<int>(value >> 3), 0);
@@ -79,7 +84,7 @@ void j_rev_dct_sse2_sparseDC( lwmSInt16 data[64], lwmSInt16 value )
 	}
 }
 
-void j_rev_dct_sse2_sparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value )
+void lwmovie::idct::IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value )
 {
 	__m128i fill = _mm_setzero_si128();
 	fill = _mm_insert_epi16(fill, static_cast<int>(value), 0);
@@ -89,7 +94,7 @@ void j_rev_dct_sse2_sparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt
 
 	int rows = 8;
 	lwmSInt16 *dataPtr = data;
-	const lwmSInt16 *sparseMat = lwmovie::lwmSparseIDCTContainer::staticInstance.GetSparseBlock(coeffPos)->data;
+	const lwmSInt16 *sparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock(coeffPos)->data;
 	while(rows--)
 	{
 		__m128i sparseInputRow = _mm_load_si128(reinterpret_cast<const __m128i*>(sparseMat));
@@ -104,3 +109,9 @@ void j_rev_dct_sse2_sparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt
 	}
 }
 
+extern "C" void j_rev_dct_sse2( lwmSInt16 data[64] );
+
+void lwmovie::idct::IDCT( lwmSInt16 data[64] )
+{
+	j_rev_dct_sse2(data);
+}

@@ -28,10 +28,8 @@
 #include "lwmovie_recon_m1vsw.hpp"
 #include "lwmovie_simd_defs.hpp"
 #include "lwmovie_profile.hpp"
+#include "lwmovie_idct.hpp"
 
-void j_rev_dct_sse2( lwmSInt16 data[64] );
-void j_rev_dct_sse2_sparseDC( lwmSInt16 data[64], lwmSInt16 value );
-void j_rev_dct_sse2_sparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value );
 
 lwmovie::lwmCM1VSoftwareReconstructor::lwmCM1VSoftwareReconstructor()
 :	m_mblocks(NULL)

@@ -48,9 +48,10 @@
 
 #define SSE2_DECLCONSTANT_32(name, v0, v1, v2, v3)						static const __m128i name = _mm_set_epi32(v3, v2, v1, v0);
 #define SSE2_DECLCONSTANT_16(name, v0, v1, v2, v3, v4, v5, v6, v7)		static const __m128i name = _mm_set_epi16(v7, v6, v5, v4, v3, v2, v1, v0);
+#define SSE2_DECLCONSTANT_8(name, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15)		static const __m128i name = _mm_set_epi8(v15, v14, v13, v12, v11, v10, v9, v8, v7, v6, v5, v4, v3, v2, v1, v0);
 
 #define FUNCTION_HEADER	\
-	void j_rev_dct_sse2( short data[64] )\
+	extern "C" void j_rev_dct_sse2( short data[64] )\
 	{\
 		__m128i processedRows[8];\
 		__m128i stored_temps[8];\
@@ -64,6 +65,8 @@
 #ifndef SSE2_INLINE_SET1
 	#define SSE2_DECL_SCALAR_CONSTANT_32(name, value)	SSE2_DECLCONSTANT_32(name, value, value, value, value)
 	#define SSE2_DECL_SCALAR_CONSTANT_16(name, value)	SSE2_DECLCONSTANT_16(name, value, value, value, value, value, value, value, value)
+	#define SSE2_DECL_SCALAR_CONSTANT_16X2(name, value1, value2)	SSE2_DECLCONSTANT_16(name, value1, value2, value1, value2, value1, value2, value1, value2)
+	#define SSE2_DECL_SCALAR_CONSTANT_8(name, value)	SSE2_DECLCONSTANT_8(name, value, value, value, value, value, value, value, value, value, value, value, value, value, value, value, value)
 	#define SSE2_SET1_32(reg, value)					SSE2_LOADCONSTANT(reg, value)
 	#define SSE2_SET1_16(reg, value)					SSE2_LOADCONSTANT(reg, value)
 #else

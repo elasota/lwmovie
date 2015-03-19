@@ -107,6 +107,7 @@
     <ClInclude Include="lwmovie_external_types.h" />
     <ClInclude Include="lwmovie_fillable.hpp" />
     <ClInclude Include="lwmovie_fp.hpp" />
+    <ClInclude Include="lwmovie_idct.hpp" />
     <ClInclude Include="lwmovie_mp2_decoder.hpp" />
     <ClInclude Include="lwmovie_package.hpp" />
     <ClInclude Include="lwmovie_packetplan.hpp" />

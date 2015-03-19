@@ -21,12 +21,14 @@
  */
 #include "../mp2dec2/lwmovie_layer2_constants.hpp"
 #include "lwmovie.h"
+#include "lwmovie_idct.hpp"
 
 namespace lwmovie
 {
 	void Initialize()
 	{
 		lwmovie::layerii::InitializeTables();
+		lwmovie::idct::Initialize();
 	}
 }
 

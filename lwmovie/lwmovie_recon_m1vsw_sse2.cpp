@@ -22,6 +22,7 @@
 #include <emmintrin.h>
 #include "lwmovie_recon_m1vsw.hpp"
 #include "lwmovie_profile.hpp"
+#include "lwmovie_idct.hpp"
 
 static void ExtractMotionLumaAligned(lwmUInt8 *outBlock, const lwmUInt8 *inBase, lwmLargeUInt stride)
 {
@@ -804,10 +805,6 @@ void lwmovie::lwmDCTBLOCK::FastZeroFill()
 	}
 }
 
-void j_rev_dct_sse2( lwmSInt16 data[64] );
-void j_rev_dct_sse2_sparseDC( lwmSInt16 data[64], lwmSInt16 value );
-void j_rev_dct_sse2_sparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value );
-
 void lwmovie::lwmBlockInfo::IDCT(lwmDCTBLOCK *block) const
 {
 	if(needs_idct)
@@ -815,12 +812,12 @@ void lwmovie::lwmBlockInfo::IDCT(lwmDCTBLOCK *block) const
 		if(sparse_idct)
 		{
 			if(sparse_idct_index == 0)
-				j_rev_dct_sse2_sparseDC(block->data, sparse_idct_coef);
+				lwmovie::idct::IDCT_SparseDC(block->data, sparse_idct_coef);
 			else
-				j_rev_dct_sse2_sparseAC(block->data, sparse_idct_index, sparse_idct_coef);
+				lwmovie::idct::IDCT_SparseAC(block->data, sparse_idct_index, sparse_idct_coef);
 		}
 		else
-			j_rev_dct_sse2(block->data);
+			lwmovie::idct::IDCT(block->data);
 	}
 	else
 	{
