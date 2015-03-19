@@ -154,7 +154,7 @@ namespace lwfe
                             stageArgs.Add("-pass");
                             stageArgs.Add("1");
                             stageArgs.Add("-passlogfile");
-                            stageArgs.Add(outputFile + ".passlog");
+                            stageArgs.Add(outputFile + ".p");
                             stageArgs.Add("NUL");
 
                             plan.AddStage(new ExecutionStage(ffmpegPath, stageArgs.ToArray()));
@@ -172,11 +172,12 @@ namespace lwfe
                         stageArgs.Add("-pass");
                         stageArgs.Add("1");
                         stageArgs.Add("-passlogfile");
-                        stageArgs.Add(outputFile + ".passlog");
+                        stageArgs.Add(outputFile + ".p");
                         stageArgs.Add("NUL");
 
                         plan.AddStage(new ExecutionStage(ffmpegPath, stageArgs.ToArray()));
                     }
+                    plan.AddTemporaryFile(outputFile + ".p-0.log");
                     plans.Add(plan);
                 }
                 // Pass 2
@@ -216,7 +217,7 @@ namespace lwfe
                             stageArgs.Add("-pass");
                             stageArgs.Add("2");
                             stageArgs.Add("-passlogfile");
-                            stageArgs.Add(outputFile + ".passlog");
+                            stageArgs.Add(outputFile + ".p");
                             stageArgs.Add(outputFile + ".m1v");
 
                             plan.AddStage(new ExecutionStage(ffmpegPath, stageArgs.ToArray()));
@@ -234,16 +235,19 @@ namespace lwfe
                         stageArgs.Add("-pass");
                         stageArgs.Add("2");
                         stageArgs.Add("-passlogfile");
-                        stageArgs.Add(outputFile + ".passlog");
+                        stageArgs.Add(outputFile + ".p");
                         stageArgs.Add(outputFile + ".m1v");
 
                         plan.AddStage(new ExecutionStage(ffmpegPath, stageArgs.ToArray()));
                     }
+                    plan.AddCleanupFile(outputFile + ".p-0.log");
+                    plan.AddTemporaryFile(outputFile + ".m1v");
                     plans.Add(plan);
                 }
             }
             else
             {
+                // 1-pass mode
                 ExecutionPlan plan = new ExecutionPlan();
 
                 if (FullRange)
@@ -296,6 +300,7 @@ namespace lwfe
 
                     plan.AddStage(new ExecutionStage(ffmpegPath, stageArgs.ToArray()));
                 }
+                plan.AddTemporaryFile(outputFile + ".m1v");
                 plans.Add(plan);
             }
 
@@ -309,6 +314,7 @@ namespace lwfe
                 plan.AddStage(new ExecutionStage(lwmuxPath, args.ToArray()));
 
                 plan.CompletionCallback = pcd;
+                plan.AddCleanupFile(outputFile + ".m1v");
                 plans.Add(plan);
             }
         }

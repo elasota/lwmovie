@@ -34,6 +34,7 @@ namespace lwfe
                 ExecutionPlan plan = new ExecutionPlan();
                 ExecutionStage stage = new ExecutionStage(ffmpegPath, new string[] { "-i", inputFile, "-acodec", "pcm_s16le", "-vn", "-y", outputFile + ".wav" });
                 plan.AddStage(stage);
+                plan.AddTemporaryFile(outputFile + ".wav");
                 plans.Add(plan);
             }
             {
@@ -42,6 +43,7 @@ namespace lwfe
                 plan.AddStage(stage);
 
                 plan.CompletionCallback = pcd;
+                plan.AddCleanupFile(outputFile + ".wav");
                 plans.Add(plan);
             }
         }

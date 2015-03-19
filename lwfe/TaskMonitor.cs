@@ -174,11 +174,23 @@ namespace lwfe
 
         private void ThreadRunExecutionPlans(object o)
         {
+            HashSet<string> delayedCleanupFiles = new HashSet<string>();
             while(_planQueue.Count != 0)
             {
                 ExecutionPlan plan = _planQueue.Dequeue();
+                foreach (string filePath in plan.TemporaryFiles)
+                    delayedCleanupFiles.Add(filePath);
                 ExecutePlan(plan);
+                foreach (string filePath in plan.CleanupFiles)
+                {
+                    // TODO: Catch delete failures
+                    System.IO.File.Delete(filePath);
+                    delayedCleanupFiles.Remove(filePath);
+                }
             }
+
+            foreach (string filePath in delayedCleanupFiles)
+                System.IO.File.Delete(filePath);
         }
 
         private void RunExecutionPlans()

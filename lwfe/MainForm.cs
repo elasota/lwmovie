@@ -256,9 +256,11 @@ namespace lwfe
 
         private void GenerateExecutionPlans()
         {
-            string lwmuxPath = System.IO.Directory.GetCurrentDirectory() + "\\lwmux.exe";
-            string lwrerangePath = System.IO.Directory.GetCurrentDirectory() + "\\lwrerange.exe";
-            string ffmpegPath = System.IO.Directory.GetCurrentDirectory() + "\\ffmpeg\\bin\\ffmpeg.exe";
+            string currentExePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            string currentExeDir = currentExePath.Substring(0, currentExePath.LastIndexOf('\\'));
+            string lwmuxPath = currentExeDir + "\\lwmux.exe";
+            string lwrerangePath = currentExeDir + "\\lwrerange.exe";
+            string ffmpegPath = currentExeDir + "\\ffmpeg\\bin\\ffmpeg.exe";
             Dictionary<string, object> settings = new Dictionary<string, object>();
 
             settings["lwmuxPath"] = lwmuxPath;
