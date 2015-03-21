@@ -28,4 +28,12 @@ typedef long lwmAtomicInt;
 
 #endif	// _MSC_VER
 
+#ifdef __GNUC__
+
+#include <stdint.h>
+
+typedef int32_t lwmAtomicInt;
+
+#endif	// __GNUC__
+
 #endif

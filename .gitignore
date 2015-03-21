@@ -3,8 +3,16 @@ lwfe/bin/Release
 lwfe/obj
 Debug
 Release
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles
+install_manifest.c
+Makefile
+*.a
 *.user
 *.sdf
 *.suo
 *.opensdf
 *.ipch
+*.dll
+*.exe

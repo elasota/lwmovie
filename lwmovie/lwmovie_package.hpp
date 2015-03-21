@@ -173,23 +173,5 @@ struct lwmAudioSynchronizationPoint
 LWM_DECLARE_PLAN_MEMBER_NONZERO(0, lwmAudioSynchronizationPoint, lwmUInt32, audioPeriod);
 LWM_DECLARE_PLAN(lwmAudioSynchronizationPoint);
 
-class lwmOSFile;
-
-template<class T>
-inline void lwmWritePlanToFile(const T &input, lwmOSFile *osFile)
-{
-	lwmUInt8 buffer[lwmPlanHandler<T>::SIZE];
-	lwmPlanHandler<T>::Write(input, buffer);
-	osFile->WriteBytes(buffer, lwmPlanHandler<T>::SIZE);
-}
-
-template<class T>
-inline bool lwmReadPlanFromFile(T &input, lwmOSFile *osFile)
-{
-	lwmUInt8 buffer[lwmPlanHandler<T>::SIZE];
-	if(osFile->ReadBytes(buffer, lwmPlanHandler<T>::SIZE) != lwmPlanHandler<T>::SIZE)
-		return false;
-	return lwmPlanHandler<T>::Read(input, buffer);
-}
 
 #endif

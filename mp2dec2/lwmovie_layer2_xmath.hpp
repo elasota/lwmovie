@@ -54,6 +54,17 @@ inline lwmSInt64 lwmovie::xmath::EMul(lwmSInt32 ls, lwmSInt32 rs)
 
 #endif
 
+#ifdef __GNUC__
+inline __attribute__((always_inline)) lwmSInt32 lwmovie::xmath::EMulHigh(lwmSInt32 ls, lwmSInt32 rs)
+{
+	return static_cast<lwmSInt32>((static_cast<lwmSInt64>(ls) * static_cast<lwmSInt64>(rs)) >> 32);
+}
+
+inline __attribute__((always_inline)) lwmSInt64 lwmovie::xmath::EMul(lwmSInt32 ls, lwmSInt32 rs)
+{
+	return static_cast<lwmSInt64>(ls) * static_cast<lwmSInt64>(rs);
+}
+#endif
 
 
 #endif

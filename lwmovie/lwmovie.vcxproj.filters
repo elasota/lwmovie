@@ -165,7 +165,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_idct.hpp">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

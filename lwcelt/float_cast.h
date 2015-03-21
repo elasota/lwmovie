@@ -88,33 +88,13 @@
 #include	<math.h>
 #define float2int(x) lrint(x)
 
-#elif (defined (WIN64) || defined (_WIN64))
+#elif (defined (WIN64) || defined (_WIN64) || defined (WIN32) || defined (_WIN32))
 	#include <xmmintrin.h>
 
 	__inline long int float2int(float value)
 	{
 		return _mm_cvtss_si32(_mm_load_ss(&value));
 	}
-#elif (defined (WIN32) || defined (_WIN32))
-
-	#include	<math.h>
-
-	/*	Win32 doesn't seem to have these functions. 
-	**	Therefore implement inline versions of these functions here.
-	*/
-	
-	__inline long int 
-	float2int (float flt)
-	{	int intgr;
-
-		_asm
-		{	fld flt
-			fistp intgr
-			} ;
-			
-		return intgr ;
-	}
-
 #else
 
 #ifdef __GNUC__ /* supported by gcc, but not by all other compilers*/

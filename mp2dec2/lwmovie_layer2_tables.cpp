@@ -20,8 +20,10 @@
  * THE SOFTWARE.
  */
 #include <math.h>
+#include <string.h>
 
 #include "lwmovie_layer2_constants.hpp"
+#include "lwmovie_layer2_dspops.hpp"
 
 namespace lwmovie
 {
@@ -123,6 +125,8 @@ namespace lwmovie
 
 		void InitializeTables()
 		{
+			IMDCT_Init();
+
 			for(int i=0;i<64;i++)
 				MP2_SCALEFACTORS[i] = LWMOVIE_CREATE_CSF(i);
 			for(int i=0;i<NUM_QINDEX;i++)

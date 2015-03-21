@@ -79,6 +79,7 @@
     <ClInclude Include="..\lwmovie\lwmovie_packetplan.hpp" />
     <ClInclude Include="lwmux_escape.hpp" />
     <ClInclude Include="lwmux_osfile.hpp" />
+    <ClInclude Include="lwmux_planio.hpp" />
     <ClInclude Include="lwmux_riff.hpp" />
     <ClInclude Include="lwmux_util.hpp" />
     <ClInclude Include="lwmux_wav.hpp" />

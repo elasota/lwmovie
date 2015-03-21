@@ -23,10 +23,12 @@
 #define __LWMOVIE_CORETYPES_H__
 
 #include "lwmovie_config.h"
+#include "lwmovie_attribs.h"
 
 // This file is used by the C API
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef int64_t lwmSInt64;
 typedef int32_t lwmSInt32;
@@ -50,7 +52,7 @@ typedef uint_fast8_t lwmFastUInt8;
 #if defined(LWMOVIE_SSE2)
 	#define LWMOVIE_FIXEDREAL_SIMD_WIDTH		4
 	#define LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT	16
-	#define LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB __declspec(align(16))
+	#define LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB LWMOVIE_ATTRIB_ALIGN(16)
 #elif defined(LWMOVIE_NOSIMD)
 	#define LWMOVIE_FIXEDREAL_SIMD_WIDTH		1
 	#define LWMOVIE_FIXEDREAL_SIMD_ALIGNMENT	1

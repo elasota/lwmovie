@@ -46,4 +46,23 @@ __forceinline void *lwmAtomicCompareAndSwap(void *volatile* destination, void *n
 
 #endif	// _MSC_VER
 
+#ifdef __GNUC__
+
+inline __attribute__((always_inline)) lwmAtomicInt lwmAtomicIncrement(lwmAtomicInt volatile* ptr)
+{
+	return __sync_add_and_fetch(ptr, 1);
+}
+
+inline __attribute__((always_inline)) lwmAtomicInt lwmAtomicDecrement(lwmAtomicInt volatile* ptr)
+{
+	return __sync_add_and_fetch(ptr, -1);
+}
+
+inline __attribute__((always_inline)) void *lwmAtomicCompareAndSwap(void *volatile* destination, void *newValue, void *comp)
+{
+	return __sync_val_compare_and_swap(destination, comp, newValue);
+}
+
+#endif
+
 #endif

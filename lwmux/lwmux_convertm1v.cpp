@@ -6,6 +6,7 @@
 #include "../lwmovie/lwmovie_constants.hpp"
 #include "../lwmovie/lwmovie_package.hpp"
 #include "lwmux_osfile.hpp"
+#include "lwmux_planio.hpp"
 
 using namespace lwmovie;
 using namespace lwmovie::constants;

@@ -77,5 +77,8 @@
     <ClInclude Include="lwmux_util.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="lwmux_planio.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

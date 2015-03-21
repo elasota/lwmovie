@@ -39,6 +39,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+struct lwmSAllocator;
+
 /** CELT wrapper for calloc(). To do your own dynamic allocation, all you need to do is replace this function, celt_realloc and celt_free 
     NOTE: celt_alloc needs to CLEAR THE MEMORY */
 void *celt_alloc (struct lwmSAllocator *alloc, int size);

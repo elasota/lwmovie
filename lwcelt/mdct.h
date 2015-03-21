@@ -44,6 +44,7 @@
 
 #include "kiss_fft.h"
 #include "arch.h"
+#include "config.h"
 
 typedef struct {
    int n;

@@ -77,7 +77,9 @@ typedef lwmFixedReal14 REG_TYPE;
 #define MULT_NORM(x) (LWMOVIE_FIXEDREAL_REDUCEFRACPRECISION((x), 14))
 #define HALVE(x) LWMOVIE_FIXEDREAL_RS((x), 1)
 
-#define M_PI (3.1415926535897932384626433832795)
+#ifndef M_PI
+	#define M_PI (3.1415926535897932384626433832795)
+#endif
 
 struct imdct32_lookup
 {
@@ -91,43 +93,49 @@ static imdct32_lookup lookup;
 /* build lookups for trig functions; also pre-figure scaling and
    some window function algebra. */
 
-static void mdct_32_init()
+namespace lwmovie
 {
-	int n = 64;
-	int n2=n>>1;
-	int log2n=6;
-	DATA_TYPE *T=lookup.trig;
-
-	/* trig lookups... */
-
-	for(int i=0;i<n/4;i++)
+	namespace layerii
 	{
-		T[i*2]=FLOAT_CONV(cos((M_PI/n)*(4*i)));
-		T[i*2+1]=FLOAT_CONV(-sin((M_PI/n)*(4*i)));
-		T[n2+i*2]=FLOAT_CONV(cos((M_PI/(2*n))*(2*i+1)));
-		T[n2+i*2+1]=FLOAT_CONV(sin((M_PI/(2*n))*(2*i+1)));
-	}
-	for(int i=0;i<n/8;i++)
-	{
-		T[n+i*2]=FLOAT_CONV(cos((M_PI/n)*(4*i+2))*.5);
-		T[n+i*2+1]=FLOAT_CONV(-sin((M_PI/n)*(4*i+2))*.5);
-	}
-
-	/* bitreverse lookup... */
-	{
-		int mask=(1<<(log2n-1))-1,i;
-		int msb=1<<(log2n-2);
-		for(i=0;i<n/8;i++)
+		void IMDCT_Init()
 		{
-			int acc=0;
-			for(int j=0;msb>>j;j++)
-				if((msb>>j)&i)
-					acc|=1<<j;
-			lookup.bitrev[i*2]=((~acc)&mask)-1;
-			lookup.bitrev[i*2+1]=acc;
+			int n = 64;
+			int n2=n>>1;
+			int log2n=6;
+			DATA_TYPE *T=lookup.trig;
+
+			/* trig lookups... */
+
+			for(int i=0;i<n/4;i++)
+			{
+				T[i*2]=FLOAT_CONV(cos((M_PI/n)*(4*i)));
+				T[i*2+1]=FLOAT_CONV(-sin((M_PI/n)*(4*i)));
+				T[n2+i*2]=FLOAT_CONV(cos((M_PI/(2*n))*(2*i+1)));
+				T[n2+i*2+1]=FLOAT_CONV(sin((M_PI/(2*n))*(2*i+1)));
+			}
+			for(int i=0;i<n/8;i++)
+			{
+				T[n+i*2]=FLOAT_CONV(cos((M_PI/n)*(4*i+2))*.5);
+				T[n+i*2+1]=FLOAT_CONV(-sin((M_PI/n)*(4*i+2))*.5);
+			}
+
+			/* bitreverse lookup... */
+			{
+				int mask=(1<<(log2n-1))-1,i;
+				int msb=1<<(log2n-2);
+				for(i=0;i<n/8;i++)
+				{
+					int acc=0;
+					for(int j=0;msb>>j;j++)
+						if((msb>>j)&i)
+							acc|=1<<j;
+					lookup.bitrev[i*2]=((~acc)&mask)-1;
+					lookup.bitrev[i*2+1]=acc;
+				}
+			}
+			lookup.scale=FLOAT_CONV(4.f/n);
 		}
 	}
-	lookup.scale=FLOAT_CONV(4.f/n);
 }
 
 /* 8 point butterfly (in place, 4 register) */
@@ -405,19 +413,4 @@ void lwmovie::layerii::IMDCT32(DATA_TYPE out[64], const DATA_TYPE in[32])
 			iX+=4;
 		} while(oX1>oX2);
 	}
-}
-
-
-namespace lwmovie
-{
-	struct lwmIMDCTStaticInitializer
-	{
-		lwmIMDCTStaticInitializer()
-		{
-			mdct_32_init();
-		}
-
-		static lwmIMDCTStaticInitializer instance;
-	};
-	lwmIMDCTStaticInitializer lwmIMDCTStaticInitializer::instance;
 }

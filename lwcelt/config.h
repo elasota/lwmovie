@@ -73,7 +73,13 @@
 #undef HAVE_LRINT
 
 /* Define to 1 if you have the `lrintf' function. */
-#undef HAVE_LRINTF
+#ifdef __MSC_VER
+	#undef HAVE_LRINTF
+#endif
+
+#ifdef __GNUC__
+	#define HAVE_LRINTF 1
+#endif
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H

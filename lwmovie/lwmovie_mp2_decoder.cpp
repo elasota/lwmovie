@@ -1,5 +1,6 @@
 #include "lwmovie_mp2_decoder.hpp"
 #include "lwmovie_package.hpp"
+#include <string.h>
 
 lwmovie::lwmCMP2Decoder::lwmCMP2Decoder(lwmSAllocator *alloc)
 	: m_alloc(alloc)

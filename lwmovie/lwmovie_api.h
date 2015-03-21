@@ -3,14 +3,32 @@
 
 #include "../common/lwmovie_config.h"
 
-#ifdef LWMOVIE_DLL
-	#ifdef LWMOVIE_DLL_EXPORT
-		#define LWMOVIE_API_DLL __declspec(dllexport)
+#ifdef __GNUC__
+	#ifdef lwmovie_EXPORTS
+		#ifdef __CYGWIN__
+			#define LWMOVIE_API_DLL __declspec(dllexport)
+		#else
+			#define LWMOVIE_API_DLL __attribute__ ((visibility ("default")))
+		#endif
 	#else
-		#define LWMOVIE_API_DLL __declspec(dllimport)
+		#ifdef __CYGWIN__
+			#define LWMOVIE_API_DLL __declspec(dllimport)
+		#else
+			#define LWMOVIE_API_DLL
+		#endif
 	#endif
-#else
-	#define LWMOVIE_API_DLL
+#endif
+
+#ifdef __MSC_VER
+	#ifdef LWMOVIE_DLL
+		#ifdef LWMOVIE_DLL_EXPORT
+			#define LWMOVIE_API_DLL __declspec(dllexport)
+		#else
+			#define LWMOVIE_API_DLL __declspec(dllimport)
+		#endif
+	#else
+		#define LWMOVIE_API_DLL
+	#endif
 #endif
 
 #ifdef __cplusplus

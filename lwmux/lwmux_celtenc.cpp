@@ -1,7 +1,11 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "lwmux_riff.hpp"
 #include "lwmux_wav.hpp"
 #include "lwmux_osfile.hpp"
 #include "lwmux_escape.hpp"
+#include "lwmux_planio.hpp"
 #include "../lwmovie/lwmovie_external_types.h"
 #include "../lwmovie/lwmovie_package.hpp"
 #include "../lwcelt/celt.h"

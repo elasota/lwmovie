@@ -19,6 +19,6 @@
 #define LWMOVIE_DLL
 
 
-#ifdef LWMOVIE_SSE42
+#ifdef LWMOVIE_SSE41
 	#define LWMOVIE_SSE2
 #endif

@@ -29,13 +29,13 @@
 template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage>::lwmFixed32(const TStorage &v)
 {
-	m_i = v << FracBits;
+	this->m_i = v << FracBits;
 }
 
 template<int FracBits, class TStorage>
 inline TStorage lwmFixed32<FracBits, TStorage>::RawData() const
 {
-	return m_i;
+	return this->m_i;
 }
 
 template<int FracBits, class TStorage>
@@ -46,25 +46,25 @@ inline lwmFixed32<FracBits, TStorage>::lwmFixed32()
 template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage>::lwmFixed32(const float &f)
 {
-	m_i = static_cast<lwmSInt32>(f * static_cast<float>(1 << FracBits));
+	this->m_i = static_cast<lwmSInt32>(f * static_cast<float>(1 << FracBits));
 }
 
 template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage>::lwmFixed32(const lwmUInt32 i)
 {
-	m_i = static_cast<lwmSInt32>(i << FracBits);
+	this->m_i = static_cast<lwmSInt32>(i << FracBits);
 }
 
 template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage>::lwmFixed32(const double &f)
 {
-	m_i = static_cast<lwmSInt32>(f * static_cast<double>(1 << FracBits));
+	this->m_i = static_cast<lwmSInt32>(f * static_cast<double>(1 << FracBits));
 }
 
 template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage> & lwmFixed32<FracBits, TStorage>::operator +=(const lwmFixed32<FracBits, TStorage> &rs)
 {
-	m_i += rs.m_i;
+	this->m_i += rs.m_i;
 	return *this;
 }
 
@@ -73,7 +73,7 @@ template<int FracBits, class TStorage>
 template<int RSFracBits, int TargetBits>
 inline lwmFixed32<TargetBits, TStorage> lwmFixed32<FracBits, TStorage>::MulTo(const lwmFixed32<RSFracBits, TStorage> &rs) const
 {
-	TStorage xmulHigh = lwmovie::xmath::EMulHigh(m_i, rs.RawData());
+	TStorage xmulHigh = lwmovie::xmath::EMulHigh(this->m_i, rs.RawData());
 	lwmFixed32<TargetBits, TStorage> result;
 	int rshift = FracBits + RSFracBits - 32 - TargetBits;
 	result.m_i = xmulHigh >> (FracBits + RSFracBits - 32 - TargetBits);
@@ -83,7 +83,7 @@ inline lwmFixed32<TargetBits, TStorage> lwmFixed32<FracBits, TStorage>::MulTo(co
 template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage> & lwmFixed32<FracBits, TStorage>::operator -=(const lwmFixed32<FracBits, TStorage> &rs)
 {
-	m_i -= rs.m_i;
+	this->m_i -= rs.m_i;
 	return *this;
 }
 
@@ -91,7 +91,7 @@ template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage> lwmFixed32<FracBits, TStorage>::operator +(const lwmFixed32<FracBits, TStorage> &rs) const
 {
 	lwmFixed32<FracBits, TStorage> retVal;
-	retVal.m_i = m_i + rs.m_i;
+	retVal.m_i = this->m_i + rs.m_i;
 	return retVal;
 }
 
@@ -99,7 +99,7 @@ template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage> lwmFixed32<FracBits, TStorage>::operator -(const lwmFixed32<FracBits, TStorage> &rs) const
 {
 	lwmFixed32<FracBits, TStorage> retVal;
-	retVal.m_i = m_i - rs.m_i;
+	retVal.m_i = this->m_i - rs.m_i;
 	return retVal;
 }
 
@@ -107,7 +107,7 @@ template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage> lwmFixed32<FracBits, TStorage>::operator -() const
 {
 	lwmFixed32<FracBits, TStorage> retVal;
-	retVal.m_i = -m_i;
+	retVal.m_i = -this->m_i;
 	return retVal;
 }
 
@@ -116,7 +116,7 @@ template<int RSFracBits>
 inline lwmFixed32<FracBits + RSFracBits, TStorage> lwmFixed32<FracBits, TStorage>::operator *(const lwmFixed32<RSFracBits, TStorage> &rs) const
 {
 	lwmFixed32<FracBits + RSFracBits, TStorage> retVal;
-	retVal.m_i = m_i * rs.m_i;
+	retVal.m_i = this->m_i * rs.m_i;
 	return retVal;
 }
 
@@ -124,7 +124,7 @@ template<int FracBits, class TStorage>
 inline lwmFixed32<FracBits, TStorage> lwmFixed32<FracBits, TStorage>::RShift(int rs) const
 {
 	lwmFixed32<FracBits, TStorage> retVal;
-	retVal.m_i = m_i >> rs;
+	retVal.m_i = this->m_i >> rs;
 	return retVal;
 }
 
@@ -133,7 +133,7 @@ template<int RShiftBits>
 inline lwmFixed32<FracBits - RShiftBits, TStorage> lwmFixed32<FracBits, TStorage>::ReduceFracPrecision() const
 {
 	lwmFixed32<FracBits - RShiftBits, TStorage> retVal;
-	retVal.m_i = m_i >> RShiftBits;
+	retVal.m_i = this->m_i >> RShiftBits;
 	return retVal;
 }
 
@@ -142,7 +142,7 @@ template<int LShiftBits>
 inline lwmFixed32<FracBits + LShiftBits, TStorage> lwmFixed32<FracBits, TStorage>::IncreaseFracPrecision() const
 {
 	lwmFixed32<FracBits + LShiftBits, TStorage> retVal;
-	retVal.m_i = m_i << LShiftBits;
+	retVal.m_i = this->m_i << LShiftBits;
 	return retVal;
 }
 
@@ -151,7 +151,7 @@ template<int RShiftBits>
 inline lwmFixed32<FracBits + RShiftBits, TStorage> lwmFixed32<FracBits, TStorage>::RShiftFixed() const
 {
 	lwmFixed32<FracBits + RShiftBits, TStorage> retVal;
-	retVal.m_i = m_i;
+	retVal.m_i = this->m_i;
 	return retVal;
 }
 
@@ -162,12 +162,12 @@ inline lwmSimdInt16<TStorage> lwmFixed32<FracBits, TStorage>::LShiftRoundClamp(c
 	if(rs < FracBits)
 	{
 		int diff = FracBits - rs;
-		firstHalf = (m_i + TStorage(1 << (diff - 1))) >> diff;
+		firstHalf = (this->m_i + TStorage(1 << (diff - 1))) >> diff;
 		secondHalf = (append.m_i + TStorage(1 << (diff - 1))) >> diff;
 	}
 	else
 	{
-		firstHalf = m_i << (FracBits - rs);
+		firstHalf = this->m_i << (FracBits - rs);
 		secondHalf = append.m_i << (FracBits - rs);
 	}
 	return lwmSimdInt16<TStorage>(firstHalf, secondHalf);
@@ -184,13 +184,13 @@ inline lwmFixed32<FracBits, TStorage> lwmFixed32<FracBits, TStorage>::Load(const
 template<int FracBits, class TStorage>
 inline void lwmFixed32<FracBits, TStorage>::Store(lwmFixed32<FracBits, lwmSInt32> *dest) const
 {
-	m_i.Store(reinterpret_cast<lwmSInt32*>(dest));
+	this->m_i.Store(reinterpret_cast<lwmSInt32*>(dest));
 }
 
 template<int FracBits, class TStorage>
 inline int lwmFixed32<FracBits, TStorage>::Round() const
 {
-	return (m_i + (1 << (FracBits - 1))) >> FracBits;
+	return (this->m_i + (1 << (FracBits - 1))) >> FracBits;
 }
 
 typedef lwmFixed32<24, lwmSInt32> lwmFixedReal;

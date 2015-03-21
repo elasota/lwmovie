@@ -2,6 +2,7 @@
 #define __LWMOVIE_LAYER2_SSEINT_HPP__
 
 #include "lwmovie_layer2.hpp"
+#include "../common/lwmovie_attribs.h"
 
 #ifdef LWMOVIE_SSE2
 
@@ -121,11 +122,24 @@ inline lwmSimdInt16<lwmSimdSInt32>::lwmSimdInt16(const lwmSimdSInt32 &a, const l
 
 inline lwmSInt16 lwmSimdInt16<lwmSimdSInt32>::GetSimdSub(int index) const
 {
+#ifdef __MSC_VER
 	return m_data.m128i_i16[index];
+#endif
+#ifdef __GCC__
+	return reinterpret_cast<const lwmSInt16*>(&m_data)[index];
+#endif
 }
 
+#ifdef LWMOVIE_SSE41
+#include <smmintrin.h>
+#endif
 
-inline lwmSimdSInt32 lwmovie::xmath::EMulHigh(const lwmSimdSInt32 &a, const lwmSimdSInt32 &b)
+inline 
+#ifdef LWMOVIE_SSE41
+	LWMOVIE_ATTRIB_ARCH("sse4.1")
+#endif
+	lwmSimdSInt32 lwmovie::xmath::EMulHigh(const lwmSimdSInt32 &a, const lwmSimdSInt32 &b)
+
 {
 	__m128i lo_a_even = a.RawSimd();
 	__m128i lo_a_odd = _mm_srli_si128(lo_a_even, 4);

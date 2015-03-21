@@ -32,6 +32,7 @@ namespace lwmovie
 	{
 		void SubBandSynthesis(lwmSInt16 *output, lwmFixedReal22 accumulators[lwmovie::layerii::FILTER_SIZE][lwmovie::layerii::NUM_SUBBANDS], const lwmFixedReal14 coeffs[lwmovie::layerii::NUM_SUBBANDS], int currentRotator, lwmFastUInt8 stride);
 		void IMDCT32(lwmFixedReal14 out[64], const lwmFixedReal14 in[32]);
+		void IMDCT_Init();
 	}
 }
 

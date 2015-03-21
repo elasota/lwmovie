@@ -144,6 +144,8 @@ typedef struct CELTDecoder CELTDecoder;
     bad */
 typedef struct CELTMode CELTMode;
 
+struct lwmSAllocator;
+
 
 /** \defgroup codec Encoding and decoding */
 /*  @{ */

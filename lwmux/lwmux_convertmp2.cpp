@@ -3,6 +3,7 @@
 #include "../lwmovie/lwmovie_package.hpp"
 #include "lwmux_osfile.hpp"
 #include "lwmux_escape.hpp"
+#include "lwmux_planio.hpp"
 
 static bool DecodeMP2Header(lwmAudioCommonInfo &aci, lwmAudioStreamInfo &asi, const void *data, bool &outIsPadded, bool &outHasChecksum, lwmUInt32 &outFrameSize)
 {

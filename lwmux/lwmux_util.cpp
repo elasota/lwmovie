@@ -3,6 +3,7 @@
 #include "lwmux_osfile.hpp"
 #include "lwmux_util.hpp"
 #include "lwmux_escape.hpp"
+#include "lwmux_planio.hpp"
 #include "../lwmovie/lwmovie_package.hpp"
 
 void lwmux::util::WriteSyncedAudioPacket(lwmOSFile *outFile, const lwmUInt8 *bytes, lwmUInt32 sz, lwmUInt32 syncTime)

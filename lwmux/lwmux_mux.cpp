@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "lwmux_osfile.hpp"
+#include "lwmux_planio.hpp"
 #include "../lwmovie/lwmovie_package.hpp"
 
 struct audioLink

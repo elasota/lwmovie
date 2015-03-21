@@ -219,7 +219,7 @@ lwmOSFile *lwmOSFile::Open(const char *path, EFileMode fileMode)
 	if(!impl->Open(path, fileMode))
 	{
 		delete impl;
-		return false;
+		return NULL;
 	}
 
 	lwmOSFile *osFile = new lwmOSFile();

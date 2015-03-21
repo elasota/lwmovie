@@ -85,6 +85,7 @@ THE SOFTWARE.
 #include <stddef.h>
 #include <stdio.h>
 #include <new>
+#include <string.h>
 
 #include "../common/lwmovie_coretypes.h"
 #include "../common/lwmovie_atomicint_type.hpp"
