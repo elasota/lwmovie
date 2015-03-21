@@ -94,9 +94,9 @@
     <ClCompile Include="mpeg_vidstream.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\lwmovie_attribs.h" />
     <ClInclude Include="lwmovie.h" />
     <ClInclude Include="lwmovie_adpcm_decoder.hpp" />
-    <ClInclude Include="lwmovie_api.hpp" />
     <ClInclude Include="lwmovie_audiobuffer.hpp" />
     <ClInclude Include="lwmovie_audiocodec.hpp" />
     <ClInclude Include="lwmovie_bits.hpp" />

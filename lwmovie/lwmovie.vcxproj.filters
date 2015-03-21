@@ -143,9 +143,6 @@
     <ClInclude Include="lwmovie.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lwmovie_api.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lwmovie_audiobuffer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -165,6 +162,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_idct.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\lwmovie_attribs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

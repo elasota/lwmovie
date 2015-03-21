@@ -19,7 +19,7 @@
 	#endif
 #endif
 
-#ifdef __MSC_VER
+#ifdef _MSC_VER
 	#ifdef LWMOVIE_DLL
 		#ifdef LWMOVIE_DLL_EXPORT
 			#define LWMOVIE_API_DLL __declspec(dllexport)

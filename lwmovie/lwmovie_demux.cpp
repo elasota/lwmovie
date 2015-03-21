@@ -405,8 +405,9 @@ public:
 			return CreateAudioCodecTpl<lwmovie::lwmCCELTDecoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
 		case lwmAST_ADPCM:
 			return CreateAudioCodecTpl<lwmovie::lwmCADPCMDecoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
+		default:
+			return NULL;
 		};
-		return NULL;
 	}
 };
 

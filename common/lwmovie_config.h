@@ -7,7 +7,7 @@
 #define LWMOVIE_SSE2
 
 // Define to support SSE 4.1 instructions
-#define LWMOVIE_SSE41
+//#define LWMOVIE_SSE41
 
 // Define this to use fixed-point arithmetic
 #define LWMOVIE_FIXEDPOINT

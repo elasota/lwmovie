@@ -74,11 +74,11 @@
     <ClInclude Include="..\lwmovie\lwmovie_adpcm.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lwmux_util.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="lwmux_planio.hpp">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmux_util.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

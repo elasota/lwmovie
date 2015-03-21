@@ -6,8 +6,6 @@
 #include <string.h>
 #include "lwmux_osfile.hpp"
 
-const int INVALID_FILE = -1;
-
 class lwmOSFileImpl
 {
 private:
