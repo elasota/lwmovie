@@ -30,6 +30,14 @@
 #include "lwmovie_profile.hpp"
 #include "lwmovie_idct.hpp"
 
+#ifdef LWMOVIE_SSE2
+#include "lwmovie_recon_m1vsw_sse2.inl"
+#endif
+
+#ifdef LWMOVIE_NOSIMD
+#include "lwmovie_recon_m1vsw_c.inl"
+#endif
+
 
 lwmovie::lwmCM1VSoftwareReconstructor::lwmCM1VSoftwareReconstructor()
 :	m_mblocks(NULL)
@@ -299,6 +307,272 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const 
 	}
 }
 
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
+{
+	lwmUInt8 bytes[16+256+256];
+
+	lwmLargeUInt alignOffs = (bytes + 15 - static_cast<const lwmUInt8 *>(0)) & 0xf;
+	lwmUInt8 *alignedBytes = bytes + 15 - alignOffs;
+
+	lwmUInt8 *motion = alignedBytes + 0;
+	lwmUInt8 *mergeMotion = alignedBytes + 256;
+
+	lwmSInt32 reconDownFor = mblock->recon_down_for;
+	lwmSInt32 reconRightFor = mblock->recon_right_for;
+	lwmSInt32 reconDownBack = mblock->recon_down_back;
+	lwmSInt32 reconRightBack = mblock->recon_right_back;
+
+	if((!mblock->mb_motion_forw) && (!mblock->mb_motion_back))
+	{
+		// No motion
+		
+		if(mblock->skipped)
+		{
+			// Skipped MB, motion compensation only
+			ZeroLumaBlockPair(c, stride);
+			ZeroLumaBlockPair(c + stride * 8, stride);
+		}
+		else
+		{
+			// Apply DCT
+			if(!block[0].zero_block_flag)
+			{
+				block[0].IDCT(dctBlock);
+				if(!block[1].zero_block_flag)
+				{
+					// 0+1
+					block[1].IDCT(dctBlock + 1);
+					SetLumaDCTPaired(c, dctBlock, stride);
+				}
+				else
+				{
+					// 0 only
+					SetLumaDCTLow(c, dctBlock, stride);
+				}
+			}
+			else
+			{
+				if(!block[1].zero_block_flag)
+				{
+					// 1 only
+					block[1].IDCT(dctBlock + 1);
+					SetLumaDCTHigh(c, dctBlock, stride);
+				}
+				else
+				{
+					// No DCT
+					ZeroLumaBlockPair(c, stride);
+				}
+			}
+
+			lwmUInt8 *c2 = c + stride * 8;
+
+			if(!block[2].zero_block_flag)
+			{
+				block[2].IDCT(dctBlock + 2);
+				if(!block[3].zero_block_flag)
+				{
+					// 2+3
+					block[3].IDCT(dctBlock + 3);
+					SetLumaDCTPaired(c2, dctBlock + 2, stride);
+				}
+				else
+				{
+					// 2 only
+					SetLumaDCTLow(c2, dctBlock + 2, stride);
+				}
+			}
+			else
+			{
+				if(!block[3].zero_block_flag)
+				{
+					// 3 only
+					block[3].IDCT(dctBlock + 3);
+					SetLumaDCTHigh(c2, dctBlock + 2, stride);
+				}
+				else
+				{
+					// No DCT
+					ZeroLumaBlockPair(c2, stride);
+				}
+			}
+		}
+
+		// End of no-motion
+	}
+	else
+	{
+		if(mblock->mb_motion_forw)
+		{
+			ExtractMotionLuma(motion, f, reconRightFor, reconDownFor, stride, profileTags);
+			if(mblock->mb_motion_back)
+			{
+				ExtractMotionLuma(mergeMotion, p, reconRightBack, reconDownBack, stride, profileTags);
+				MergeLumaMotion(motion, mergeMotion);
+			}
+		}
+		else //if(mblock->mb_motion_back)
+		{
+			ExtractMotionLuma(motion, p, reconRightBack, reconDownBack, stride, profileTags);
+		}
+
+		if(mblock->skipped)
+		{
+			// Skipped MB, motion compensation only
+			CopyLumaBlockPair(c, motion, stride);
+			CopyLumaBlockPair(c + stride * 8, motion + 128, stride);
+		}
+		else
+		{
+			// Apply DCT
+			if(!block[0].zero_block_flag)
+			{
+				block[0].IDCT(dctBlock);
+				if(!block[1].zero_block_flag)
+				{
+					// 0+1
+					block[1].IDCT(dctBlock +1);
+					ApplyLumaDCTPaired(c, motion, dctBlock, stride);
+				}
+				else
+				{
+					// 0 only
+					ApplyLumaDCTLow(c, motion, dctBlock, stride);
+				}
+			}
+			else
+			{
+				if(!block[1].zero_block_flag)
+				{
+					// 1 only
+					block[1].IDCT(dctBlock + 1);
+					ApplyLumaDCTHigh(c, motion, dctBlock, stride);
+				}
+				else
+				{
+					// No DCT
+					CopyLumaBlockPair(c, motion, stride);
+				}
+			}
+
+			lwmUInt8 *c2 = c + stride * 8;
+
+			if(!block[2].zero_block_flag)
+			{
+				block[2].IDCT(dctBlock + 2);
+				if(!block[3].zero_block_flag)
+				{
+					// 2+3
+					block[3].IDCT(dctBlock + 3);
+					ApplyLumaDCTPaired(c2, motion + 128, dctBlock + 2, stride);
+				}
+				else
+				{
+					// 2 only
+					ApplyLumaDCTLow(c2, motion + 128, dctBlock + 2, stride);
+				}
+			}
+			else
+			{
+				if(!block[3].zero_block_flag)
+				{
+					// 3 only
+					block[3].IDCT(dctBlock + 3);
+					ApplyLumaDCTHigh(c2, motion + 128, dctBlock + 2, stride);
+				}
+				else
+				{
+					// No DCT
+					CopyLumaBlockPair(c2, motion + 128, stride);
+				}
+			}
+		}
+
+		// End of motion + DCT
+	}
+}
+
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
+{
+	lwmUInt8 bytes[16+64+64];
+
+	lwmLargeUInt alignOffs = (bytes + 15 - static_cast<const lwmUInt8 *>(0)) & 0xf;
+	lwmUInt8 *alignedBytes = bytes + 15 - alignOffs;
+
+	lwmUInt8 *motion = alignedBytes + 0;
+	lwmUInt8 *mergeMotion = alignedBytes + 64;
+
+	lwmSInt32 reconDownFor = mblock->recon_down_for;
+	lwmSInt32 reconRightFor = mblock->recon_right_for;
+	lwmSInt32 reconDownBack = mblock->recon_down_back;
+	lwmSInt32 reconRightBack = mblock->recon_right_back;
+
+	// Note: Divide, not shift.  Chroma MVs round towards zero.
+	reconDownFor = reconDownFor / 2;
+	reconRightFor = reconRightFor / 2;
+	reconDownBack = reconDownBack / 2;
+	reconRightBack = reconRightBack / 2;
+
+	if((!mblock->mb_motion_forw) && (!mblock->mb_motion_back))
+	{
+		// No motion
+		
+		if(mblock->skipped)
+		{
+			// Skipped MB, motion compensation only
+			ZeroChromaBlock(c, stride);
+		}
+		else
+		{
+			// Apply DCT
+			if(!block->zero_block_flag)
+			{
+				block->IDCT(dctBlock);
+				SetChromaDCT(c, dctBlock, stride);
+			}
+			else
+				ZeroChromaBlock(c, stride);
+		}
+
+		// End of no-motion
+	}
+	else
+	{
+		if(mblock->mb_motion_forw)
+		{
+			ExtractMotionChroma(motion, f, reconRightFor, reconDownFor, stride, profileTags);
+			if(mblock->mb_motion_back)
+			{
+				ExtractMotionChroma(mergeMotion, p, reconRightBack, reconDownBack, stride, profileTags);
+				MergeChromaMotion(motion, mergeMotion);
+			}
+		}
+		else //if(mblock->mb_motion_back)
+		{
+			ExtractMotionChroma(motion, p, reconRightBack, reconDownBack, stride, profileTags);
+		}
+
+		if(mblock->skipped)
+		{
+			// Skipped MB, motion compensation only
+			CopyChromaBlock(c, motion, stride);
+		}
+		else
+		{
+			// Apply DCT
+			if(!block->zero_block_flag)
+			{
+				block->IDCT(dctBlock);
+				ApplyChromaDCT(c, motion, dctBlock, stride);
+			}
+			else
+				CopyChromaBlock(c, motion, stride);
+		}
+
+		// End of motion + DCT
+	}
+}
+
 void lwmovie::lwmCM1VSoftwareReconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB)
 {
 	this->CloseFrame();
@@ -411,6 +685,16 @@ void lwmovie::lwmCM1VSoftwareReconstructor::STarget::Close(lwmSVideoFrameProvide
 	}
 }
 
+void lwmovie::lwmCM1VSoftwareReconstructor::STWNJoinFunc(lwmSWorkNotifier *workNotifier)
+{
+}
+
+void lwmovie::lwmCM1VSoftwareReconstructor::STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier)
+{
+	STWorkNotifier *typeWN = static_cast<STWorkNotifier*>(workNotifier);
+	static_cast<STWorkNotifier*>(workNotifier)->recon->Participate();
+}
+
 //////////////////////////////////////////////////////////////////
 // Grid block cursor
 lwmovie::lwmCM1VGridBlockCursor::lwmCM1VGridBlockCursor(lwmReconMBlock *mblocks, lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks)
@@ -502,7 +786,6 @@ void lwmovie::lwmCM1VBaseBlockCursor::CommitFull()
 	blockInfo->needs_idct = true;
 	blockInfo->sparse_idct = false;
 }
-
 
 /////////////////////////////////////////////////////////////
 lwmovie::lwmIM1VBlockCursor::~lwmIM1VBlockCursor()

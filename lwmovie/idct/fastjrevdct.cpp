@@ -45,6 +45,11 @@
  * multiplication; this allows a very simple and accurate implementation in
  * scaled fixed-point arithmetic, with a minimal number of shifts.
  */
+
+#include "../../common/lwmovie_config.h"
+
+#ifdef LWMOVIE_SSE2
+
 #include "liteasm.h"
 
 #define CONST_BITS		13
@@ -650,3 +655,5 @@ FCLABEL(pass1)
 	odd_part(1, odd_part_export_pass_2_rc, odd_part_export_pass_2)
 
 FUNCTION_FOOTER
+
+#endif

@@ -68,6 +68,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="idct\fastjrevdct.cpp" />
+    <ClCompile Include="idct\jrevdct.cpp" />
     <ClCompile Include="lwmovie_adpcm.cpp" />
     <ClCompile Include="lwmovie_adpcm_decoder.cpp" />
     <ClCompile Include="lwmovie_audiobuffer.cpp" />
@@ -87,7 +88,6 @@
     <ClCompile Include="lwmovie_profile.cpp" />
     <ClCompile Include="lwmovie_recon.cpp" />
     <ClCompile Include="lwmovie_recon_m1vsw.cpp" />
-    <ClCompile Include="lwmovie_recon_m1vsw_sse2.cpp" />
     <ClCompile Include="lwmovie_vlc.cpp" />
     <ClCompile Include="lwmovie_vlctables.cpp" />
     <ClCompile Include="mpeg_deslicer.cpp" />
@@ -127,6 +127,10 @@
     <ProjectReference Include="..\mp2dec2\mp2dec2.vcxproj">
       <Project>{c20d80ea-b440-485b-b555-26401fe7a054}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lwmovie_recon_m1vsw_c.inl" />
+    <None Include="lwmovie_recon_m1vsw_sse2.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

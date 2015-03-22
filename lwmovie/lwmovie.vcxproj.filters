@@ -51,9 +51,6 @@
     <ClCompile Include="lwmovie_recon.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lwmovie_recon_m1vsw_sse2.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mpeg_deslicer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -88,6 +85,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lwmovie_audiocodec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="idct\jrevdct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -167,5 +167,13 @@
     <ClInclude Include="..\common\lwmovie_attribs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="lwmovie_recon_m1vsw_sse2.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="lwmovie_recon_m1vsw_c.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -19,11 +19,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#include "../common/lwmovie_config.h"
+
+#ifdef LWMOVIE_SSE2
 #include <emmintrin.h>
+#endif
+
 #include <string.h>
 #include "../common/lwmovie_coretypes.h"
 #include "lwmovie_videotypes.hpp"
 #include "lwmovie_idct.hpp"
+
 
 namespace lwmovie
 {
@@ -70,6 +76,7 @@ void lwmovie::idct::Initialize()
 
 void lwmovie::idct::IDCT_SparseDC( lwmSInt16 data[64], lwmSInt16 value )
 {
+#ifdef LWMOVIE_SSE2
 	__m128i fill = _mm_setzero_si128();
 	fill = _mm_insert_epi16(fill, static_cast<int>(value >> 3), 0);
 	fill = _mm_unpacklo_epi16(fill, fill);
@@ -82,10 +89,22 @@ void lwmovie::idct::IDCT_SparseDC( lwmSInt16 data[64], lwmSInt16 value )
 		_mm_store_si128(reinterpret_cast<__m128i*>(dataPtr), fill);
 		dataPtr += 8;
 	}
+#else
+	value >>= 3;
+	int rows = 8;
+	lwmSInt16 *dataPtr = data;
+	while(rows--)
+	{
+		for(int i=0;i<8;i++)
+			dataPtr[i] = value;
+		dataPtr += 8;
+	}
+#endif
 }
 
 void lwmovie::idct::IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value )
 {
+#ifdef LWMOVIE_SSE2
 	__m128i fill = _mm_setzero_si128();
 	fill = _mm_insert_epi16(fill, static_cast<int>(value), 0);
 	fill = _mm_unpacklo_epi16(fill, fill);
@@ -107,11 +126,51 @@ void lwmovie::idct::IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lw
 		dataPtr += 8;
 		sparseMat += 8;
 	}
+#else
+	int rows = 8;
+	lwmSInt16 *dataPtr = data;
+	const lwmSInt16 *sparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock(coeffPos)->data;
+	while(rows--)
+	{
+		const lwmSInt16 *sparseInputRow = sparseMat;
+		for(int i=0;i<8;i++)
+			dataPtr[i] = static_cast<lwmSInt16>((static_cast<lwmSInt32>(sparseInputRow[i]) * value) >> 8);
+		dataPtr += 8;
+		sparseMat += 8;
+	}
+#endif
 }
 
 extern "C" void j_rev_dct_sse2( lwmSInt16 data[64] );
+extern "C" void j_rev_dct ( lwmSInt16 data[64] );
 
 void lwmovie::idct::IDCT( lwmSInt16 data[64] )
 {
+#ifdef LWMOVIE_SSE2
 	j_rev_dct_sse2(data);
+#endif
+#ifdef LWMOVIE_NOSIMD
+	j_rev_dct(data);
+#endif
+}
+
+
+void lwmovie::lwmBlockInfo::IDCT(lwmDCTBLOCK *block) const
+{
+	if(needs_idct)
+	{
+		if(sparse_idct)
+		{
+			if(sparse_idct_index == 0)
+				lwmovie::idct::IDCT_SparseDC(block->data, sparse_idct_coef);
+			else
+				lwmovie::idct::IDCT_SparseAC(block->data, sparse_idct_index, sparse_idct_coef);
+		}
+		else
+			lwmovie::idct::IDCT(block->data);
+	}
+	else
+	{
+		block->FastZeroFill();
+	}
 }
