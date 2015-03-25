@@ -8,7 +8,7 @@
 #include "lwmux_planio.hpp"
 #include "../lwmovie/lwmovie_external_types.h"
 #include "../lwmovie/lwmovie_package.hpp"
-#include "../lwcelt/celt.h"
+#include "../lwcelt/celt/celt.h"
 
 using namespace lwmovie::riff;
 
@@ -50,7 +50,7 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 	{
 		lwmMovieHeader pkgHeader;
 		pkgHeader.videoStreamType = lwmVST_None;
-		pkgHeader.audioStreamType = lwmAST_CELT_0_11_1;
+		pkgHeader.audioStreamType = lwmAST_OpusCustom;
 		pkgHeader.numTOC = 0;
 		pkgHeader.largestPacketSize = 0;
 		pkgHeader.longestFrameReadahead = 0;
@@ -74,15 +74,15 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 	CRIFFDataChunk *dataAtom = rootAtom->FindDataChild(SFourCC('d', 'a', 't', 'a'));
 
 	int errorCode;
-	CELTMode *mode = celt_mode_create(&alloc, wavFormat.sampleRate, FRAME_SIZE, &errorCode);
+	CELTMode *mode = opus_custom_mode_create(&alloc, wavFormat.sampleRate, FRAME_SIZE, &errorCode);
 	if(mode)
 	{
-		CELTEncoder *encoder = celt_encoder_create_custom(mode, wavFormat.numChannels, &errorCode);
+		CELTEncoder *encoder = opus_custom_encoder_create(&alloc, mode, wavFormat.numChannels, &errorCode);
 		if(encoder)
 		{
 			int vbrFlag = (vbr ? 0 : 1);
-			celt_encoder_ctl(encoder, CELT_SET_VBR(vbrFlag));
-			celt_encoder_ctl(encoder, CELT_SET_BITRATE(bitsPerSecond));
+			opus_custom_encoder_ctl(encoder, OPUS_SET_VBR(vbrFlag));
+			opus_custom_encoder_ctl(encoder, OPUS_SET_BITRATE(bitsPerSecond));
 
 			inFile->Seek(dataAtom->FileOffset(), lwmOSFile::SM_Start);
 			lwmUInt32 numSamples = dataAtom->ChunkSize() / (wavFormat.bitsPerSample/8) / wavFormat.numChannels + ENCODE_DELAY;
@@ -149,7 +149,7 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 				memset(samples + numUsableSamples*wavFormat.numChannels, 0, sizeof(lwmSInt16) * (FRAME_SIZE - numUsableSamples) * wavFormat.numChannels);
 
 				// Encode
-				int numEncoded = celt_encode(encoder, samples, FRAME_SIZE, encodedBytes, 2000);
+				int numEncoded = opus_custom_encode(encoder, samples, FRAME_SIZE, encodedBytes, 2000);
 				if(numEncoded > 0)
 				{
 					lwmPacketHeader pktHeader;
@@ -201,8 +201,8 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 				delete[] samples;
 				delete[] encodedBytes;
 			}
-			celt_encoder_destroy(encoder);
+			opus_custom_encoder_destroy(encoder);
 		}
-		celt_mode_destroy(mode);
+		opus_custom_mode_destroy(mode);
 	}
 }

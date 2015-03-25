@@ -44,7 +44,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -61,7 +61,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>HAVE_CONFIG_H;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>false</ExceptionHandling>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -76,51 +76,59 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="arch.h" />
-    <ClInclude Include="bands.h" />
-    <ClInclude Include="celt.h" />
-    <ClInclude Include="celt_header.h" />
-    <ClInclude Include="celt_types.h" />
-    <ClInclude Include="config.h" />
-    <ClInclude Include="cwrs.h" />
-    <ClInclude Include="ecintrin.h" />
-    <ClInclude Include="entcode.h" />
-    <ClInclude Include="entdec.h" />
-    <ClInclude Include="entenc.h" />
-    <ClInclude Include="fixed_debug.h" />
-    <ClInclude Include="fixed_generic.h" />
-    <ClInclude Include="float_cast.h" />
-    <ClInclude Include="kiss_fft.h" />
-    <ClInclude Include="laplace.h" />
-    <ClInclude Include="mathops.h" />
-    <ClInclude Include="mdct.h" />
-    <ClInclude Include="modes.h" />
-    <ClInclude Include="os_support.h" />
-    <ClInclude Include="pitch.h" />
-    <ClInclude Include="plc.h" />
-    <ClInclude Include="quant_bands.h" />
-    <ClInclude Include="rate.h" />
-    <ClInclude Include="stack_alloc.h" />
-    <ClInclude Include="vq.h" />
+    <ClCompile Include="celt\bands.c" />
+    <ClCompile Include="celt\celt.c" />
+    <ClCompile Include="celt\celt_decoder.c" />
+    <ClCompile Include="celt\celt_encoder.c" />
+    <ClCompile Include="celt\celt_lpc.c" />
+    <ClCompile Include="celt\cwrs.c" />
+    <ClCompile Include="celt\entcode.c" />
+    <ClCompile Include="celt\entdec.c" />
+    <ClCompile Include="celt\entenc.c" />
+    <ClCompile Include="celt\kiss_fft.c" />
+    <ClCompile Include="celt\laplace.c" />
+    <ClCompile Include="celt\mathops.c" />
+    <ClCompile Include="celt\mdct.c" />
+    <ClCompile Include="celt\modes.c" />
+    <ClCompile Include="celt\pitch.c" />
+    <ClCompile Include="celt\quant_bands.c" />
+    <ClCompile Include="celt\rate.c" />
+    <ClCompile Include="celt\vq.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="bands.c" />
-    <ClCompile Include="celt.c" />
-    <ClCompile Include="cwrs.c" />
-    <ClCompile Include="entcode.c" />
-    <ClCompile Include="entdec.c" />
-    <ClCompile Include="entenc.c" />
-    <ClCompile Include="kiss_fft.c" />
-    <ClCompile Include="laplace.c" />
-    <ClCompile Include="lwmem.c" />
-    <ClCompile Include="mathops.c" />
-    <ClCompile Include="mdct.c" />
-    <ClCompile Include="modes.c" />
-    <ClCompile Include="pitch.c" />
-    <ClCompile Include="plc.c" />
-    <ClCompile Include="quant_bands.c" />
-    <ClCompile Include="rate.c" />
-    <ClCompile Include="vq.c" />
+    <ClInclude Include="celt\arch.h" />
+    <ClInclude Include="celt\bands.h" />
+    <ClInclude Include="celt\celt.h" />
+    <ClInclude Include="celt\celt_lpc.h" />
+    <ClInclude Include="celt\cpu_support.h" />
+    <ClInclude Include="celt\cwrs.h" />
+    <ClInclude Include="celt\ecintrin.h" />
+    <ClInclude Include="celt\entcode.h" />
+    <ClInclude Include="celt\entdec.h" />
+    <ClInclude Include="celt\entenc.h" />
+    <ClInclude Include="celt\fixed_debug.h" />
+    <ClInclude Include="celt\fixed_generic.h" />
+    <ClInclude Include="celt\float_cast.h" />
+    <ClInclude Include="celt\kiss_fft.h" />
+    <ClInclude Include="celt\laplace.h" />
+    <ClInclude Include="celt\mathops.h" />
+    <ClInclude Include="celt\mdct.h" />
+    <ClInclude Include="celt\mfrngcod.h" />
+    <ClInclude Include="celt\modes.h" />
+    <ClInclude Include="celt\os_support.h" />
+    <ClInclude Include="celt\pitch.h" />
+    <ClInclude Include="celt\quant_bands.h" />
+    <ClInclude Include="celt\rate.h" />
+    <ClInclude Include="celt\stack_alloc.h" />
+    <ClInclude Include="celt\static_modes_fixed.h" />
+    <ClInclude Include="celt\static_modes_float.h" />
+    <ClInclude Include="celt\vq.h" />
+    <ClInclude Include="celt\_kiss_fft_guts.h" />
+    <ClInclude Include="include\opus.h" />
+    <ClInclude Include="include\opus_custom.h" />
+    <ClInclude Include="include\opus_defines.h" />
+    <ClInclude Include="include\opus_multistream.h" />
+    <ClInclude Include="include\opus_types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -7,8 +7,8 @@
 struct lwmSAllocator;
 struct lwmAudioStreamInfo;
 struct lwmMovieHeader;
-struct CELTMode;
-struct CELTDecoder;
+struct OpusCustomMode;
+struct OpusCustomDecoder;
 
 namespace lwmovie
 {
@@ -24,8 +24,8 @@ namespace lwmovie
 	private:
 		lwmSAllocator *m_alloc;
 		lwmUInt8 m_numChannels;
-		CELTMode *m_celtMode;
-		CELTDecoder *m_celtDecoder;
+		OpusCustomMode *m_celtMode;
+		OpusCustomDecoder *m_celtDecoder;
 		lwmCAudioBuffer m_audioBuffer;
 	};
 }

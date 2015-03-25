@@ -18,136 +18,160 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="arch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="bands.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="celt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="celt_header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="celt_types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cwrs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ecintrin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="entcode.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="entdec.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="entenc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fixed_debug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fixed_generic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="float_cast.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="kiss_fft.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="laplace.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mathops.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="mdct.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="modes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="os_support.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="pitch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="plc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="quant_bands.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rate.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stack_alloc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vq.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
+    <ClCompile Include="celt\bands.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\celt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\celt_lpc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\cwrs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\entcode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\entdec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\entenc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\kiss_fft.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\laplace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\mathops.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\mdct.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\modes.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\pitch.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\quant_bands.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\rate.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\vq.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\celt_decoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="celt\celt_encoder.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="bands.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="celt.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cwrs.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="entcode.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="entdec.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="entenc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="kiss_fft.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="laplace.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mdct.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="modes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="pitch.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="plc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="quant_bands.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rate.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="vq.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mathops.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="lwmem.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="celt\_kiss_fft_guts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\arch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\bands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\celt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\celt_lpc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\cpu_support.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\cwrs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\ecintrin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\entcode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\entdec.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\entenc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\fixed_debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\fixed_generic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\float_cast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\kiss_fft.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\laplace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\mathops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\mdct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\mfrngcod.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\modes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\os_support.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\pitch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\quant_bands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\rate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\stack_alloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\static_modes_fixed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\static_modes_float.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\vq.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opus_custom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opus_defines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opus_multistream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\opus_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

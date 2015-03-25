@@ -25,7 +25,7 @@ namespace lwfe
     public class CELTAudioCodec : ICodec
     {
         string ICodec.CodecID { get { return "CELT"; } }
-        string ICodec.Name { get { return "CELT 0.11.1"; } }
+        string ICodec.Name { get { return "Opus Custom (CELT)"; } }
         IExecutionPlanSettings ICodec.CreateExecutionPlanSettings() { return new CELTAudioSettings(); }
         Control ICodec.CreateCodecControl() { return new CELTAudioOptionsControl(); }
     }

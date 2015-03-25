@@ -30,18 +30,25 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.fsExistingVideoIntermediate = new lwfe.FileSelector();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.pnlVideoCodecOptions = new System.Windows.Forms.Panel();
             this.label6 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
+            this.fsVideoEncodeOutput = new lwfe.FileSelector();
+            this.fsVideoEncodeInput = new lwfe.FileSelector();
             this.cbxVideoCodec = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.radVideoEncode = new System.Windows.Forms.RadioButton();
             this.radVideoUseIF = new System.Windows.Forms.RadioButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.gbxAudioIO = new System.Windows.Forms.GroupBox();
+            this.btnAudioUseVideoSource = new System.Windows.Forms.Button();
+            this.fsExistingAudioIntermediate = new lwfe.FileSelector();
             this.label7 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
+            this.fsAudioEncodeOutput = new lwfe.FileSelector();
+            this.fsAudioEncodeInput = new lwfe.FileSelector();
             this.radAudioEncode = new System.Windows.Forms.RadioButton();
             this.radAudioUseIF = new System.Windows.Forms.RadioButton();
             this.gbxAudioCodecOptions = new System.Windows.Forms.GroupBox();
@@ -54,6 +61,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.label4 = new System.Windows.Forms.Label();
+            this.fsOutputFile = new lwfe.FileSelector();
             this.btnGo = new System.Windows.Forms.Button();
             this.mnsMenu = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -62,14 +70,6 @@
             this.saveSettingsAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.btnAudioUseVideoSource = new System.Windows.Forms.Button();
-            this.fsExistingVideoIntermediate = new lwfe.FileSelector();
-            this.fsVideoEncodeOutput = new lwfe.FileSelector();
-            this.fsVideoEncodeInput = new lwfe.FileSelector();
-            this.fsExistingAudioIntermediate = new lwfe.FileSelector();
-            this.fsAudioEncodeOutput = new lwfe.FileSelector();
-            this.fsAudioEncodeInput = new lwfe.FileSelector();
-            this.fsOutputFile = new lwfe.FileSelector();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -114,6 +114,20 @@
             this.tabPage1.Text = "Video";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // fsExistingVideoIntermediate
+            // 
+            this.fsExistingVideoIntermediate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsExistingVideoIntermediate.DefaultDirectory = null;
+            this.fsExistingVideoIntermediate.DefaultFilterIndex = 0;
+            this.fsExistingVideoIntermediate.FileName = "";
+            this.fsExistingVideoIntermediate.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
+            this.fsExistingVideoIntermediate.FileTypeFilters = "lwmovie Intermediate Video (*lwiv)|*.lwiv";
+            this.fsExistingVideoIntermediate.Location = new System.Drawing.Point(78, 29);
+            this.fsExistingVideoIntermediate.Name = "fsExistingVideoIntermediate";
+            this.fsExistingVideoIntermediate.Size = new System.Drawing.Size(445, 20);
+            this.fsExistingVideoIntermediate.TabIndex = 10;
+            // 
             // groupBox1
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -155,6 +169,35 @@
             this.label5.Size = new System.Drawing.Size(34, 13);
             this.label5.TabIndex = 7;
             this.label5.Text = "Input:";
+            // 
+            // fsVideoEncodeOutput
+            // 
+            this.fsVideoEncodeOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsVideoEncodeOutput.DefaultDirectory = null;
+            this.fsVideoEncodeOutput.DefaultFilterIndex = 0;
+            this.fsVideoEncodeOutput.FileName = "";
+            this.fsVideoEncodeOutput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Save;
+            this.fsVideoEncodeOutput.FileTypeFilters = "lwmovie Intermediate Video (*.lwiv)|*.lwiv";
+            this.fsVideoEncodeOutput.Location = new System.Drawing.Point(78, 104);
+            this.fsVideoEncodeOutput.Name = "fsVideoEncodeOutput";
+            this.fsVideoEncodeOutput.Size = new System.Drawing.Size(445, 20);
+            this.fsVideoEncodeOutput.TabIndex = 6;
+            // 
+            // fsVideoEncodeInput
+            // 
+            this.fsVideoEncodeInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsVideoEncodeInput.DefaultDirectory = null;
+            this.fsVideoEncodeInput.DefaultFilterIndex = 0;
+            this.fsVideoEncodeInput.FileName = "";
+            this.fsVideoEncodeInput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
+            this.fsVideoEncodeInput.FileTypeFilters = "Input Files (*.avi,*.mp4)|*.avi;*.mp4";
+            this.fsVideoEncodeInput.Location = new System.Drawing.Point(78, 78);
+            this.fsVideoEncodeInput.Name = "fsVideoEncodeInput";
+            this.fsVideoEncodeInput.Size = new System.Drawing.Size(445, 20);
+            this.fsVideoEncodeInput.TabIndex = 5;
+            this.fsVideoEncodeInput.FileChanged += new System.EventHandler(this.fsVideoEncodeInput_FileChanged);
             // 
             // cbxVideoCodec
             // 
@@ -235,6 +278,30 @@
             this.gbxAudioIO.Text = "Input/Output";
             this.gbxAudioIO.Visible = false;
             // 
+            // btnAudioUseVideoSource
+            // 
+            this.btnAudioUseVideoSource.Location = new System.Drawing.Point(78, 91);
+            this.btnAudioUseVideoSource.Name = "btnAudioUseVideoSource";
+            this.btnAudioUseVideoSource.Size = new System.Drawing.Size(161, 23);
+            this.btnAudioUseVideoSource.TabIndex = 25;
+            this.btnAudioUseVideoSource.Text = "Use Video Source As Input";
+            this.btnAudioUseVideoSource.UseVisualStyleBackColor = true;
+            this.btnAudioUseVideoSource.Click += new System.EventHandler(this.btnAudioUseVideoSource_Click);
+            // 
+            // fsExistingAudioIntermediate
+            // 
+            this.fsExistingAudioIntermediate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsExistingAudioIntermediate.DefaultDirectory = null;
+            this.fsExistingAudioIntermediate.DefaultFilterIndex = 0;
+            this.fsExistingAudioIntermediate.FileName = "";
+            this.fsExistingAudioIntermediate.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
+            this.fsExistingAudioIntermediate.FileTypeFilters = "lwmovie Intermediate Audio (*.lwia)|*.lwia";
+            this.fsExistingAudioIntermediate.Location = new System.Drawing.Point(78, 42);
+            this.fsExistingAudioIntermediate.Name = "fsExistingAudioIntermediate";
+            this.fsExistingAudioIntermediate.Size = new System.Drawing.Size(429, 20);
+            this.fsExistingAudioIntermediate.TabIndex = 24;
+            // 
             // label7
             // 
             this.label7.AutoSize = true;
@@ -252,6 +319,35 @@
             this.label8.Size = new System.Drawing.Size(34, 13);
             this.label8.TabIndex = 22;
             this.label8.Text = "Input:";
+            // 
+            // fsAudioEncodeOutput
+            // 
+            this.fsAudioEncodeOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsAudioEncodeOutput.DefaultDirectory = null;
+            this.fsAudioEncodeOutput.DefaultFilterIndex = 0;
+            this.fsAudioEncodeOutput.FileName = "";
+            this.fsAudioEncodeOutput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Save;
+            this.fsAudioEncodeOutput.FileTypeFilters = "lwmovie Intermediate Audio (*.lwia)|*.lwia";
+            this.fsAudioEncodeOutput.Location = new System.Drawing.Point(78, 146);
+            this.fsAudioEncodeOutput.Name = "fsAudioEncodeOutput";
+            this.fsAudioEncodeOutput.Size = new System.Drawing.Size(429, 20);
+            this.fsAudioEncodeOutput.TabIndex = 21;
+            // 
+            // fsAudioEncodeInput
+            // 
+            this.fsAudioEncodeInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsAudioEncodeInput.DefaultDirectory = null;
+            this.fsAudioEncodeInput.DefaultFilterIndex = 0;
+            this.fsAudioEncodeInput.FileName = "";
+            this.fsAudioEncodeInput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
+            this.fsAudioEncodeInput.FileTypeFilters = "Input Files (*.avi,*.mp4,*.wav,*.mp2)|*.avi;*.mp4;*.wav;*.mp2";
+            this.fsAudioEncodeInput.Location = new System.Drawing.Point(78, 120);
+            this.fsAudioEncodeInput.Name = "fsAudioEncodeInput";
+            this.fsAudioEncodeInput.Size = new System.Drawing.Size(429, 20);
+            this.fsAudioEncodeInput.TabIndex = 20;
+            this.fsAudioEncodeInput.FileChanged += new System.EventHandler(this.fsAudioEncodeInput_FileChanged);
             // 
             // radAudioEncode
             // 
@@ -305,7 +401,7 @@
             this.cbxAudioCodec.FormattingEnabled = true;
             this.cbxAudioCodec.Location = new System.Drawing.Point(55, 6);
             this.cbxAudioCodec.Name = "cbxAudioCodec";
-            this.cbxAudioCodec.Size = new System.Drawing.Size(121, 21);
+            this.cbxAudioCodec.Size = new System.Drawing.Size(190, 21);
             this.cbxAudioCodec.TabIndex = 5;
             this.cbxAudioCodec.SelectedIndexChanged += new System.EventHandler(this.cbxAudioCodec_SelectedIndexChanged);
             // 
@@ -378,6 +474,20 @@
             this.label4.TabIndex = 0;
             this.label4.Text = "Output file:";
             // 
+            // fsOutputFile
+            // 
+            this.fsOutputFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.fsOutputFile.DefaultDirectory = null;
+            this.fsOutputFile.DefaultFilterIndex = 0;
+            this.fsOutputFile.FileName = "";
+            this.fsOutputFile.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Save;
+            this.fsOutputFile.FileTypeFilters = "lwmovie files (*.lwmv)|*.lwmv|All files (*.*)|*.*";
+            this.fsOutputFile.Location = new System.Drawing.Point(70, 9);
+            this.fsOutputFile.Name = "fsOutputFile";
+            this.fsOutputFile.Size = new System.Drawing.Size(449, 20);
+            this.fsOutputFile.TabIndex = 1;
+            // 
             // btnGo
             // 
             this.btnGo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
@@ -441,116 +551,6 @@
             this.quitToolStripMenuItem.Name = "quitToolStripMenuItem";
             this.quitToolStripMenuItem.Size = new System.Drawing.Size(168, 22);
             this.quitToolStripMenuItem.Text = "Quit";
-            // 
-            // btnAudioUseVideoSource
-            // 
-            this.btnAudioUseVideoSource.Location = new System.Drawing.Point(78, 91);
-            this.btnAudioUseVideoSource.Name = "btnAudioUseVideoSource";
-            this.btnAudioUseVideoSource.Size = new System.Drawing.Size(161, 23);
-            this.btnAudioUseVideoSource.TabIndex = 25;
-            this.btnAudioUseVideoSource.Text = "Use Video Source As Input";
-            this.btnAudioUseVideoSource.UseVisualStyleBackColor = true;
-            this.btnAudioUseVideoSource.Click += new System.EventHandler(this.btnAudioUseVideoSource_Click);
-            // 
-            // fsExistingVideoIntermediate
-            // 
-            this.fsExistingVideoIntermediate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsExistingVideoIntermediate.DefaultDirectory = null;
-            this.fsExistingVideoIntermediate.DefaultFilterIndex = 0;
-            this.fsExistingVideoIntermediate.FileName = "";
-            this.fsExistingVideoIntermediate.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
-            this.fsExistingVideoIntermediate.FileTypeFilters = "lwmovie Intermediate Video (*lwiv)|*.lwiv";
-            this.fsExistingVideoIntermediate.Location = new System.Drawing.Point(78, 29);
-            this.fsExistingVideoIntermediate.Name = "fsExistingVideoIntermediate";
-            this.fsExistingVideoIntermediate.Size = new System.Drawing.Size(445, 20);
-            this.fsExistingVideoIntermediate.TabIndex = 10;
-            // 
-            // fsVideoEncodeOutput
-            // 
-            this.fsVideoEncodeOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsVideoEncodeOutput.DefaultDirectory = null;
-            this.fsVideoEncodeOutput.DefaultFilterIndex = 0;
-            this.fsVideoEncodeOutput.FileName = "";
-            this.fsVideoEncodeOutput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Save;
-            this.fsVideoEncodeOutput.FileTypeFilters = "lwmovie Intermediate Video (*.lwiv)|*.lwiv";
-            this.fsVideoEncodeOutput.Location = new System.Drawing.Point(78, 104);
-            this.fsVideoEncodeOutput.Name = "fsVideoEncodeOutput";
-            this.fsVideoEncodeOutput.Size = new System.Drawing.Size(445, 20);
-            this.fsVideoEncodeOutput.TabIndex = 6;
-            // 
-            // fsVideoEncodeInput
-            // 
-            this.fsVideoEncodeInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsVideoEncodeInput.DefaultDirectory = null;
-            this.fsVideoEncodeInput.DefaultFilterIndex = 0;
-            this.fsVideoEncodeInput.FileName = "";
-            this.fsVideoEncodeInput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
-            this.fsVideoEncodeInput.FileTypeFilters = "Input Files (*.avi,*.mp4)|*.avi;*.mp4";
-            this.fsVideoEncodeInput.Location = new System.Drawing.Point(78, 78);
-            this.fsVideoEncodeInput.Name = "fsVideoEncodeInput";
-            this.fsVideoEncodeInput.Size = new System.Drawing.Size(445, 20);
-            this.fsVideoEncodeInput.TabIndex = 5;
-            this.fsVideoEncodeInput.FileChanged += new System.EventHandler(this.fsVideoEncodeInput_FileChanged);
-            // 
-            // fsExistingAudioIntermediate
-            // 
-            this.fsExistingAudioIntermediate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsExistingAudioIntermediate.DefaultDirectory = null;
-            this.fsExistingAudioIntermediate.DefaultFilterIndex = 0;
-            this.fsExistingAudioIntermediate.FileName = "";
-            this.fsExistingAudioIntermediate.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
-            this.fsExistingAudioIntermediate.FileTypeFilters = "lwmovie Intermediate Audio (*.lwia)|*.lwia";
-            this.fsExistingAudioIntermediate.Location = new System.Drawing.Point(78, 42);
-            this.fsExistingAudioIntermediate.Name = "fsExistingAudioIntermediate";
-            this.fsExistingAudioIntermediate.Size = new System.Drawing.Size(429, 20);
-            this.fsExistingAudioIntermediate.TabIndex = 24;
-            // 
-            // fsAudioEncodeOutput
-            // 
-            this.fsAudioEncodeOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsAudioEncodeOutput.DefaultDirectory = null;
-            this.fsAudioEncodeOutput.DefaultFilterIndex = 0;
-            this.fsAudioEncodeOutput.FileName = "";
-            this.fsAudioEncodeOutput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Save;
-            this.fsAudioEncodeOutput.FileTypeFilters = "lwmovie Intermediate Audio (*.lwia)|*.lwia";
-            this.fsAudioEncodeOutput.Location = new System.Drawing.Point(78, 146);
-            this.fsAudioEncodeOutput.Name = "fsAudioEncodeOutput";
-            this.fsAudioEncodeOutput.Size = new System.Drawing.Size(429, 20);
-            this.fsAudioEncodeOutput.TabIndex = 21;
-            // 
-            // fsAudioEncodeInput
-            // 
-            this.fsAudioEncodeInput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsAudioEncodeInput.DefaultDirectory = null;
-            this.fsAudioEncodeInput.DefaultFilterIndex = 0;
-            this.fsAudioEncodeInput.FileName = "";
-            this.fsAudioEncodeInput.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Open;
-            this.fsAudioEncodeInput.FileTypeFilters = "Input Files (*.avi,*.mp4,*.wav,*.mp2)|*.avi;*.mp4;*.wav;*.mp2";
-            this.fsAudioEncodeInput.Location = new System.Drawing.Point(78, 120);
-            this.fsAudioEncodeInput.Name = "fsAudioEncodeInput";
-            this.fsAudioEncodeInput.Size = new System.Drawing.Size(429, 20);
-            this.fsAudioEncodeInput.TabIndex = 20;
-            this.fsAudioEncodeInput.FileChanged += new System.EventHandler(this.fsAudioEncodeInput_FileChanged);
-            // 
-            // fsOutputFile
-            // 
-            this.fsOutputFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.fsOutputFile.DefaultDirectory = null;
-            this.fsOutputFile.DefaultFilterIndex = 0;
-            this.fsOutputFile.FileName = "";
-            this.fsOutputFile.FileSelectionMode = lwfe.FileSelector.EFileSelectionMode.Save;
-            this.fsOutputFile.FileTypeFilters = "lwmovie files (*.lwmv)|*.lwmv|All files (*.*)|*.*";
-            this.fsOutputFile.Location = new System.Drawing.Point(70, 9);
-            this.fsOutputFile.Name = "fsOutputFile";
-            this.fsOutputFile.Size = new System.Drawing.Size(449, 20);
-            this.fsOutputFile.TabIndex = 1;
             // 
             // MainForm
             // 

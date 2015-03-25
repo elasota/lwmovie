@@ -401,7 +401,7 @@ public:
 		{
 		case lwmAST_MP2:
 			return CreateAudioCodecTpl<lwmovie::lwmCMP2Decoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
-		case lwmAST_CELT_0_11_1:
+		case lwmAST_OpusCustom:
 			return CreateAudioCodecTpl<lwmovie::lwmCCELTDecoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
 		case lwmAST_ADPCM:
 			return CreateAudioCodecTpl<lwmovie::lwmCADPCMDecoder>(alloc, movieHeader, audioCommonInfo, audioStreamInfo);
@@ -441,7 +441,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 		// TODO: Test
 		break;
 	case lwmAST_MP2:
-	case lwmAST_CELT_0_11_1:
+	case lwmAST_OpusCustom:
 	case lwmAST_ADPCM:
 		movieState->audioDecoders = alloc->NAlloc<lwmovie::lwmCAudioCodec*>(movieState->audioCommonInfo.numAudioStreams);
 		for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)

@@ -9,7 +9,6 @@
 #include "../lwmovie/lwmovie_adpcm.hpp"
 #include "../lwmovie/lwmovie_external_types.h"
 #include "../lwmovie/lwmovie_package.hpp"
-#include "../lwcelt/celt.h"
 
 using namespace lwmovie::riff;
 

@@ -2,7 +2,7 @@
 
 #include "lwmovie_celt_decoder.hpp"
 #include "lwmovie_package.hpp"
-#include "../lwcelt/celt.h"
+#include "../lwcelt/celt/celt.h"
 
 static const unsigned int FRAME_SIZE = 1024;
 static const unsigned int CELT_MAX_FRAME_BYTES = 1275;
@@ -19,9 +19,9 @@ lwmovie::lwmCCELTDecoder::lwmCCELTDecoder(lwmSAllocator *alloc)
 lwmovie::lwmCCELTDecoder::~lwmCCELTDecoder()
 {
 	if(m_celtDecoder)
-		celt_decoder_destroy(m_celtDecoder);
+		opus_custom_decoder_destroy(m_celtDecoder);
 	if(m_celtMode)
-		celt_mode_destroy(m_celtMode);
+		opus_custom_mode_destroy(m_celtMode);
 }
 
 bool lwmovie::lwmCCELTDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo)
@@ -37,10 +37,10 @@ bool lwmovie::lwmCCELTDecoder::Init(const lwmMovieHeader *movieHeader, const lwm
 		return false;
 
 	int errorCode;
-	m_celtMode = celt_mode_create(m_alloc, audioCommonInfo->sampleRate, FRAME_SIZE, &errorCode);
+	m_celtMode = opus_custom_mode_create(m_alloc, audioCommonInfo->sampleRate, FRAME_SIZE, &errorCode);
 	if(!m_celtMode)
 		return false;
-	m_celtDecoder = celt_decoder_create_custom(m_celtMode, m_numChannels, &errorCode);
+	m_celtDecoder = opus_custom_decoder_create(m_alloc, m_celtMode, m_numChannels, &errorCode);
 	if(!m_celtDecoder)
 		return false;
 
@@ -57,7 +57,7 @@ bool lwmovie::lwmCCELTDecoder::DigestDataPacket(const void *bytes, lwmUInt32 pac
 	void *outputBuf = m_audioBuffer.ReserveNewContiguous(FRAME_SIZE, numDroppedSamples);
 	if(!outputBuf)
 		return false;
-	if(celt_decode(m_celtDecoder, static_cast<const unsigned char *>(bytes), static_cast<int>(packetSize), static_cast<celt_int16*>(outputBuf), FRAME_SIZE) != CELT_OK)
+	if(opus_custom_decode(m_celtDecoder, static_cast<const unsigned char *>(bytes), static_cast<int>(packetSize), static_cast<opus_int16*>(outputBuf), FRAME_SIZE) != FRAME_SIZE)
 		return false;
 	if(numDroppedSamples)
 		outOverrun = true;

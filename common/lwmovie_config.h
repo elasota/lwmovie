@@ -3,6 +3,9 @@
 // If SSE 4.1 is not available, the fastest is LWMOVIE_SSE2 without LWMOVIE_FIXEDPOINT.
 // You must enable at least one option.
 
+// Enable to support SSE instructions
+#define LWMOVIE_SSE
+
 // Enable to support SSE 2 instructions
 #define LWMOVIE_SSE2
 
