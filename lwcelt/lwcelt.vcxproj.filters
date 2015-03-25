@@ -173,5 +173,11 @@
     <ClInclude Include="include\opus_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lwcelt_defs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="celt\x86\pitch_sse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -123,12 +123,14 @@
     <ClInclude Include="celt\static_modes_fixed.h" />
     <ClInclude Include="celt\static_modes_float.h" />
     <ClInclude Include="celt\vq.h" />
+    <ClInclude Include="celt\x86\pitch_sse.h" />
     <ClInclude Include="celt\_kiss_fft_guts.h" />
     <ClInclude Include="include\opus.h" />
     <ClInclude Include="include\opus_custom.h" />
     <ClInclude Include="include\opus_defines.h" />
     <ClInclude Include="include\opus_multistream.h" />
     <ClInclude Include="include\opus_types.h" />
+    <ClInclude Include="lwcelt_defs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

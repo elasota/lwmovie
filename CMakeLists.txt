@@ -3,23 +3,24 @@ project (lwmovie)
 include (GenerateExportHeader)
 
 add_library(lwcelt STATIC
-	lwcelt/bands.c
-	lwcelt/celt.c
-	lwcelt/cwrs.c
-	lwcelt/entcode.c
-	lwcelt/entdec.c
-	lwcelt/entenc.c
-	lwcelt/kiss_fft.c
-	lwcelt/laplace.c
-	lwcelt/lwmem.c
-	lwcelt/mathops.c
-	lwcelt/mdct.c
-	lwcelt/modes.c
-	lwcelt/pitch.c
-	lwcelt/plc.c
-	lwcelt/quant_bands.c
-	lwcelt/rate.c
-	lwcelt/vq.c
+	lwcelt/celt/bands.c
+	lwcelt/celt/celt.c
+	lwcelt/celt/celt_encoder.c
+	lwcelt/celt/celt_decoder.c
+	lwcelt/celt/celt_lpc.c
+	lwcelt/celt/cwrs.c
+	lwcelt/celt/entcode.c
+	lwcelt/celt/entdec.c
+	lwcelt/celt/entenc.c
+	lwcelt/celt/kiss_fft.c
+	lwcelt/celt/laplace.c
+	lwcelt/celt/mathops.c
+	lwcelt/celt/mdct.c
+	lwcelt/celt/modes.c
+	lwcelt/celt/pitch.c
+	lwcelt/celt/quant_bands.c
+	lwcelt/celt/rate.c
+	lwcelt/celt/vq.c
 )
 
 add_library(mp2dec2 STATIC
@@ -51,7 +52,6 @@ add_library(lwmovie MODULE
 	lwmovie/lwmovie_profile.cpp
 	lwmovie/lwmovie_recon.cpp
 	lwmovie/lwmovie_recon_m1vsw.cpp
-	lwmovie/lwmovie_recon_m1vsw_sse2.cpp
 	lwmovie/lwmovie_vlc.cpp
 	lwmovie/lwmovie_vlctables.cpp
 	lwmovie/mpeg_deslicer.cpp

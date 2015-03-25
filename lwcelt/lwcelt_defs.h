@@ -1,8 +1,9 @@
 #include "../common/lwmovie_config.h"
 
-#define CUSTOM_MODES
-#define USE_ALLOCA
+#ifndef HAVE_CONFIG_H
+	#define HAVE_CONFIG_H
+#endif
 
-#ifdef LWMOVIE_SSE
+#if defined(LWMOVIE_SSE) && !defined(__SSE__)
 	#define __SSE__
 #endif
