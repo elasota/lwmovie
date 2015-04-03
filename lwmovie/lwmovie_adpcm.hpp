@@ -51,11 +51,11 @@ inline lwmSInt16 lwmovie::adpcm::SPredictorState::DecodeSample(lwmUInt8 encoded)
 	// Update predictor
 	lwmSInt32 newPred = this->predictor + (static_cast<lwmSInt32>(encoded) * 2 - 15) * s_StepTable[this->stepIndex] / 8;
 	if(newPred > 32767)
-		this->predictor = 32767;
+		newPred = 32767;
 	else if(newPred < -32768)
-		this->predictor = -32768;
-	else
-		this->predictor = static_cast<lwmSInt16>(newPred);
+		newPred = -32768;
+
+	this->predictor = static_cast<lwmSInt16>(newPred);
 
 	this->stepIndex += s_IndexTable[encoded];
 	if(this->stepIndex < 0) 
@@ -65,6 +65,5 @@ inline lwmSInt16 lwmovie::adpcm::SPredictorState::DecodeSample(lwmUInt8 encoded)
 
 	return newPred;
 }
-
 
 #endif
