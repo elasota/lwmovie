@@ -182,7 +182,7 @@ void EmitFrameSync(lwmOSFile *outFile, lwmUInt32 frameNumber, bool isRandomAcces
 	globalSync += 7;
 }
 
-void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile)
+void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
 {
 	videoTagLink *linkHead = NULL;
 	videoTagLink *linkTail = NULL;
@@ -217,6 +217,9 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile)
 	lwmUInt64 vidFileSize = mpegFile->FilePos();
 
 	lwmVideoStreamInfo vsi;
+	vsi.frameFormat = lwmFRAMEFORMAT_8Bit_420P_Planar;
+	vsi.channelLayout = (isExpandedRange ? lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG : lwmVIDEOCHANNELLAYOUT_YCbCr_BT601);
+
 	videoTagLink *vsiLink = NULL;
 	void *seqData = NULL;
 

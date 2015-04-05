@@ -420,6 +420,11 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 		break;
 	case lwmVST_M1V_Variant:
 		{
+			if(movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_420P_Planar)
+				goto cleanup;
+			if(movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 &&
+				movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG)
+				goto cleanup;
 			if(movieState->videoInfo.videoWidth > 4095)
 				goto cleanup;
 			if(movieState->videoInfo.videoHeight > 4095)
@@ -796,6 +801,18 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 					default:
 						return 0;
 					};
+				}
+				return 1;
+			case lwmSTREAMPARAM_U32_VideoFrameFormat:
+				{
+					*outValue = movieState->videoInfo.frameFormat;
+					return 1;
+				}
+				return 1;
+			case lwmSTREAMPARAM_U32_VideoChannelLayout:
+				{
+					*outValue = movieState->videoInfo.channelLayout;
+					return 1;
 				}
 				return 1;
 			case lwmSTREAMPARAM_U32_SyncPeriod:

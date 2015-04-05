@@ -37,6 +37,8 @@ namespace lwmovie
 		virtual void UnlockWorkFrame(lwmUInt32 workFrameIndex) = 0;
 		virtual void *GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex) = 0;
 		virtual lwmUInt32 GetWorkFramePlaneStride(lwmUInt32 planeIndex) = 0;
+		virtual lwmUInt32 GetWorkFramePlaneWidth(lwmUInt32 planeIndex) = 0;
+		virtual lwmUInt32 GetWorkFramePlaneHeight(lwmUInt32 planeIndex) = 0;
 		virtual void Destroy() = 0;
 
 	private:
@@ -45,6 +47,8 @@ namespace lwmovie
 		static void StaticUnlockWorkFrame(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
 		static void *StaticGetWorkFramePlane(lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
 		static lwmUInt32 StaticGetWorkFramePlaneStride(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+		static lwmUInt32 StaticGetWorkFramePlaneWidth(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+		static lwmUInt32 StaticGetWorkFramePlaneHeight(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
 		static void StaticDestroy(lwmSVideoFrameProvider *frameProvider);
 	};
 }

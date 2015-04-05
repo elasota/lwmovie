@@ -76,11 +76,15 @@ struct lwmVideoStreamInfo
 	lwmUInt16 videoHeight;
 	lwmUInt32 periodsPerSecondNum;
 	lwmUInt16 periodsPerSecondDenom;
+	lwmEFrameFormat frameFormat;
+	lwmEVideoChannelLayout channelLayout;
 };
-LWM_DECLARE_PLAN_MEMBER_NONZERO(0, lwmVideoStreamInfo, lwmUInt16, videoWidth);
-LWM_DECLARE_PLAN_MEMBER_NONZERO(1, lwmVideoStreamInfo, lwmUInt16, videoHeight);
-LWM_DECLARE_PLAN_MEMBER_NONZERO(2, lwmVideoStreamInfo, lwmUInt32, periodsPerSecondNum);
-LWM_DECLARE_PLAN_MEMBER_NONZERO(3, lwmVideoStreamInfo, lwmUInt16, periodsPerSecondDenom);
+LWM_DECLARE_PLAN_MEMBER_NONZERO	(0, lwmVideoStreamInfo, lwmUInt16, videoWidth);
+LWM_DECLARE_PLAN_MEMBER_NONZERO	(1, lwmVideoStreamInfo, lwmUInt16, videoHeight);
+LWM_DECLARE_PLAN_MEMBER_NONZERO	(2, lwmVideoStreamInfo, lwmUInt32, periodsPerSecondNum);
+LWM_DECLARE_PLAN_MEMBER_NONZERO	(3, lwmVideoStreamInfo, lwmUInt16, periodsPerSecondDenom);
+LWM_DECLARE_PLAN_ENUM_MEMBER	(4, lwmVideoStreamInfo, lwmEFrameFormat, lwmFRAMEFORMAT_Count, lwmUInt8, frameFormat);
+LWM_DECLARE_PLAN_ENUM_MEMBER	(5, lwmVideoStreamInfo, lwmEVideoChannelLayout, lwmVIDEOCHANNELLAYOUT_Count, lwmUInt8, channelLayout);
 LWM_DECLARE_PLAN(lwmVideoStreamInfo);
 
 struct lwmAudioCommonInfo

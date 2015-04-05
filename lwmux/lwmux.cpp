@@ -4,7 +4,7 @@
 #include "../common/lwmovie_coretypes.h"
 #include "lwmux_osfile.hpp"
 
-void ConvertM1V(lwmOSFile *inFile, lwmOSFile *outFile);
+void ConvertM1V(lwmOSFile *inFile, lwmOSFile *outFile, bool isExpandedRange);
 void ConvertMP2(lwmOSFile *inFile, lwmOSFile *outFile);
 void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr);
 void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile);
@@ -17,7 +17,7 @@ int main(int argc, const char **argv)
 	{
 		lwmOSFile *mpegFile = lwmOSFile::Open(argv[2], lwmOSFile::FM_Read);
 		lwmOSFile *outFile = lwmOSFile::Open(argv[3], lwmOSFile::FM_Create);
-		ConvertM1V(mpegFile, outFile);
+		ConvertM1V(mpegFile, outFile, (atoi(argv[4]) != 0));
 	}
 	else if(!strcmp(argv[1], "importmp2"))
 	{

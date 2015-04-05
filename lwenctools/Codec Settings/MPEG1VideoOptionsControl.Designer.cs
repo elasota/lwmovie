@@ -1,4 +1,4 @@
-﻿namespace lwfe
+﻿namespace lwenctools
 {
     partial class MPEG1VideoOptionsControl
     {
@@ -421,7 +421,6 @@
             this.Controls.Add(this.label1);
             this.Name = "MPEG1VideoOptionsControl";
             this.Size = new System.Drawing.Size(465, 315);
-            this.Load += new System.EventHandler(this.MPEG1VideoOptions_Load);
             ((System.ComponentModel.ISupportInitialize)(this.tbQuality)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

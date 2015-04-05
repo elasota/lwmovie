@@ -1,4 +1,4 @@
-﻿namespace lwfe
+﻿namespace lwenctools
 {
     partial class CELTAudioOptionsControl
     {
@@ -93,7 +93,6 @@
             this.Controls.Add(this.chkVBR);
             this.Name = "CELTAudioOptionsControl";
             this.Size = new System.Drawing.Size(382, 58);
-            this.Load += new System.EventHandler(this.CELTAudioOptionsControl_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 

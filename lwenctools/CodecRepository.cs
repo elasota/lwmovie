@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace lwfe
+namespace lwenctools
 {
     public interface ICodec
     {
@@ -30,6 +30,22 @@ namespace lwfe
         Control ICodec.CreateCodecControl() { return new CELTAudioOptionsControl(); }
     }
 
+    public class MP2AudioCodec : ICodec
+    {
+        string ICodec.CodecID { get { return "MP2"; } }
+        string ICodec.Name { get { return "MPEG Layer II"; } }
+        IExecutionPlanSettings ICodec.CreateExecutionPlanSettings() { return new MP2AudioSettings(); }
+        Control ICodec.CreateCodecControl() { return new MP2AudioOptionsControl(); }
+    }
+
+    public class ADPCMAudioCodec : ICodec
+    {
+        string ICodec.CodecID { get { return "ADPCM"; } }
+        string ICodec.Name { get { return "4-bit ADPCM"; } }
+        IExecutionPlanSettings ICodec.CreateExecutionPlanSettings() { return new ADPCMAudioSettings(); }
+        Control ICodec.CreateCodecControl() { return new ADPCMAudioOptionsControl(); }
+    }
+
     public class CodecRepository
     {
         public static ICodec[] VideoCodecs = new ICodec[]
@@ -39,6 +55,24 @@ namespace lwfe
         public static ICodec[] AudioCodecs = new ICodec[]
         {
             new CELTAudioCodec(),
+            new MP2AudioCodec(),
+            new ADPCMAudioCodec(),
         };
+
+        public static ICodec GetVideoCodec(string codecID)
+        {
+            foreach (ICodec codec in VideoCodecs)
+                if (codec.CodecID == codecID)
+                    return codec;
+            return null;
+        }
+
+        public static ICodec GetAudioCodec(string codecID)
+        {
+            foreach (ICodec codec in AudioCodecs)
+                if (codec.CodecID == codecID)
+                    return codec;
+            return null;
+        }
     }
 }

@@ -109,6 +109,7 @@ namespace lwmovie
 		virtual void CloseFrame();
 
 		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
+		virtual lwmSVideoFrameProvider *GetFrameProvider() const;
 
 		virtual void Destroy();
 

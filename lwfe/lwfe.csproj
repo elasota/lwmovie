@@ -48,38 +48,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CELTAudioOptionsControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="CELTAudioOptionsControl.Designer.cs">
-      <DependentUpon>CELTAudioOptionsControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CELTAudioSettings.cs" />
-    <Compile Include="CodecRepository.cs" />
-    <Compile Include="EncodeSettingsProject.cs" />
-    <Compile Include="ExecutionPlan.cs" />
-    <Compile Include="ExecutionSet.cs" />
     <Compile Include="FileSelector.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="FileSelector.Designer.cs">
       <DependentUpon>FileSelector.cs</DependentUpon>
     </Compile>
-    <Compile Include="ICodecSettingsControl.cs" />
-    <Compile Include="IExecutionPlanSettings.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="MPEG1VideoOptionsControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="MPEG1VideoOptionsControl.Designer.cs">
-      <DependentUpon>MPEG1VideoOptionsControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MPEG1VideoSettings.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TaskLogView.cs">
@@ -94,17 +74,11 @@
     <Compile Include="TaskMonitor.Designer.cs">
       <DependentUpon>TaskMonitor.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Include="CELTAudioOptionsControl.resx">
-      <DependentUpon>CELTAudioOptionsControl.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="FileSelector.resx">
       <DependentUpon>FileSelector.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MPEG1VideoOptionsControl.resx">
-      <DependentUpon>MPEG1VideoOptionsControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -130,6 +104,12 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\lwenctools\lwenctools.csproj">
+      <Project>{ECDF8F96-DB0B-4655-9088-7818FE21F5CA}</Project>
+      <Name>lwenctools</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

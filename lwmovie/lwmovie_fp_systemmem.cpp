@@ -37,6 +37,8 @@ namespace lwmovie
 		virtual void UnlockWorkFrame(lwmUInt32 workFrameIndex);
 		virtual void *GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
 		virtual lwmUInt32 GetWorkFramePlaneStride(lwmUInt32 planeIndex);
+		virtual lwmUInt32 GetWorkFramePlaneWidth(lwmUInt32 planeIndex);
+		virtual lwmUInt32 GetWorkFramePlaneHeight(lwmUInt32 planeIndex);
 		virtual void Destroy();
 
 	private:
@@ -47,6 +49,9 @@ namespace lwmovie
 		lwmLargeUInt m_channelOffsets[MAX_CHANNELS];
 		lwmLargeUInt m_channelStrides[MAX_CHANNELS];
 		lwmSAllocator *m_alloc;
+
+		lwmUInt32 m_channelWidths[MAX_CHANNELS];
+		lwmUInt32 m_channelHeights[MAX_CHANNELS];
 	};
 }
 
@@ -67,13 +72,19 @@ int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames,
 {
 	lwmLargeUInt channelStrides[MAX_CHANNELS];
 	lwmLargeUInt channelOffsets[MAX_CHANNELS + 1];
+	lwmUInt32 channelWidths[MAX_CHANNELS];
+	lwmUInt32 channelHeights[MAX_CHANNELS];
 	lwmLargeUInt numChannels;
 
 	switch(frameFormat)
 	{
-	case lwmFRAMEFORMAT_YUV420P_Planar:
+	case lwmFRAMEFORMAT_8Bit_420P_Planar:
 		channelStrides[0] = workFrameWidth;
 		channelStrides[1] = channelStrides[2] = (workFrameWidth + 1) / 2;
+		channelWidths[0] = workFrameWidth;
+		channelHeights[0] = workFrameHeight;
+		channelWidths[1] = channelWidths[2] = workFrameWidth / 2;
+		channelHeights[1] = channelHeights[2] = workFrameHeight / 2;
 		numChannels = 3;
 		break;
 	default:
@@ -85,13 +96,15 @@ int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames,
 	{
 		channelStrides[i] += (lwmovie::SIMD_ALIGN - 1);
 		channelStrides[i] -= channelStrides[i] % lwmovie::SIMD_ALIGN;
-		channelOffsets[i + 1] = channelOffsets[i] + channelStrides[i] * workFrameHeight;
+		channelOffsets[i + 1] = channelOffsets[i] + channelStrides[i] * channelHeights[i];
 	}
 	
 	for(lwmLargeUInt i=0;i<numChannels;i++)
 	{
 		m_channelOffsets[i] = channelOffsets[i];
 		m_channelStrides[i] = channelStrides[i];
+		m_channelWidths[i] = channelWidths[i];
+		m_channelHeights[i] = channelHeights[i];
 	}
 
 	m_frameSize = channelOffsets[numChannels];
@@ -120,6 +133,16 @@ void *lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlane(lwmUInt32 workFrame
 lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneStride(lwmUInt32 planeIndex)
 {
 	return this->m_channelStrides[planeIndex];
+}
+
+lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex)
+{
+	return this->m_channelWidths[planeIndex];
+}
+
+lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex)
+{
+	return this->m_channelHeights[planeIndex];
 }
 
 void lwmovie::lwmCSystemMemFrameProvider::Destroy()

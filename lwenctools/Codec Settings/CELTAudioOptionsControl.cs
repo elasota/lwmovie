@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace lwfe
+namespace lwenctools
 {
     public partial class CELTAudioOptionsControl : UserControl, ICodecSettingsControl
     {
@@ -16,6 +16,18 @@ namespace lwfe
         public CELTAudioOptionsControl()
         {
             InitializeComponent();
+
+            _bitratePresets.Add(new KeyValuePair<string, int>("64 kbps", 64000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("72 kbps", 72000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("96 kbps", 96000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("128 kbps", 128000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("160 kbps", 160000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("192 kbps", 192000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("256 kbps", 256000));
+            _bitratePresets.Add(new KeyValuePair<string, int>("320 kbps", 320000));
+
+            foreach (KeyValuePair<string, int> kvp in _bitratePresets)
+                cbxBitratePreset.Items.Add(kvp.Key);
         }
 
         IExecutionPlanSettings ICodecSettingsControl.GenerateSettings()
@@ -34,21 +46,6 @@ namespace lwfe
             cbxBitratePreset.SelectedIndex = settings.BitRatePresetIndex;
             txtBitRate.Text = settings.BitRate.ToString();
             chkVBR.Checked = settings.VBR;
-        }
-
-        private void CELTAudioOptionsControl_Load(object sender, EventArgs e)
-        {
-            _bitratePresets.Add(new KeyValuePair<string, int>("64 kbps", 64000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("72 kbps", 72000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("96 kbps", 96000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("128 kbps", 128000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("160 kbps", 160000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("192 kbps", 192000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("256 kbps", 256000));
-            _bitratePresets.Add(new KeyValuePair<string, int>("320 kbps", 320000));
-
-            foreach (KeyValuePair<string, int> kvp in _bitratePresets)
-                cbxBitratePreset.Items.Add(kvp.Key);
         }
 
         private void cbxBitratePreset_SelectedIndexChanged(object sender, EventArgs e)

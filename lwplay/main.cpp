@@ -151,9 +151,11 @@ int main(int argc, char **argv)
 	lwmMovieState *movieState = lwmCreateMovieState(&myAllocator, 0);
 	lwmSVideoFrameProvider *frameProvider = NULL;
 	lwmIVideoReconstructor *videoRecon = NULL;
+	lwmVideoRGBConverter *rgbConverter = NULL;
 	SDL_Window *window = NULL;
 	SDL_Renderer *renderer = NULL;
 	SDL_Texture *texture = NULL;
+	bool textureIsYUV = false;
 	lwplay::CAudioQueue *audioQueue = NULL;
 	lwmUInt32 vidWidth, vidHeight, fpsNum, fpsDenom;
 
@@ -188,13 +190,17 @@ int main(int argc, char **argv)
 		case lwmDIGEST_Initialize:
 			{
 				lwmUInt32 reconType;
+				lwmUInt32 frameFormat, channelLayout;
 				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &vidWidth);
 				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &vidHeight);
-				
+
 				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_PPSNumerator, &fpsNum);
 				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_PPSDenominator, &fpsDenom);
 
 				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_VideoFrameFormat, &frameFormat);
+				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_VideoChannelLayout, &channelLayout);
+
 				frameProvider = lwmCreateSystemMemoryFrameProvider(&myAllocator, movieState);
 				videoRecon = lwmCreateSoftwareVideoReconstructor(movieState, &myAllocator, reconType, 0, frameProvider);
 				lwmMovieState_SetVideoReconstructor(movieState, videoRecon);
@@ -239,11 +245,30 @@ int main(int argc, char **argv)
 				// TODO: Check for failures
 				window = SDL_CreateWindow("lwplay", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, static_cast<int>(vidWidth), static_cast<int>(vidHeight), 0);
 				renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-				texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(vidWidth), static_cast<int>(vidHeight));
+
+				if(channelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 && frameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar)
+				{
+					textureIsYUV = true;
+					texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(vidWidth), static_cast<int>(vidHeight));
+				}
+				else
+				{
+					rgbConverter = lwmVideoRGBConverter_Create(&myAllocator, videoRecon, static_cast<lwmEFrameFormat>(frameFormat), static_cast<lwmEVideoChannelLayout>(channelLayout), vidWidth, vidHeight, lwmVIDEOCHANNELLAYOUT_RGBA);
+
+					int sdlPixelFormat;
+					if(SDL_PIXELTYPE(SDL_PIXELFORMAT_RGBA8888) == SDL_PIXELTYPE_PACKED32 && SDL_BYTEORDER == SDL_LIL_ENDIAN)
+						sdlPixelFormat = SDL_PIXELFORMAT_ABGR8888;
+					else
+						sdlPixelFormat = SDL_PIXELFORMAT_RGBA8888;
+
+					texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(vidWidth), static_cast<int>(vidHeight));
+					textureIsYUV = false;
+				}
 
 				//PTP_WORK videoReconWork = CreateThreadpoolWork(MyVideoReconWorkCallback, videoRecon, NULL);
 				//videoReconNotifier.SetWork(videoReconWork);
 				//lwmVideoRecon_SetWorkNotifier(videoRecon, &videoReconNotifier);
+
 			}
 			break;
 		case lwmDIGEST_VideoSync:
@@ -295,7 +320,17 @@ int main(int argc, char **argv)
 				rect.x = rect.y = 0;
 				rect.w = static_cast<int>(vidWidth);
 				rect.h = static_cast<int>(vidHeight);
-				int updated = SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
+
+				if(textureIsYUV)
+					SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
+				else
+				{
+					void *pixels;
+					int pitch;
+					SDL_LockTexture(texture, &rect, &pixels, &pitch);
+					lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
+					SDL_UnlockTexture(texture);
+				}
 				SDL_RenderCopy(renderer, texture, NULL, NULL);
 				SDL_RenderPresent(renderer);
 
@@ -357,6 +392,8 @@ int main(int argc, char **argv)
 
 exitMovieLoop:
 	lwmMovieState_Destroy(movieState);
+	if(rgbConverter)
+		lwmVideoRGBConverter_Destroy(rgbConverter);
 	lwmIVideoReconstructor_Destroy(videoRecon);
 	lwmSVideoFrameProvider_Destroy(frameProvider);
 

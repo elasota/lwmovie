@@ -90,6 +90,9 @@
     <ClCompile Include="idct\jrevdct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lwmovie_exportpixels.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lwmovie_bitstream.hpp">

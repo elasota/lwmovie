@@ -19,10 +19,7 @@ static void EncodeADPCM(lwmUInt8 *output, const lwmSInt16 *samples, lwmUInt32 nu
 	while(numSamples)
 	{
 		for(lwmUInt32 i=0;i<numChannels;i++)
-		{
-			lwmovie::adpcm::SPredictorState predState = predictorStates[i];
 			output[i] = predictorStates[i].EncodeSamples(samples[i], samples[i + numChannels]);
-		}
 		numSamples -= 2;
 		samples += stride * 2;
 		output += numChannels;
@@ -77,7 +74,7 @@ void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile)
 
 
 	// This employs a kind of fun trick: The first frame is encoded backwards to prime the predictor.  This ensures
-	bool firstFrame = false;
+	bool firstFrame = true;
 
 	inFile->Seek(dataAtom->FileOffset(), lwmOSFile::SM_Start);
 	lwmUInt32 numSamples = dataAtom->ChunkSize() / (wavFormat.bitsPerSample/8) / wavFormat.numChannels;

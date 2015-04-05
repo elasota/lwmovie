@@ -26,7 +26,13 @@
 
 namespace lwmovie
 {
-	static const lwmUInt32 SIMD_ALIGN	= 16;
+#ifdef LWMOVIE_SSE2
+	static const lwmUInt32 SIMD_ALIGN		= 16;
+	static const lwmUInt32 SIMD_BLOCK_SIZE	= 16;
+#elif defined(LWMOVIE_NOSIMD)
+	static const lwmUInt32 SIMD_ALIGN		= 1;
+	static const lwmUInt32 SIMD_BLOCK_SIZE	= 1;
+#endif
 
 	inline lwmUInt32 PadToSIMD(lwmUInt32 value)
 	{

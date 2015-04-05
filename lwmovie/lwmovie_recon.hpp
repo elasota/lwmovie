@@ -26,6 +26,7 @@
 
 struct lwmSWorkNotifier;
 class lwmCProfileTagSet;
+struct lwmSVideoFrameProvider;
 
 struct lwmIVideoReconstructor
 {
@@ -36,6 +37,7 @@ struct lwmIVideoReconstructor
 	virtual void FlushProfileTags(lwmCProfileTagSet *tagSet) = 0;
 	virtual lwmUInt32 GetWorkFrameIndex() const = 0;
 	virtual void Destroy() = 0;
+	virtual lwmSVideoFrameProvider *GetFrameProvider() const = 0;
 };
 
 #endif

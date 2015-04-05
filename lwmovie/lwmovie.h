@@ -37,16 +37,6 @@ enum
 	lwmVIDEOLOCK_Read,				// Target is being read from
 };
 
-struct lwmSVideoFrameProvider
-{
-	int (*createWorkFramesFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
-	void (*lockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 lockType);
-	void (*unlockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
-	void *(*getWorkFramePlaneFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
-	lwmUInt32 (*getWorkFramePlaneStrideFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
-	void (*destroyFunc)(struct lwmSVideoFrameProvider *frameProvider);
-};
-
 enum lwmEDigestResult
 {
 	lwmDIGEST_Nothing,
@@ -66,7 +56,26 @@ enum lwmEReconstructorType
 enum lwmEFrameFormat
 {
 	lwmFRAMEFORMAT_Unknown,
-	lwmFRAMEFORMAT_YUV420P_Planar,
+	lwmFRAMEFORMAT_8Bit_420P_Planar,
+	lwmFRAMEFORMAT_8Bit_3Channel_Interleaved,
+	lwmFRAMEFORMAT_8Bit_4Channel_Interleaved,
+
+	lwmFRAMEFORMAT_Count,
+};
+
+enum lwmEVideoChannelLayout
+{
+	lwmVIDEOCHANNELLAYOUT_Unknown,
+	lwmVIDEOCHANNELLAYOUT_YCbCr_BT601,	// 16-235 luma, 16-240 chroma
+	lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG,	// 0-255 luma, 0-255 chroma
+	lwmVIDEOCHANNELLAYOUT_RGB,
+	lwmVIDEOCHANNELLAYOUT_BGR,
+	lwmVIDEOCHANNELLAYOUT_ARGB,
+	lwmVIDEOCHANNELLAYOUT_ABGR,
+	lwmVIDEOCHANNELLAYOUT_RGBA,
+	lwmVIDEOCHANNELLAYOUT_BGRA,
+
+	lwmVIDEOCHANNELLAYOUT_Count,
 };
 
 enum lwmESpeakerLayout
@@ -94,6 +103,8 @@ enum lwmEStreamParameter
 	lwmSTREAMPARAM_U32_PPSNumerator,
 	lwmSTREAMPARAM_U32_PPSDenominator,
 	lwmSTREAMPARAM_U32_ReconType,
+	lwmSTREAMPARAM_U32_VideoFrameFormat,
+	lwmSTREAMPARAM_U32_VideoChannelLayout,
 	lwmSTREAMPARAM_U32_LongestFrameReadAhead,
 
 	lwmSTREAMPARAM_U32_SampleRate,
@@ -108,6 +119,24 @@ enum lwmEUserFlag
 	lwmUSERFLAG_ThreadedReconstructor	= (1 << 1),
 };
 
+enum lwmEPixelConvertFlags
+{
+	lwmPIXELCONVERTFLAG_Interpolate	=	(1 << 0),
+	lwmPIXELCONVERTFLAG_NoCache	=		(1 << 1),
+};
+
+struct lwmSVideoFrameProvider
+{
+	int (*createWorkFramesFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
+	void (*lockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 lockType);
+	void (*unlockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
+	void *(*getWorkFramePlaneFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
+	lwmUInt32 (*getWorkFramePlaneStrideFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+	lwmUInt32 (*getWorkFramePlaneWidthFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+	lwmUInt32 (*getWorkFramePlaneHeightFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+	void (*destroyFunc)(struct lwmSVideoFrameProvider *frameProvider);
+};
+
 LWMOVIE_API_LINK void lwmInitialize();
 LWMOVIE_API_LINK struct lwmMovieState *lwmCreateMovieState(struct lwmSAllocator *alloc, lwmUInt32 userFlags);
 LWMOVIE_API_LINK void lwmMovieState_FeedData(struct lwmMovieState *movieState, const void *inBytes, lwmUInt32 numBytes, lwmUInt32 *outResult, lwmUInt32 *outBytesDigested);
@@ -119,7 +148,6 @@ LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(struct lwmMovieState *
 LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(struct lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(struct lwmMovieState *movieState, struct lwmSWorkNotifier *videoDigestWorkNotifier);
 LWMOVIE_API_LINK void lwmMovieState_Destroy(struct lwmMovieState *movieState);
-
 
 LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(struct lwmMovieState *movieState);
 LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(struct lwmMovieState *movieState);
@@ -134,9 +162,18 @@ LWMOVIE_API_LINK void lwmVideoRecon_Destroy(struct lwmIVideoReconstructor *video
 LWMOVIE_API_LINK struct lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(struct lwmSAllocator *alloc, const struct lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(struct lwmSVideoFrameProvider *frameProvider);
 
+LWMOVIE_API_LINK int lwmVideoRecon_ExportRGB(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, void *outPixels, lwmLargeUInt outStride, lwmUInt32 outWidth, lwmUInt32 outHeight, lwmEVideoChannelLayout channelLayout, int pixelConvertFlags);
+
 LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmUInt32 flags, struct lwmSVideoFrameProvider *frameProvider);
 LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(struct lwmIVideoReconstructor *videoRecon);
 
 LWMOVIE_API_LINK void lwmFlushProfileTags(struct lwmMovieState *movieState, LWMOVIE_API_CLASS lwmCProfileTagSet *tagSet);
+
+LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, lwmEFrameFormat inFrameFormat, lwmEVideoChannelLayout inChannelLayout, lwmUInt32 outWidth, lwmUInt32 outHeight, lwmEVideoChannelLayout outChannelLayout, lwmLargeUInt numSlices);
+LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_Create(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, lwmEFrameFormat inFrameFormat, lwmEVideoChannelLayout inChannelLayout, lwmUInt32 outWidth, lwmUInt32 outHeight, lwmEVideoChannelLayout outChannelLayout);
+LWMOVIE_API_LINK void lwmVideoRGBConverter_SetWorkNotifier(struct lwmVideoRGBConverter *converter, struct lwmSWorkNotifier *workNotifier);
+LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *converter, void *outPixels, lwmLargeUInt outStride, int conversionFlags);
+LWMOVIE_API_LINK void lwmVideoRGBConverter_Destroy(struct lwmVideoRGBConverter *converter);
+LWMOVIE_API_LINK void lwmVideoRGBConverter_ConvertParticipate(struct lwmVideoRGBConverter *converter);
 
 #endif

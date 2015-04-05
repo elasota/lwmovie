@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Xml;
+using lwenctools;
 
 namespace lwfe
 {
@@ -125,8 +126,6 @@ namespace lwfe
         {
             this._project = null;
 
-            IExecutionPlanSettings selectedCodecSettings;
-
             for (int i = 0; i < CodecRepository.VideoCodecs.Length; i++)
             {
                 if (CodecRepository.VideoCodecs[i].CodecID == proj.VideoCodecID)
@@ -138,6 +137,11 @@ namespace lwfe
 
             LoadVideoCodecSettings(proj);
 
+            cbxAudioStream.Items.Clear();
+            foreach (EncodeSettingsProject.AudioStreamSettings audioStream in proj.AudioStreams)
+                AddNewAudioStreamItem();
+            cbxAudioStream.SelectedIndex = -1;
+
             for (int i = 0; i < CodecRepository.AudioCodecs.Length; i++)
             {
                 if (CodecRepository.AudioCodecs[i].CodecID == proj.AudioCodecID)
@@ -147,11 +151,14 @@ namespace lwfe
                 }
             }
 
-            LoadAudioCodecSettings(proj);
+            cbxAudioStream.SelectedIndex = proj.SelectedAudioStreamIndex;
+
+            RefreshAudioCodecSettings(proj);
 
             fsExistingVideoIntermediate.FileName = proj.VideoIntermediateFile;
             fsVideoEncodeInput.FileName = proj.VideoEncodeInputFile;
             fsVideoEncodeOutput.FileName = proj.VideoEncodeOutputFile;
+            fsOutputFile.FileName = proj.MuxOutputFile;
             radVideoUseIF.Checked = proj.VideoUseIntermediate;
             radVideoEncode.Checked = !proj.VideoUseIntermediate;
 
@@ -227,6 +234,7 @@ namespace lwfe
                 fsExistingAudioIntermediate.FileName = audioSettings.IntermediateFile;
                 radAudioEncode.Checked = !audioSettings.UseIntermediate;
                 radAudioUseIF.Checked = audioSettings.UseIntermediate;
+
                 _audioCodecSettingsControl.LoadFromSettings(settings);
             }
         }
@@ -239,6 +247,7 @@ namespace lwfe
             _project.VideoEncodeInputFile = fsVideoEncodeInput.FileName;
             _project.VideoEncodeOutputFile = fsVideoEncodeOutput.FileName;
             _project.VideoUseIntermediate = radVideoUseIF.Checked;
+            _project.MuxOutputFile = fsOutputFile.FileName;
 
             SaveCurrentVideoCodecSettings();
             SaveCurrentAudioCodecSettings();
@@ -267,66 +276,7 @@ namespace lwfe
             settings["lwrerangePath"] = lwrerangePath;
             settings["ffmpegPath"] = ffmpegPath;
 
-            List<string> audioStreamPaths = new List<string>();
-            string videoStreamPath = null;
-
-            List<ExecutionPlan> ePlans = new List<ExecutionPlan>();
-            if (!_project.VideoUseIntermediate)
-            {
-                EncodeSettingsProject proj = _project;
-
-                settings["InputFile"] = _project.VideoEncodeInputFile;
-                settings["OutputFile"] = _project.VideoEncodeOutputFile;
-                _project.VideoCodecSettings[_project.VideoCodecID].CreateCommands(ePlans, settings, delegate()
-                {
-                    proj.VideoIntermediateFile = proj.VideoEncodeOutputFile;
-                    proj.VideoUseIntermediate = true;
-                });
-
-                videoStreamPath = _project.VideoEncodeOutputFile;
-            }
-            else
-            {
-                videoStreamPath = _project.VideoIntermediateFile;
-            }
-
-            foreach (EncodeSettingsProject.AudioStreamSettings audioStream in _project.AudioStreams)
-            {
-                if (!audioStream.UseIntermediate)
-                {
-                    settings["InputFile"] = audioStream.EncodeInputFile;
-                    settings["OutputFile"] = audioStream.EncodeOutputFile;
-
-                    EncodeSettingsProject.AudioStreamSettings currentStream = audioStream;
-                    audioStream.AudioCodecSettings[_project.AudioCodecID].CreateCommands(ePlans, settings, delegate()
-                    {
-                        audioStream.IntermediateFile = audioStream.EncodeOutputFile;
-                        audioStream.UseIntermediate = true;
-                    });
-
-                    audioStreamPaths.Add(audioStream.EncodeOutputFile);
-                }
-                else
-                {
-                    audioStreamPaths.Add(audioStream.IntermediateFile);
-                }
-            }
-
-            // Create finalize task
-            List<string> muxArgs = new List<string>();
-            muxArgs.Add("finalize");
-            muxArgs.Add(videoStreamPath);
-            muxArgs.Add(fsOutputFile.FileName);
-            muxArgs.Add("10000");
-            muxArgs.Add(audioStreamPaths.Count.ToString());
-            muxArgs.AddRange(audioStreamPaths);
-
-            {
-                ExecutionPlan plan = new ExecutionPlan();
-                ExecutionStage stage = new ExecutionStage(lwmuxPath, muxArgs.ToArray());
-                plan.AddStage(stage);
-                ePlans.Add(plan);
-            }
+            List<ExecutionPlan> ePlans = _project.CreateExecutionPlans(settings);
 
             TaskMonitor tm = new TaskMonitor(ePlans);
             tm.ShowDialog();
@@ -348,40 +298,57 @@ namespace lwfe
             doc.Save(path);
         }
 
+        private void LoadProjectFromFile(string path)
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.Load(path);
+            EncodeSettingsProject proj = new EncodeSettingsProject();
+            proj.LoadFromXml(doc);
+            LoadProject(proj);
+        }
+
         private void openSettingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            OpenFileDialog fDialog = new OpenFileDialog();
+            fDialog.InitialDirectory = null;
+            fDialog.Filter = "lwmovie Project (*.lwproj)|*.lwproj";
+            fDialog.FilterIndex = 0;
+            fDialog.RestoreDirectory = false;
 
+            fDialog.ShowDialog();
+
+            if (fDialog.FileName != null && fDialog.FileName.Length > 0)
+            {
+                LoadProjectFromFile(fDialog.FileName);
+            }
         }
 
         private void saveSettingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
         }
 
-        private void fsVideoEncodeInput_Load(object sender, EventArgs e)
+        public void AddNewAudioStreamItem()
         {
-
+            cbxAudioStream.Items.Add("Stream " + (cbxAudioStream.Items.Count + 1).ToString());
         }
 
         private void btnAddAudioStream_Click(object sender, EventArgs e)
         {
             EncodeSettingsProject.AudioStreamSettings streamSettings = new EncodeSettingsProject.AudioStreamSettings();
             _project.AudioStreams.Add(streamSettings);
-            cbxAudioStream.Items.Add("Stream " + (cbxAudioStream.Items.Count + 1).ToString());
+            AddNewAudioStreamItem();
             if (cbxAudioStream.Items.Count == 1)
                 cbxAudioStream.SelectedIndex = 0;
         }
 
-        private void RefreshAudioCodecSettings()
+        private void RefreshAudioCodecSettings(EncodeSettingsProject proj)
         {
-            if (_project == null)
-                return;
-
-            if (_project.AudioStreams.Count != 0)
+            if (proj.AudioStreams.Count != 0)
             {
                 ICodec selectedCodec = null;
                 foreach (ICodec codec in CodecRepository.AudioCodecs)
                 {
-                    if (codec.CodecID == _project.AudioCodecID)
+                    if (codec.CodecID == proj.AudioCodecID)
                     {
                         selectedCodec = codec;
                         break;
@@ -395,7 +362,7 @@ namespace lwfe
                     SetPanelContainedControl(pnlAudioCodecOptions, codecOptionsControl);
 
                     _audioCodecSettingsControl = (ICodecSettingsControl)codecOptionsControl;
-                    LoadAudioCodecSettings(_project);
+                    LoadAudioCodecSettings(proj);
                 }
             }
         }
@@ -411,8 +378,10 @@ namespace lwfe
 
             gbxAudioIO.Visible = (index != -1);
             gbxAudioCodecOptions.Visible = (index != -1);
+            gbxAudioStreamOptions.Visible = (index != -1);
 
-            RefreshAudioCodecSettings();
+            if (_project != null)
+                RefreshAudioCodecSettings(_project);
         }
 
         private void cbxAudioCodec_SelectedIndexChanged(object sender, EventArgs e)
@@ -421,9 +390,10 @@ namespace lwfe
             SaveCurrentAudioCodecSettings();
 
             if (_project != null)
+            {
                 _project.AudioCodecID = CodecRepository.AudioCodecs[((ComboBox)sender).SelectedIndex].CodecID;
-
-            RefreshAudioCodecSettings();
+                RefreshAudioCodecSettings(_project);
+            }
         }
 
         private void fsAudioEncodeInput_FileChanged(object sender, EventArgs e)
@@ -466,6 +436,27 @@ namespace lwfe
         private void btnAudioUseVideoSource_Click(object sender, EventArgs e)
         {
             fsAudioEncodeInput.FileName = fsVideoEncodeInput.FileName;
+        }
+
+        private void quitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void saveSettingsAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog fDialog = new SaveFileDialog();
+            fDialog.InitialDirectory = null;
+            fDialog.Filter = "lwmovie Project (*.lwproj)|*.lwproj";
+            fDialog.FilterIndex = 0;
+            fDialog.RestoreDirectory = false;
+
+            fDialog.ShowDialog();
+
+            if (fDialog.FileName != null && fDialog.FileName.Length > 0)
+            {
+                SaveProjectToFile(fDialog.FileName);
+            }
         }
     }
 }

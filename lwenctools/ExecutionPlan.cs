@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace lwfe
+namespace lwenctools
 {
     public class ExecutionPlan
     {

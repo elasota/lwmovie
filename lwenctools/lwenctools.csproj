@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{ECDF8F96-DB0B-4655-9088-7818FE21F5CA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>lwenctools</RootNamespace>
+    <AssemblyName>lwenctools</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Codec Settings\ADPCMAudioOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Codec Settings\ADPCMAudioOptionsControl.Designer.cs">
+      <DependentUpon>ADPCMAudioOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Codec Settings\ADPCMAudioSettings.cs" />
+    <Compile Include="Codec Settings\CELTAudioOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Codec Settings\CELTAudioOptionsControl.Designer.cs">
+      <DependentUpon>CELTAudioOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Codec Settings\CELTAudioSettings.cs" />
+    <Compile Include="Codec Settings\MP2AudioOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Codec Settings\MP2AudioOptionsControl.Designer.cs">
+      <DependentUpon>MP2AudioOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Codec Settings\MP2AudioSettings.cs" />
+    <Compile Include="Codec Settings\MPEG1VideoOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Codec Settings\MPEG1VideoOptionsControl.Designer.cs">
+      <DependentUpon>MPEG1VideoOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Codec Settings\MPEG1VideoSettings.cs" />
+    <Compile Include="CodecRepository.cs" />
+    <Compile Include="EncodeSettingsProject.cs" />
+    <Compile Include="ExecutionPlan.cs" />
+    <Compile Include="ExecutionSet.cs" />
+    <Compile Include="ICodecSettingsControl.cs" />
+    <Compile Include="IExecutionPlanSettings.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Codec Settings\ADPCMAudioOptionsControl.resx">
+      <DependentUpon>ADPCMAudioOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Codec Settings\CELTAudioOptionsControl.resx">
+      <DependentUpon>CELTAudioOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Codec Settings\MP2AudioOptionsControl.resx">
+      <DependentUpon>MP2AudioOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Codec Settings\MPEG1VideoOptionsControl.resx">
+      <DependentUpon>MPEG1VideoOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -8,7 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.Xml;
 
-namespace lwfe
+namespace lwenctools
 {
     public partial class MPEG1VideoOptionsControl : UserControl, ICodecSettingsControl
     {
@@ -37,10 +37,7 @@ namespace lwfe
             _motionEstimationPresets.Add(new KeyValuePair<string, int>("512", 512));
             _motionEstimationPresets.Add(new KeyValuePair<string, int>("768", 768));
             _motionEstimationPresets.Add(new KeyValuePair<string, int>("1024 (Best)", 1024));
-        }
 
-        private void MPEG1VideoOptions_Load(object sender, EventArgs e)
-        {
             foreach (KeyValuePair<string, int> preset in _maxBitratePresets)
                 cbxBitrateMaxPresets.Items.Add(preset.Key);
             foreach (KeyValuePair<string, int> preset in _minBitratePresets)

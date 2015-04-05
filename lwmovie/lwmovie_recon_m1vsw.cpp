@@ -82,7 +82,7 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 	m_frameProvider = frameProvider;
 	m_useRowJobs = useRowJobs;
 
-	if(!frameProvider->createWorkFramesFunc(frameProvider, 2, 1, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_YUV420P_Planar))
+	if(!frameProvider->createWorkFramesFunc(frameProvider, 2, 1, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_8Bit_420P_Planar))
 		return false;
 	m_yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
 	m_uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
@@ -652,6 +652,10 @@ void lwmovie::lwmCM1VSoftwareReconstructor::FlushProfileTags(lwmCProfileTagSet *
 #endif
 }
 
+lwmSVideoFrameProvider *lwmovie::lwmCM1VSoftwareReconstructor::GetFrameProvider() const
+{
+	return this->m_frameProvider;
+}
 
 void lwmovie::lwmCM1VSoftwareReconstructor::Destroy()
 {

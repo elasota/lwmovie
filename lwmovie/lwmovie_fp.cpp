@@ -48,6 +48,16 @@ lwmUInt32 lwmovie::lwmIVideoFrameProvider::StaticGetWorkFramePlaneStride(lwmSVid
 	return static_cast<lwmIVideoFrameProvider *>(frameProvider)->GetWorkFramePlaneStride(planeIndex);
 }
 
+lwmUInt32 lwmovie::lwmIVideoFrameProvider::StaticGetWorkFramePlaneWidth(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex)
+{
+	return static_cast<lwmIVideoFrameProvider *>(frameProvider)->GetWorkFramePlaneWidth(planeIndex);
+}
+
+lwmUInt32 lwmovie::lwmIVideoFrameProvider::StaticGetWorkFramePlaneHeight(lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex)
+{
+	return static_cast<lwmIVideoFrameProvider *>(frameProvider)->GetWorkFramePlaneWidth(planeIndex);
+}
+
 void lwmovie::lwmIVideoFrameProvider::StaticDestroy(lwmSVideoFrameProvider *frameProvider)
 {
 	return static_cast<lwmIVideoFrameProvider *>(frameProvider)->Destroy();
@@ -60,6 +70,8 @@ lwmovie::lwmIVideoFrameProvider::lwmIVideoFrameProvider()
 	this->unlockWorkFrameFunc = StaticUnlockWorkFrame;
 	this->getWorkFramePlaneFunc = StaticGetWorkFramePlane;
 	this->getWorkFramePlaneStrideFunc = StaticGetWorkFramePlaneStride;
+	this->getWorkFramePlaneWidthFunc = StaticGetWorkFramePlaneWidth;
+	this->getWorkFramePlaneHeightFunc = StaticGetWorkFramePlaneHeight;
 	this->destroyFunc = StaticDestroy;
 }
 

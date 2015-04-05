@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 
-namespace lwfe
+namespace lwenctools
 {
     public class MPEG1VideoSettings : IExecutionPlanSettings
     {
@@ -26,6 +26,32 @@ namespace lwfe
 
         void IExecutionPlanSettings.LoadFromXml(XmlElement xml)
         {
+            int temp;
+            if (int.TryParse(xml.GetAttribute("MaxSlices"), out temp))
+                MaxSlices = temp;
+            TwoPass = (xml.GetAttribute("TwoPass") != "False");
+            AutoRD = (xml.GetAttribute("AutoRD") != "False");
+            FullRange = (xml.GetAttribute("FullRange") != "False");
+            if (int.TryParse(xml.GetAttribute("BFrames"), out temp))
+                NumBFrames = temp;
+            if (int.TryParse(xml.GetAttribute("BStrategy"), out temp))
+                BStrategy = temp;
+            UseCBR = (xml.GetAttribute("UseCBR") != "False");
+            UseQuality = (xml.GetAttribute("UseQuality") != "False");
+            if (int.TryParse(xml.GetAttribute("Quality"), out temp))
+                Quality = temp;
+            if (int.TryParse(xml.GetAttribute("BitrateMinPreset"), out temp))
+                BitrateMinPresetIndex = temp;
+            if (int.TryParse(xml.GetAttribute("BitrateMin"), out temp))
+                BitrateMin = temp;
+            if (int.TryParse(xml.GetAttribute("BitrateBufferSize"), out temp))
+                BitrateBufferSize = temp;
+            if (int.TryParse(xml.GetAttribute("BitrateMaxPreset"), out temp))
+                BitrateMaxPresetIndex = temp;
+            if (int.TryParse(xml.GetAttribute("BitrateMax"), out temp))
+                BitrateMax = temp;
+            if (int.TryParse(xml.GetAttribute("MotionEstimationPresetIndex"), out temp))
+                MotionEstimationPresetIndex = temp;
         }
 
         void IExecutionPlanSettings.SaveToXml(XmlElement xml)
@@ -311,6 +337,10 @@ namespace lwfe
                 args.Add("importm1v");
                 args.Add(outputFile + ".m1v");
                 args.Add(outputFile);
+                if (FullRange)
+                    args.Add("1");
+                else
+                    args.Add("0");
                 plan.AddStage(new ExecutionStage(lwmuxPath, args.ToArray()));
 
                 plan.CompletionCallback = pcd;

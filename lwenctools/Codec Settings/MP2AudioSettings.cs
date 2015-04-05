@@ -4,21 +4,24 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 
-namespace lwfe
+namespace lwenctools
 {
-    public class CELTAudioSettings : IExecutionPlanSettings
+    public class MP2AudioSettings : IExecutionPlanSettings
     {
-        public bool VBR { get; set; }
         public int BitRate { get; set; }
         public int BitRatePresetIndex { get; set; }
 
         void IExecutionPlanSettings.LoadFromXml(XmlElement xml)
         {
+            int temp;
+            if (int.TryParse(xml.GetAttribute("BitRate"), out temp))
+                BitRate = temp;
+            if (int.TryParse(xml.GetAttribute("BitRatePresetIndex"), out temp))
+                BitRatePresetIndex = temp;
         }
 
         void IExecutionPlanSettings.SaveToXml(XmlElement xml)
         {
-            xml.SetAttribute("VBR", VBR ? "True" : "False");
             xml.SetAttribute("BitRate", BitRate.ToString());
             xml.SetAttribute("BitRatePresetIndex", BitRatePresetIndex.ToString());
         }
@@ -32,27 +35,27 @@ namespace lwfe
 
             {
                 ExecutionPlan plan = new ExecutionPlan();
-                ExecutionStage stage = new ExecutionStage(ffmpegPath, new string[] { "-i", inputFile, "-acodec", "pcm_s16le", "-vn", "-y", outputFile + ".wav" });
+                ExecutionStage stage = new ExecutionStage(ffmpegPath, new string[] { "-i", inputFile, "-acodec", "libtwolame", "-vn", "-b:a", BitRate.ToString(), "-y", outputFile + ".mp2" });
                 plan.AddStage(stage);
-                plan.AddTemporaryFile(outputFile + ".wav");
+                plan.AddTemporaryFile(outputFile + ".mp2");
+                plan.CompletionCallback = pcd;
                 plans.Add(plan);
             }
             {
                 ExecutionPlan plan = new ExecutionPlan();
-                ExecutionStage stage = new ExecutionStage(lwmuxPath, new string[] { "importwav_celt", BitRate.ToString(), VBR ? "1" : "0", outputFile + ".wav", outputFile });
+                ExecutionStage stage = new ExecutionStage(lwmuxPath, new string[] { "importmp2", outputFile + ".mp2", outputFile });
                 plan.AddStage(stage);
 
                 plan.CompletionCallback = pcd;
-                plan.AddCleanupFile(outputFile + ".wav");
+                plan.AddCleanupFile(outputFile + ".mp2");
                 plans.Add(plan);
             }
         }
 
-        public CELTAudioSettings()
+        public MP2AudioSettings()
         {
             BitRate = 192000;
-            BitRatePresetIndex = 6;
-            VBR = true;
+            BitRatePresetIndex = 9;
         }
     }
 }
