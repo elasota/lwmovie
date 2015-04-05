@@ -55,9 +55,41 @@ When lwmovie returns a synchronization result, you can get the timestamp for the
 The timestamp represents the amount of data that the encoder has finished, including the data just processed, in periods.
 - TODO
 
-=== Additional topics ===
--- Full-range color --
-  lwmovie supports full-range color, but full-range color is non-standard in MPEG-1 and requires either hacks or "tricking" the encoder.  You can get around this limit in ffmpeg by converting your movie to rawvideo using -pix_fmt yuvj420p and then encoding it using -pix_fmt yuv420p.
+=== Color space conversion ===
+lwmovie videos are generally in planar YCbCr colorspaces with subsampled Cb and Cr planes and displaying them requires converting them to RGB.  You can determine the internal format of an lwmovie video stream using lwmGetStreamParameterU32 with the lwmSTREAMPARAM_U32_VideoFrameFormat and lwmSTREAMPARAM_U32_VideoChannelLayout stream parameters.
+
+Using hardware acceleration to perform color space conversion is strongly recommended, but lwmovie can convert colorspaces in software if necessary.
+
+If you want to display lwmovie output using a YUV overlay, or are doing the conversion by hand, you should be aware of what YUV ranges the source video is using.  lwmovie supports videos in two ranges: BT.601 and JPEG (a.k.a. "full-range").  JPEG is more accurate and provides better fidelity, but hardware overlays typically require signalling to convert it properly, and conversion using shaders requires using a different set of scaling factors.  Using the wrong matrix will cause discoloration and increased or reduced contrast.
+
+If you need to implement shader-based conversion, the YCbCr to RGB conversion formulae are as follows:
+BT.601:
+R = 1.164*Y + 1.596*Cr - 222.921
+G = 1.164*Y + 0.392*Cb - 0.813*Cr + 135.576
+B = 1.164*Y + 2.017*Cb - 276.836
+
+JPEG:
+R = Y + 1.402*Cr - 179.456
+G = Y - 0.34414*Cb - 0.71414*Cr + 135.460
+B = Y + 1.772*Cb - 226.816
+
+If you want to use software conversion, you can create an lwmVideoRGBConverter object to do the conversion for you.  Note that 3-channel output formats (i.e. BGR, RGB) are dramatically slower than 4-channel output formats.
+
+To create a video RGB converter, call lwmVideoRGBConverter_Create or lwmVideoRGBConverter_CreateSliced.  The "sliced" version allows portions of the conversion to be processed in parallel using a work notifier while the Create version is equivalent to calling CreateSliced with 1 slice.  They accept the following parameters:
+- alloc: Allocator to allocate temporary processing space with.
+- recon: Video reconstructor to read work frame information from.
+- inFrameFormat: Input frame format.
+- inChannelLayout: Input channel layout.
+- outWidth: Output width.  This does not have to be the same as the video frame width, but it must not be larger.
+- outHeight: Output height.  This does not have to be the same as the video frame height, but it must not be larger.
+- outChannelLayout: Output channel layout.
+- numSlices: (CreateSliced version only) Number of work areas to divide the frame into.
+
+If you want to assign a work notifier to the converter, use lwmVideoRGBConverter_SetWorkNotifier.  The notifier should participate using lwmVideoRGBConverter_ConvertParticipate.
+
+To perform the conversion operation, call lwmVideoRGBConverter_Convert.  This will lock the work frames of the video reconstructor while it performs its work.
+
+To destroy the RGB converter object, call lwmVideoRGBConverter_Destroy.
 
 
 === Thread pooling ===
@@ -69,6 +101,7 @@ Work notifiers are expected to contain 2 fields:
 
 To assign a work notifier to the video digester, use lwmSetVideoDigestWorkNotifier and participate using lwmVideoDigestParticipate.
 To assign a work notifier to the video reconstructor, use lwmSetVideoReconWorkNotifier and participate using lwmVideoReconParticipate.
+To assign a work notifier to an RGB converter, use lwmVideoRGBConverter_SetWorkNotifier and participate using lwmVideoRGBConverter_ConvertParticipate
 
 Currently, pooling the digester causes a minor increase in memory usage and pooling the reconstructor causes a heavy increase in memory usage.  Pooling the reconstructor is more beneficial if there are fewer slices than available CPUs, but has almost no improvement when using a high slice count, so you should avoid pooling the reconstructor unless you're playing back videos with low slice counts.
 
