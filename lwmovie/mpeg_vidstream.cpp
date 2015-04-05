@@ -223,7 +223,12 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 	}
 
 	if(m_picture.code_type == constants::MPEG_B_TYPE)
-		m_current = m_outputSlot = lwmRECONSLOT_B;
+	{
+		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_Isolable)
+			m_current = m_outputSlot = lwmRECONSLOT_B;
+		else
+			m_current = m_outputSlot = lwmRECONSLOT_Dropped_B;
+	}
 	else if(m_picture.code_type == constants::MPEG_I_TYPE)
 	{
 		if(m_future == lwmRECONSLOT_Unassigned)
@@ -267,6 +272,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 lwmovie::lwmVidStream::lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
 	: m_stDeslicerJob((width + 15) / 16, (height + 15) / 16)
 	, m_deslicerMemPool(alloc, useThreadedDeslicer ? 150000 : 0)
+	, m_dropAggressiveness(lwmDROPAGGRESSIVENESS_None)
 {
 	m_alloc = alloc;
 
@@ -442,6 +448,9 @@ bool lwmovie::lwmVidStream::DigestDataPacket(const void *bytes, lwmUInt32 packet
 
 	if (packetTypeCode >= constants::MPEG_SLICE_MIN_START_CODE && packetTypeCode <= constants::MPEG_SLICE_MAX_START_CODE)
 	{
+		if(m_current == lwmRECONSLOT_Dropped_IP || m_current == lwmRECONSLOT_Dropped_B)
+			return true;
+
 		if(m_workNotifier)
 		{
 			DispatchDeslicerJob(bytes, packetSize, m_recon);
@@ -494,20 +503,19 @@ void lwmovie::lwmVidStream::WaitForDigestFinish()
 	DestroyDeslicerJobs();
 }
 
-void lwmovie::lwmVidStream::EmitFrame()
+bool lwmovie::lwmVidStream::EmitFrame()
 {
-	// TODO: Handle bad syncs
-	m_recon->PresentFrame(m_outputSlot);
-	if(m_outputSlot == lwmRECONSLOT_B)
+	if(m_current != lwmRECONSLOT_Dropped_IP && m_current != lwmRECONSLOT_Dropped_B)
+	{
+		// TODO: Handle bad syncs
+		m_recon->PresentFrame(m_outputSlot);
+	}
+
+	// TODO: Possibly mark
+	if(m_outputSlot == lwmRECONSLOT_B || m_outputSlot == lwmRECONSLOT_Dropped_B)
 		m_outputSlot = m_past;
-}
 
-void lwmovie::lwmVidStream::SignalIOFailure()
-{
-}
-
-void lwmovie::lwmVidStream::ReportError(const char *errorStr)
-{
+	return true;
 }
 
 void lwmovie::lwmVidStream::OutputFinishedFrame()
@@ -555,6 +563,11 @@ void lwmovie::lwmVidStream::SDeslicerMemoryPool::Destroy(lwmSAllocator *alloc)
 {
 	if(memBytes)
 		alloc->Free(memBytes);
+}
+
+void lwmovie::lwmVidStream::SetDropAggressiveness(lwmEDropAggressiveness dropAggressiveness)
+{
+	this->m_dropAggressiveness = dropAggressiveness;
 }
 
 void lwmovie::lwmVidStream::FlushProfileTags(lwmCProfileTagSet *tagSet)

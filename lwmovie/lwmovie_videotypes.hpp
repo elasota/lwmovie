@@ -3,6 +3,7 @@
 
 #include "../common/lwmovie_coretypes.h"
 #include "../common/lwmovie_atomicint_type.hpp"
+#include "lwmovie.h"
 #include "lwmovie_external_types.h"
 #include "lwmovie_bitstream.hpp"
 #include "lwmovie_constants.hpp"
@@ -101,7 +102,6 @@ namespace lwmovie
 
 		lwmSAllocator *alloc;
 
-		bool createdOk;
 		bool m_isReserved;
 
 	public:
@@ -200,6 +200,8 @@ namespace lwmovie
 		lwmRECONSLOT_IP1,
 		lwmRECONSLOT_IP2,
 		lwmRECONSLOT_B,
+		lwmRECONSLOT_Dropped_IP,
+		lwmRECONSLOT_Dropped_B,
 	};
 
 	class lwmDeslicerJob
@@ -246,9 +248,6 @@ namespace lwmovie
 	class lwmVidStream
 	{
 	public:
-		void SignalIOFailure();
-		void ReportError(const char *str);
-		
 		lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
 		~lwmVidStream();
 
@@ -257,11 +256,11 @@ namespace lwmovie
 		void SetReconstructor(lwmIVideoReconstructor *recon);
 		void Participate();
 		void WaitForDigestFinish();
-		void EmitFrame();
+		bool EmitFrame();
+
+		void SetDropAggressiveness(lwmEDropAggressiveness dropAggressiveness);
 
 		void FlushProfileTags(lwmCProfileTagSet *tagSet);
-
-		bool CreatedOK() const;
 		
 		static void SkipExtraBitInfo(lwmCBitstream *m_bitstream);
 
@@ -314,9 +313,9 @@ namespace lwmovie
 
 		lwmEReconSlot		m_past;				/* Past predictive frame.         */
 		lwmEReconSlot		m_future;			/* Future predictive frame.       */
-		lwmEReconSlot		m_current;			/* Current frame.                 */
+		lwmEReconSlot		m_current;			/* Current frame being rendered.  */
 
-		lwmEReconSlot		m_outputSlot;
+		lwmEReconSlot		m_outputSlot;		/* Slot to display as output. */
 
 		lwmUInt32			m_mb_height;		/* Vert. size in mblocks.     */
 		lwmUInt32			m_mb_width;			/* Horiz. size in mblocks.    */
@@ -325,11 +324,9 @@ namespace lwmovie
 		lwmDeslicerJob		m_stDeslicerJob;
 		lwmIM1VBlockCursor	*m_stBlockCursor;
 
-
 		lwmIM1VReconstructor	*m_recon;
 
-		bool m_createdOk;
-		bool m_eof;
+		lwmEDropAggressiveness m_dropAggressiveness;
 		bool m_useThreadedDeslicer;
 
 	private:

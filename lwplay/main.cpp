@@ -271,6 +271,7 @@ int main(int argc, char **argv)
 
 			}
 			break;
+		case lwmDIGEST_VideoSync_Dropped:
 		case lwmDIGEST_VideoSync:
 			{
 				numFramesDecoded++;
@@ -300,41 +301,44 @@ int main(int argc, char **argv)
 						goto exitMovieLoop;
 				}
 
-				const lwmUInt8 *yBuffer;
-				const lwmUInt8 *uBuffer;
-				const lwmUInt8 *vBuffer;
-				lwmUInt32 yStride, uStride, vStride;
-
-				lwmUInt32 frameIndex = lwmVideoRecon_GetWorkFrameIndex(videoRecon);
-				frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
-
-				yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0));
-				uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1));
-				vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2));
-
-				yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
-				uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
-				vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
-
-				SDL_Rect rect;
-				rect.x = rect.y = 0;
-				rect.w = static_cast<int>(vidWidth);
-				rect.h = static_cast<int>(vidHeight);
-
-				if(textureIsYUV)
-					SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
-				else
+				if(digestResult == lwmDIGEST_VideoSync)
 				{
-					void *pixels;
-					int pitch;
-					SDL_LockTexture(texture, &rect, &pixels, &pitch);
-					lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
-					SDL_UnlockTexture(texture);
-				}
-				SDL_RenderCopy(renderer, texture, NULL, NULL);
-				SDL_RenderPresent(renderer);
+					const lwmUInt8 *yBuffer;
+					const lwmUInt8 *uBuffer;
+					const lwmUInt8 *vBuffer;
+					lwmUInt32 yStride, uStride, vStride;
 
-				frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
+					lwmUInt32 frameIndex = lwmVideoRecon_GetWorkFrameIndex(videoRecon);
+					frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
+
+					yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0));
+					uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1));
+					vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2));
+
+					yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
+					uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
+					vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
+
+					SDL_Rect rect;
+					rect.x = rect.y = 0;
+					rect.w = static_cast<int>(vidWidth);
+					rect.h = static_cast<int>(vidHeight);
+
+					if(textureIsYUV)
+						SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
+					else
+					{
+						void *pixels;
+						int pitch;
+						SDL_LockTexture(texture, &rect, &pixels, &pitch);
+						lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
+						SDL_UnlockTexture(texture);
+					}
+					SDL_RenderCopy(renderer, texture, NULL, NULL);
+					SDL_RenderPresent(renderer);
+
+					frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
+				}
 
 				if(playingAudio)
 				{

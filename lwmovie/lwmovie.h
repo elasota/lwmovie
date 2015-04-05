@@ -41,9 +41,9 @@ enum lwmEDigestResult
 {
 	lwmDIGEST_Nothing,
 	lwmDIGEST_Worked,
-	lwmDIGEST_Error,
-	lwmDIGEST_VideoSync,
-	lwmDIGEST_AudioSync,
+	lwmDIGEST_Error,				// Fatal error
+	lwmDIGEST_VideoSync,			// Video sync with frame
+	lwmDIGEST_VideoSync_Dropped,	// Video sync with timing, but no video frame was produced.
 	lwmDIGEST_Initialize,
 };
 
@@ -109,6 +109,15 @@ enum lwmEStreamParameter
 
 	lwmSTREAMPARAM_U32_SampleRate,
 	lwmSTREAMPARAM_U32_SpeakerLayout,
+	
+	lwmSTREAMPARAM_U32_DropAggressiveness,
+};
+
+enum lwmEDropAggressiveness
+{
+	lwmDROPAGGRESSIVENESS_None,
+	lwmDROPAGGRESSIVENESS_Isolable,
+	lwmDROPAGGRESSIVENESS_Aggressive,
 };
 
 enum lwmEUserFlag
@@ -144,6 +153,7 @@ LWMOVIE_API_LINK lwmUInt8 lwmMovieState_GetAudioStreamCount(const struct lwmMovi
 LWMOVIE_API_LINK int lwmMovieState_SetAudioStreamEnabled(struct lwmMovieState *movieState, lwmUInt8 streamIndex, int enable);
 LWMOVIE_API_LINK int lwmMovieState_GetCommonParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 commonParameterU32, lwmUInt32 *output);
 LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 *output);
+LWMOVIE_API_LINK void lwmMovieState_SetStreamParameterU32(struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 value);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(struct lwmMovieState *movieState, struct lwmIVideoReconstructor *recon);
 LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(struct lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(struct lwmMovieState *movieState, struct lwmSWorkNotifier *videoDigestWorkNotifier);

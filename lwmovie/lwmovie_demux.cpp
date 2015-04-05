@@ -260,14 +260,18 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 				if(packetSize == lwmPlanHandler<lwmVideoSynchronizationPoint>::SIZE && 
 					lwmPlanHandler<lwmVideoSynchronizationPoint>::Read(syncPoint, packetData))
 				{
+					bool frameAvailable = false;
 					if(movieState->m1vDecoder)
 					{
 						movieState->m1vDecoder->WaitForDigestFinish();
-						movieState->m1vDecoder->EmitFrame();
+						frameAvailable = movieState->m1vDecoder->EmitFrame();
 					}
 					movieState->videoReconstructor->WaitForFinish();
 					movieState->streamSyncPeriods[lwmSTREAMTYPE_Video] = syncPoint.videoPeriod;
-					*outResult = lwmDIGEST_VideoSync;
+					if(frameAvailable)
+						*outResult = lwmDIGEST_VideoSync;
+					else
+						*outResult = lwmDIGEST_VideoSync_Dropped;
 				}
 				else
 				{
@@ -846,6 +850,29 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 	return 0;
 }
 
+LWMOVIE_API_LINK void lwmMovieState_SetStreamParameterU32(lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 value)
+{
+	switch(streamType)
+	{
+	case lwmSTREAMTYPE_Video:
+		{
+			if(streamIndex != 0)
+				return;
+			
+			switch(streamParameterU32)
+			{
+			case lwmSTREAMPARAM_U32_DropAggressiveness:
+				if(movieState->m1vDecoder)
+					movieState->m1vDecoder->SetDropAggressiveness(static_cast<lwmEDropAggressiveness>(value));
+				return;
+			default:
+				return;
+			};
+		}
+	default:
+		return;
+	}
+}
 
 LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmUInt32 flags, lwmSVideoFrameProvider *frameProvider)
 {

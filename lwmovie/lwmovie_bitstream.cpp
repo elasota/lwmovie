@@ -221,7 +221,6 @@ lwmovie::lwmCBitstream::lwmCBitstream()
 	buf_start = NULL;
 
 	m_owner = NULL;
-	m_eof = false;
 
 	m_stream = NULL;
 }

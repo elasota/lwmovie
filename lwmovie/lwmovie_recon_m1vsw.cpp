@@ -577,6 +577,9 @@ void lwmovie::lwmCM1VSoftwareReconstructor::StartNewFrame(lwmUInt32 current, lwm
 {
 	this->CloseFrame();
 
+	if(current == lwmRECONSLOT_Dropped_IP || current == lwmRECONSLOT_Dropped_B)
+		return;
+
 	if(m_useRowJobs)
 		for(lwmUInt32 i=0;i<m_mbHeight;i++)
 			m_rowCommitCounts[i] = m_workRowUsers[i] = 0;

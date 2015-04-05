@@ -42,7 +42,6 @@ namespace lwmovie
 		lwmUInt32 *buf_start;
 
 		lwmVidStream *m_owner;
-		bool m_eof;
 
 		lwmIOFuncs m_iofuncs;
 		void *m_stream;
