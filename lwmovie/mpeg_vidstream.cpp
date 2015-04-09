@@ -224,7 +224,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 
 	if(m_picture.code_type == constants::MPEG_B_TYPE)
 	{
-		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_Isolable)
+		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_B)
 			m_current = m_outputSlot = lwmRECONSLOT_B;
 		else
 			m_current = m_outputSlot = lwmRECONSLOT_Dropped_B;
@@ -233,33 +233,61 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 	{
 		if(m_future == lwmRECONSLOT_Unassigned)
 		{
-			m_current = m_future = m_outputSlot = lwmRECONSLOT_IP1;
+			lwmEReconSlot slot;
+			if(m_dropAggressiveness >= lwmDROPAGGRESSIVENESS_BPI)
+				slot = lwmRECONSLOT_Dropped_IP;
+			else
+				slot = lwmRECONSLOT_IP1;
+			m_current = m_future = m_outputSlot = slot;
 		}
 		else if(m_past == lwmRECONSLOT_Unassigned)
 		{
-			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
+			lwmEReconSlot slot;
+
+			if(m_dropAggressiveness >= lwmDROPAGGRESSIVENESS_BPI)
+				slot = lwmRECONSLOT_Dropped_IP;
+			else
+				slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
 			m_current = m_past = m_outputSlot = slot;
 		}
 		else
 		{
 			m_future = m_past;
-			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
+			lwmEReconSlot slot;
+
+			if(m_dropAggressiveness >= lwmDROPAGGRESSIVENESS_BPI)
+				slot = lwmRECONSLOT_Dropped_IP;
+			else
+				slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
 			m_current = m_past = m_outputSlot = slot;
 		}
 	}
 	else if(m_picture.code_type == constants::MPEG_P_TYPE)
 	{
-		if(m_future == lwmRECONSLOT_Unassigned)
-			return constants::PARSE_SKIP_PICTURE;
+		if(m_future == lwmRECONSLOT_Unassigned || m_future == lwmRECONSLOT_Dropped_IP)
+		{
+			m_current = m_past = m_future = lwmRECONSLOT_Dropped_IP;
+			return constants::PARSE_OK;
+		}
 		else if(m_past == lwmRECONSLOT_Unassigned)
 		{
-			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
+			// Have a forward prediction frame, don't have a back prediction, this should be it
+			lwmEReconSlot slot;
+			if(m_dropAggressiveness >= lwmDROPAGGRESSIVENESS_BP)
+				slot = lwmRECONSLOT_Dropped_IP;
+			else
+				slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
 			m_current = m_past = m_outputSlot = slot;
 		}
 		else
 		{
+			// Have a past and future, OR the past prediction is a dropped frame
 			m_future = m_past;
-			lwmEReconSlot slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
+			lwmEReconSlot slot;
+			if(m_future == lwmRECONSLOT_Dropped_IP || m_dropAggressiveness >= lwmDROPAGGRESSIVENESS_BP)
+				slot = lwmRECONSLOT_Dropped_IP;
+			else
+				slot = (m_future == lwmRECONSLOT_IP1) ? lwmRECONSLOT_IP2 : lwmRECONSLOT_IP1;
 			m_current = m_past = m_outputSlot = slot;
 		}
 	}

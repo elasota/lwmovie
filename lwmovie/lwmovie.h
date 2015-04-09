@@ -115,9 +115,11 @@ enum lwmEStreamParameter
 
 enum lwmEDropAggressiveness
 {
-	lwmDROPAGGRESSIVENESS_None,
-	lwmDROPAGGRESSIVENESS_Isolable,
-	lwmDROPAGGRESSIVENESS_Aggressive,
+	lwmDROPAGGRESSIVENESS_None,			// Don't drop anything
+	lwmDROPAGGRESSIVENESS_B,			// Drop B-frames
+	lwmDROPAGGRESSIVENESS_BP,			// Drop B-frames and P-frames
+	lwmDROPAGGRESSIVENESS_BPI,			// Drop B-frames, P-frames, and I-frames
+	lwmDROPAGGRESSIVENESS_All,			// Drop everything
 };
 
 enum lwmEUserFlag
