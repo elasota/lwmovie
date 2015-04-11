@@ -1,6 +1,7 @@
 lwfe/bin/Debug
 lwfe/bin/Release
 lwfe/obj
+cov-int
 Debug
 Release
 CMakeCache.txt
