@@ -30,7 +30,7 @@ struct lwmMovieState;
 struct lwmIVideoReconstructor;
 LWMOVIE_API_CLASS lwmCProfileTagSet;
 
-enum
+enum lwmEVideoLockType
 {
 	lwmVIDEOLOCK_Write_Only,		// Target will be written to and never read from
 	lwmVIDEOLOCK_Write_ReadLater,	// Target will be written to and possibly read from later
@@ -138,13 +138,30 @@ enum lwmEPixelConvertFlags
 
 struct lwmSVideoFrameProvider
 {
+	// Creates working frames.  If compiling with SIMD, the work frames must be SIMD-aligned.
+	// numRWFrames: Number of frames that require read and write access.
+	// numWriteOnlyFrames: Number of frames that require write-only access.
+	// frameFormat: Frame format.
 	int (*createWorkFramesFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
+
+	// Locks a working frame for memory access.
+	// workFrameIndex: Work frame index.
+	// lockType: One of lwmEVideoLockType
 	void (*lockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 lockType);
+
+	// Unlocks a working frame.
 	void (*unlockWorkFrameFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex);
-	void *(*getWorkFramePlaneFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
-	lwmUInt32 (*getWorkFramePlaneStrideFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
-	lwmUInt32 (*getWorkFramePlaneWidthFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
-	lwmUInt32 (*getWorkFramePlaneHeightFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+
+	// Retrieves the pixel data for a work frame plane.
+	void *(*getWorkFramePlaneFunc)(struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch);
+
+	// Retrieves the width of a work frame plane
+	lwmUInt32 (*getWorkFramePlaneWidthFunc)(const struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+
+	// Retrieves the height of a work frame plane
+	lwmUInt32 (*getWorkFramePlaneHeightFunc)(const struct lwmSVideoFrameProvider *frameProvider, lwmUInt32 planeIndex);
+
+	// Destroys the frame provider
 	void (*destroyFunc)(struct lwmSVideoFrameProvider *frameProvider);
 };
 
@@ -163,6 +180,7 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(struct lwmMovieState *movieState);
 
 LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(struct lwmMovieState *movieState);
 LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(struct lwmMovieState *movieState);
+LWMOVIE_API_LINK lwmUInt32 lwmMovieState_GetNumAudioSamplesAvailable(struct lwmMovieState *movieState, lwmUInt8 streamIndex);
 LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(struct lwmMovieState *movieState, lwmUInt8 streamIndex, void *samples, lwmUInt32 numSamples);
 LWMOVIE_API_LINK void lwmMovieState_NotifyAudioPlaybackUnderrun(struct lwmMovieState *movieState);
 
@@ -174,15 +192,15 @@ LWMOVIE_API_LINK void lwmVideoRecon_Destroy(struct lwmIVideoReconstructor *video
 LWMOVIE_API_LINK struct lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(struct lwmSAllocator *alloc, const struct lwmMovieState *movieState);
 LWMOVIE_API_LINK void lwmSVideoFrameProvider_Destroy(struct lwmSVideoFrameProvider *frameProvider);
 
-LWMOVIE_API_LINK int lwmVideoRecon_ExportRGB(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, void *outPixels, lwmLargeUInt outStride, lwmUInt32 outWidth, lwmUInt32 outHeight, lwmEVideoChannelLayout channelLayout, int pixelConvertFlags);
+LWMOVIE_API_LINK int lwmVideoRecon_ExportRGB(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, void *outPixels, lwmLargeUInt outStride, lwmUInt32 outWidth, lwmUInt32 outHeight, enum lwmEVideoChannelLayout channelLayout, int pixelConvertFlags);
 
 LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmUInt32 flags, struct lwmSVideoFrameProvider *frameProvider);
 LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(struct lwmIVideoReconstructor *videoRecon);
 
 LWMOVIE_API_LINK void lwmFlushProfileTags(struct lwmMovieState *movieState, LWMOVIE_API_CLASS lwmCProfileTagSet *tagSet);
 
-LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, lwmEFrameFormat inFrameFormat, lwmEVideoChannelLayout inChannelLayout, lwmUInt32 outWidth, lwmUInt32 outHeight, lwmEVideoChannelLayout outChannelLayout, lwmLargeUInt numSlices);
-LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_Create(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, lwmEFrameFormat inFrameFormat, lwmEVideoChannelLayout inChannelLayout, lwmUInt32 outWidth, lwmUInt32 outHeight, lwmEVideoChannelLayout outChannelLayout);
+LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, enum lwmEFrameFormat inFrameFormat, enum lwmEVideoChannelLayout inChannelLayout, lwmUInt32 outWidth, lwmUInt32 outHeight, enum lwmEVideoChannelLayout outChannelLayout, lwmLargeUInt numSlices);
+LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_Create(struct lwmSAllocator *alloc, struct lwmIVideoReconstructor *recon, enum lwmEFrameFormat inFrameFormat, enum lwmEVideoChannelLayout inChannelLayout, lwmUInt32 outWidth, lwmUInt32 outHeight, enum lwmEVideoChannelLayout outChannelLayout);
 LWMOVIE_API_LINK void lwmVideoRGBConverter_SetWorkNotifier(struct lwmVideoRGBConverter *converter, struct lwmSWorkNotifier *workNotifier);
 LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *converter, void *outPixels, lwmLargeUInt outStride, int conversionFlags);
 LWMOVIE_API_LINK void lwmVideoRGBConverter_Destroy(struct lwmVideoRGBConverter *converter);

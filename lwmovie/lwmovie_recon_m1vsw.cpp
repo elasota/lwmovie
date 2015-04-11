@@ -84,9 +84,6 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 
 	if(!frameProvider->createWorkFramesFunc(frameProvider, 2, 1, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_8Bit_420P_Planar))
 		return false;
-	m_yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
-	m_uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
-	m_vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
 
 	if(m_useRowJobs)
 	{
@@ -149,12 +146,17 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
 	lwmUInt8 *fu = m_futureTarget.uPlane;
 	lwmUInt8 *fv = m_futureTarget.vPlane;
 
-	lwmUInt32 rowStrideY = m_yStride;
-	lwmUInt32 rowStrideU = m_uStride;
-	lwmUInt32 rowStrideV = m_vStride;
-	lwmUInt32 mbRowStrideY = 16 * m_yStride;
-	lwmUInt32 mbRowStrideU = 8 * m_uStride;
-	lwmUInt32 mbRowStrideV = 8 * m_vStride;
+	SStrideTriplet rowStrideC = m_currentTarget.strides;
+	SStrideTriplet rowStrideF = m_futureTarget.strides;
+	SStrideTriplet rowStrideP = m_pastTarget.strides;
+
+	SStrideTriplet mbRowStrideC;
+	SStrideTriplet mbRowStrideF;
+	SStrideTriplet mbRowStrideP;
+
+	rowStrideC.MakeMBStrides(mbRowStrideC);
+	rowStrideF.MakeMBStrides(mbRowStrideF);
+	rowStrideP.MakeMBStrides(mbRowStrideP);
 
 	lwmUInt32 row = 0;
 
@@ -175,9 +177,10 @@ void lwmovie::lwmCM1VSoftwareReconstructor::Participate()
 	lwmUInt32 mbAddress = row*mbWidth;
 
 	ReconstructRow(row, m_mblocks + mbAddress, m_blocks + mbAddress*6, m_dctBlocks + mbAddress*6,
-		cy + row*mbRowStrideY, cu + row*mbRowStrideU, cv + row*mbRowStrideV,
-		fy + row*mbRowStrideY, fu + row*mbRowStrideU, fv + row*mbRowStrideV,
-		py + row*mbRowStrideY, pu + row*mbRowStrideU, pv + row*mbRowStrideV,
+		cy + row*mbRowStrideC.y, cu + row*mbRowStrideC.u, cv + row*mbRowStrideC.v,
+		fy + row*mbRowStrideF.y, fu + row*mbRowStrideF.u, fv + row*mbRowStrideF.v,
+		py + row*mbRowStrideP.y, pu + row*mbRowStrideP.u, pv + row*mbRowStrideP.v,
+		rowStrideC, rowStrideF, rowStrideP,
 #ifdef LWMOVIE_PROFILE
 		m_workRowProfileTags + row
 #else
@@ -194,16 +197,6 @@ void lwmovie::lwmCM1VSoftwareReconstructor::SetWorkNotifier(lwmSWorkNotifier *wo
 void lwmovie::lwmCM1VSoftwareReconstructor::STReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks, lwmSInt32 mbAddress)
 {
 	lwmUInt32 mbWidth = m_mbWidth;
-
-	lwmUInt32 yStride = m_yStride;
-	lwmUInt32 uStride = m_uStride;
-	lwmUInt32 vStride = m_vStride;
-
-	lwmLargeUInt blockOffsets[4];
-	blockOffsets[0] = 0;
-	blockOffsets[1] = 8;
-	blockOffsets[2] = yStride * 8;
-	blockOffsets[3] = 8 + yStride * 8;
 
 	lwmSInt32 row = mbAddress / m_mbWidth;
 	lwmSInt32 col = mbAddress % m_mbWidth;
@@ -225,9 +218,15 @@ void lwmovie::lwmCM1VSoftwareReconstructor::STReconstructBlock(const lwmReconMBl
 			return;
 	}
 
-	lwmUInt32 yOffset = static_cast<lwmUInt32>(row * 16 * m_yStride + col * 16);
-	lwmUInt32 uOffset = static_cast<lwmUInt32>(row * 8 * m_uStride + col * 8);
-	lwmUInt32 vOffset = static_cast<lwmUInt32>(row * 8 * m_vStride + col * 8);
+	SStrideTriplet cMBStrides, fMBStrides, pMBStrides;
+	SStrideTriplet cStrides = m_currentTarget.strides;
+	SStrideTriplet fStrides = m_futureTarget.strides;
+	SStrideTriplet pStrides = m_pastTarget.strides;
+	cStrides.MakeMBStrides(cMBStrides);
+	fStrides.MakeMBStrides(fMBStrides);
+	pStrides.MakeMBStrides(pMBStrides);
+	lwmUInt32 lumaColOffset = col * 16;
+	lwmUInt32 chromaColOffset = col * 8;
 
 	lwmUInt8 *cy = m_currentTarget.yPlane;
 	lwmUInt8 *cu = m_currentTarget.uPlane;
@@ -239,15 +238,25 @@ void lwmovie::lwmCM1VSoftwareReconstructor::STReconstructBlock(const lwmReconMBl
 	lwmUInt8 *fu = m_futureTarget.uPlane;
 	lwmUInt8 *fv = m_futureTarget.vPlane;
 
-	ReconstructLumaBlocks(mblock, blocks, dctBlocks, cy + yOffset, fy + yOffset, py + yOffset, yStride, NULL);
-	ReconstructChromaBlock(mblock, blocks + 4, dctBlocks + 4, cu + uOffset, fu + uOffset, pu + uOffset, uStride, NULL);
-	ReconstructChromaBlock(mblock, blocks + 5, dctBlocks + 5, cv + vOffset, fv + vOffset, pv + vOffset, vStride, NULL);
+	ReconstructLumaBlocks(mblock, blocks, dctBlocks,
+		cy + cMBStrides.y * row + lumaColOffset, fy + fMBStrides.y * row + lumaColOffset, py + pMBStrides.y * row + lumaColOffset,
+		cStrides.y, fStrides.y, pStrides.y,
+		NULL);
+	ReconstructChromaBlock(mblock, blocks + 4, dctBlocks + 4,
+		cu + cMBStrides.u * row + chromaColOffset, fu + fMBStrides.u * row + chromaColOffset, pu + pMBStrides.u * row + chromaColOffset,
+		cStrides.u, fStrides.u, pStrides.u,
+		NULL);
+	ReconstructChromaBlock(mblock, blocks + 5, dctBlocks + 5,
+		cv + cMBStrides.v * row + chromaColOffset, fv + fMBStrides.v * row + chromaColOffset, pv + pMBStrides.v * row + chromaColOffset,
+		cStrides.v, fStrides.v, pStrides.v,
+		NULL);
 }
 
 void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlocks,
 	lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
 	lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv,
 	lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv,
+	SStrideTriplet cStride, SStrideTriplet fStride, SStrideTriplet pStride,
 	lwmCProfileTagSet *profileTags
 	)
 {
@@ -256,16 +265,6 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const 
 #endif
 
 	lwmUInt32 mbWidth = m_mbWidth;
-
-	lwmUInt32 yStride = m_yStride;
-	lwmUInt32 uStride = m_uStride;
-	lwmUInt32 vStride = m_vStride;
-
-	lwmLargeUInt blockOffsets[4];
-	blockOffsets[0] = 0;
-	blockOffsets[1] = 8;
-	blockOffsets[2] = yStride * 8;
-	blockOffsets[3] = 8 + yStride * 8;
 
 	lwmSInt32 mvMinDown = -static_cast<lwmSInt32>(row) * 32;
 	lwmSInt32 mvMaxDown = (m_mbHeight - row - 1) * 32;
@@ -286,9 +285,9 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const 
 				continue;
 		}
 
-		ReconstructLumaBlocks(mblock, block, dctBlocks, cy, fy, py, yStride, profileTags);
-		ReconstructChromaBlock(mblock, block + 4, dctBlocks + 4, cu, fu, pu, uStride, profileTags);
-		ReconstructChromaBlock(mblock, block + 5, dctBlocks + 5, cv, fv, pv, vStride, profileTags);
+		ReconstructLumaBlocks(mblock, block, dctBlocks, cy, fy, py, cStride.y, fStride.y, pStride.y, profileTags);
+		ReconstructChromaBlock(mblock, block + 4, dctBlocks + 4, cu, fu, pu, cStride.u, fStride.u, pStride.u, profileTags);
+		ReconstructChromaBlock(mblock, block + 5, dctBlocks + 5, cv, fv, pv, cStride.v, fStride.v, pStride.v, profileTags);
 
 		cy += 16;
 		cu += 8;
@@ -307,7 +306,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructRow(lwmUInt32 row, const 
 	}
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags)
 {
 	lwmUInt8 bytes[16+256+256];
 
@@ -329,8 +328,8 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 		if(mblock->skipped)
 		{
 			// Skipped MB, motion compensation only
-			ZeroLumaBlockPair(c, stride);
-			ZeroLumaBlockPair(c + stride * 8, stride);
+			ZeroLumaBlockPair(c, cstride);
+			ZeroLumaBlockPair(c + cstride * 8, cstride);
 		}
 		else
 		{
@@ -342,12 +341,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 0+1
 					block[1].IDCT(dctBlock + 1);
-					SetLumaDCTPaired(c, dctBlock, stride);
+					SetLumaDCTPaired(c, dctBlock, cstride);
 				}
 				else
 				{
 					// 0 only
-					SetLumaDCTLow(c, dctBlock, stride);
+					SetLumaDCTLow(c, dctBlock, cstride);
 				}
 			}
 			else
@@ -356,16 +355,16 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 1 only
 					block[1].IDCT(dctBlock + 1);
-					SetLumaDCTHigh(c, dctBlock, stride);
+					SetLumaDCTHigh(c, dctBlock, cstride);
 				}
 				else
 				{
 					// No DCT
-					ZeroLumaBlockPair(c, stride);
+					ZeroLumaBlockPair(c, cstride);
 				}
 			}
 
-			lwmUInt8 *c2 = c + stride * 8;
+			lwmUInt8 *c2 = c + cstride * 8;
 
 			if(!block[2].zero_block_flag)
 			{
@@ -374,12 +373,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 2+3
 					block[3].IDCT(dctBlock + 3);
-					SetLumaDCTPaired(c2, dctBlock + 2, stride);
+					SetLumaDCTPaired(c2, dctBlock + 2, cstride);
 				}
 				else
 				{
 					// 2 only
-					SetLumaDCTLow(c2, dctBlock + 2, stride);
+					SetLumaDCTLow(c2, dctBlock + 2, cstride);
 				}
 			}
 			else
@@ -388,12 +387,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 3 only
 					block[3].IDCT(dctBlock + 3);
-					SetLumaDCTHigh(c2, dctBlock + 2, stride);
+					SetLumaDCTHigh(c2, dctBlock + 2, cstride);
 				}
 				else
 				{
 					// No DCT
-					ZeroLumaBlockPair(c2, stride);
+					ZeroLumaBlockPair(c2, cstride);
 				}
 			}
 		}
@@ -404,23 +403,23 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 	{
 		if(mblock->mb_motion_forw)
 		{
-			ExtractMotionLuma(motion, f, reconRightFor, reconDownFor, stride, profileTags);
+			ExtractMotionLuma(motion, f, reconRightFor, reconDownFor, fstride, profileTags);
 			if(mblock->mb_motion_back)
 			{
-				ExtractMotionLuma(mergeMotion, p, reconRightBack, reconDownBack, stride, profileTags);
+				ExtractMotionLuma(mergeMotion, p, reconRightBack, reconDownBack, pstride, profileTags);
 				MergeLumaMotion(motion, mergeMotion);
 			}
 		}
 		else //if(mblock->mb_motion_back)
 		{
-			ExtractMotionLuma(motion, p, reconRightBack, reconDownBack, stride, profileTags);
+			ExtractMotionLuma(motion, p, reconRightBack, reconDownBack, pstride, profileTags);
 		}
 
 		if(mblock->skipped)
 		{
 			// Skipped MB, motion compensation only
-			CopyLumaBlockPair(c, motion, stride);
-			CopyLumaBlockPair(c + stride * 8, motion + 128, stride);
+			CopyLumaBlockPair(c, motion, cstride);
+			CopyLumaBlockPair(c + cstride * 8, motion + 128, cstride);
 		}
 		else
 		{
@@ -432,12 +431,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 0+1
 					block[1].IDCT(dctBlock +1);
-					ApplyLumaDCTPaired(c, motion, dctBlock, stride);
+					ApplyLumaDCTPaired(c, motion, dctBlock, cstride);
 				}
 				else
 				{
 					// 0 only
-					ApplyLumaDCTLow(c, motion, dctBlock, stride);
+					ApplyLumaDCTLow(c, motion, dctBlock, cstride);
 				}
 			}
 			else
@@ -446,16 +445,16 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 1 only
 					block[1].IDCT(dctBlock + 1);
-					ApplyLumaDCTHigh(c, motion, dctBlock, stride);
+					ApplyLumaDCTHigh(c, motion, dctBlock, cstride);
 				}
 				else
 				{
 					// No DCT
-					CopyLumaBlockPair(c, motion, stride);
+					CopyLumaBlockPair(c, motion, cstride);
 				}
 			}
 
-			lwmUInt8 *c2 = c + stride * 8;
+			lwmUInt8 *c2 = c + cstride * 8;
 
 			if(!block[2].zero_block_flag)
 			{
@@ -464,12 +463,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 2+3
 					block[3].IDCT(dctBlock + 3);
-					ApplyLumaDCTPaired(c2, motion + 128, dctBlock + 2, stride);
+					ApplyLumaDCTPaired(c2, motion + 128, dctBlock + 2, cstride);
 				}
 				else
 				{
 					// 2 only
-					ApplyLumaDCTLow(c2, motion + 128, dctBlock + 2, stride);
+					ApplyLumaDCTLow(c2, motion + 128, dctBlock + 2, cstride);
 				}
 			}
 			else
@@ -478,12 +477,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 				{
 					// 3 only
 					block[3].IDCT(dctBlock + 3);
-					ApplyLumaDCTHigh(c2, motion + 128, dctBlock + 2, stride);
+					ApplyLumaDCTHigh(c2, motion + 128, dctBlock + 2, cstride);
 				}
 				else
 				{
 					// No DCT
-					CopyLumaBlockPair(c2, motion + 128, stride);
+					CopyLumaBlockPair(c2, motion + 128, cstride);
 				}
 			}
 		}
@@ -492,7 +491,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructLumaBlocks(const lwmRecon
 	}
 }
 
-void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags)
+void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags)
 {
 	lwmUInt8 bytes[16+64+64];
 
@@ -520,7 +519,7 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 		if(mblock->skipped)
 		{
 			// Skipped MB, motion compensation only
-			ZeroChromaBlock(c, stride);
+			ZeroChromaBlock(c, cstride);
 		}
 		else
 		{
@@ -528,10 +527,10 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 			if(!block->zero_block_flag)
 			{
 				block->IDCT(dctBlock);
-				SetChromaDCT(c, dctBlock, stride);
+				SetChromaDCT(c, dctBlock, cstride);
 			}
 			else
-				ZeroChromaBlock(c, stride);
+				ZeroChromaBlock(c, cstride);
 		}
 
 		// End of no-motion
@@ -540,22 +539,22 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 	{
 		if(mblock->mb_motion_forw)
 		{
-			ExtractMotionChroma(motion, f, reconRightFor, reconDownFor, stride, profileTags);
+			ExtractMotionChroma(motion, f, reconRightFor, reconDownFor, fstride, profileTags);
 			if(mblock->mb_motion_back)
 			{
-				ExtractMotionChroma(mergeMotion, p, reconRightBack, reconDownBack, stride, profileTags);
+				ExtractMotionChroma(mergeMotion, p, reconRightBack, reconDownBack, pstride, profileTags);
 				MergeChromaMotion(motion, mergeMotion);
 			}
 		}
 		else //if(mblock->mb_motion_back)
 		{
-			ExtractMotionChroma(motion, p, reconRightBack, reconDownBack, stride, profileTags);
+			ExtractMotionChroma(motion, p, reconRightBack, reconDownBack, pstride, profileTags);
 		}
 
 		if(mblock->skipped)
 		{
 			// Skipped MB, motion compensation only
-			CopyChromaBlock(c, motion, stride);
+			CopyChromaBlock(c, motion, cstride);
 		}
 		else
 		{
@@ -563,10 +562,10 @@ void lwmovie::lwmCM1VSoftwareReconstructor::ReconstructChromaBlock(const lwmReco
 			if(!block->zero_block_flag)
 			{
 				block->IDCT(dctBlock);
-				ApplyChromaDCT(c, motion, dctBlock, stride);
+				ApplyChromaDCT(c, motion, dctBlock, cstride);
 			}
 			else
-				CopyChromaBlock(c, motion, stride);
+				CopyChromaBlock(c, motion, cstride);
 		}
 
 		// End of motion + DCT
@@ -676,9 +675,9 @@ lwmUInt32 lwmovie::lwmCM1VSoftwareReconstructor::GetWorkFrameIndex() const
 //////////////////////////////////////////////////////////////////
 void lwmovie::lwmCM1VSoftwareReconstructor::STarget::LoadFromFrameProvider(lwmSVideoFrameProvider *frameProvider, lwmUInt32 frameIndex)
 {
-	this->yPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0));
-	this->uPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1));
-	this->vPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2));
+	this->yPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0, &this->strides.y));
+	this->uPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1, &this->strides.u));
+	this->vPlane = static_cast<lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2, &this->strides.v));
 	this->frameIndex = frameIndex;
 	this->isOpen = true;
 }

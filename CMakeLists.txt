@@ -42,7 +42,6 @@ add_library(lwmovie MODULE
 	lwmovie/lwmovie_constants.cpp
 	lwmovie/lwmovie_decodedct.cpp
 	lwmovie/lwmovie_demux.cpp
-	lwmovie/lwmovie_fp.cpp
 	lwmovie/lwmovie_fp_systemmem.cpp
 	lwmovie/lwmovie_idct.cpp
 	lwmovie/lwmovie_init.cpp

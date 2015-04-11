@@ -9,6 +9,7 @@ cmake_install.cmake
 CMakeFiles
 install_manifest.txt
 Makefile
+lwmovie-cov.tar.gz
 *.a
 *.user
 *.sdf

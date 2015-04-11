@@ -961,9 +961,6 @@ LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(
 	lwmSVideoFrameProvider *frameProvider = recon->GetFrameProvider();
 	lwmUInt32 yWorkWidth = frameProvider->getWorkFramePlaneWidthFunc(frameProvider, 0);
 	lwmUInt32 yWorkHeight = frameProvider->getWorkFramePlaneHeightFunc(frameProvider, 0);
-	lwmUInt32 yPitch = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
-	lwmUInt32 uPitch = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
-	lwmUInt32 vPitch = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
 
 	// Determine how many jobs can actually be allocated
 	lwmLargeUInt workBlockRowCount = (outHeight + numSlices - 1) / numSlices;
@@ -1021,9 +1018,6 @@ LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(
 			block->m_outHeight = workBlockRowCount;
 		}
 
-		block->m_yPitch = yPitch;
-		block->m_uPitch = uPitch;
-		block->m_vPitch = vPitch;
 		block->m_workLineWidth = yWorkWidth;
 		block->m_convLinePitch = convLinePitch;
 		block->m_convBuffer = convBuffer + (convBlockSize * i);
@@ -1057,9 +1051,11 @@ LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *
 	frameProvider->lockWorkFrameFunc(frameProvider, workFrameIndex, lwmVIDEOLOCK_Read);
 	lwmLargeUInt numParallelJobs = converter->numBlocks;
 
-	const lwmUInt8 *yPlane = static_cast<const lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, workFrameIndex, 0));
-	const lwmUInt8 *uPlane = static_cast<const lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, workFrameIndex, 1));
-	const lwmUInt8 *vPlane = static_cast<const lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, workFrameIndex, 2));
+	lwmUInt32 yPitch, uPitch, vPitch;
+
+	const lwmUInt8 *yPlane = static_cast<const lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, workFrameIndex, 0, &yPitch));
+	const lwmUInt8 *uPlane = static_cast<const lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, workFrameIndex, 1, &uPitch));
+	const lwmUInt8 *vPlane = static_cast<const lwmUInt8*>(frameProvider->getWorkFramePlaneFunc(frameProvider, workFrameIndex, 2, &vPitch));
 		
 	lwmLargeUInt workBlockRowCount = converter->workBlockRowCount;
 
@@ -1072,6 +1068,9 @@ LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *
 		block->m_yPlane = yPlane + block->m_yPitch * (i * workBlockRowCount);
 		block->m_uPlane = uPlane + block->m_uPitch * (i * workBlockRowCount);
 		block->m_vPlane = vPlane + block->m_vPitch * (i * workBlockRowCount);
+		block->m_yPitch = yPitch;
+		block->m_uPitch = uPitch;
+		block->m_vPitch = vPitch;
 	}
 
 	bool highQuality = ((conversionFlags & lwmPIXELCONVERTFLAG_NoCache) != 0);

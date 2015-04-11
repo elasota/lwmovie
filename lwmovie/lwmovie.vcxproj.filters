@@ -63,9 +63,6 @@
     <ClCompile Include="lwmovie_fp_systemmem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lwmovie_fp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="lwmovie_init.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -91,6 +88,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lwmovie_exportpixels.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lwmovie_cake.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -155,9 +155,6 @@
     <ClInclude Include="lwmovie_mp2_decoder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lwmovie_fp.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lwmovie_adpcm_decoder.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -168,6 +165,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\common\lwmovie_attribs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_cake.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_cpp_shims.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_cake_cppshims.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

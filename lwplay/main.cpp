@@ -3,6 +3,8 @@
 #include <string.h>
 #include "SDL2-2.0.3/include/SDL.h"
 #include "../lwmovie/lwmovie.h"
+#include "../lwmovie/lwmovie_cake.h"
+#include "../lwmovie/lwmovie_cake_cppshims.hpp"
 
 namespace lwplay
 {
@@ -15,18 +17,20 @@ namespace lwplay
 		static void StaticFree(lwmSAllocator *alloc, void *ptr);
 	};
 
-	class CAudioQueue
+	class CAudioQueue : public lwmICakeAudioDevice
 	{
 	public:
-		explicit CAudioQueue(lwmUInt32 numBytes);
+		CAudioQueue(const lwmCakeAudioStreamInfo *streamInfo, lwmUInt32 numSamples);
 		~CAudioQueue();
 		lwmUInt32 NumBytesQueued() const;
 		lwmUInt32 NumBytesAvailable() const;
 		bool UnderrunOccurred() const;
-		void ClearUnderrun();
+		bool InitedOK() const;
+		void Reset();
 		lwmUInt32 Capacity() const;
 		void *GetQueuePoint();
 		void CommitQueuedData(lwmUInt32 numBytes);
+		lwmLargeUInt QueueSamples(lwmCake *cake, const lwmCakeAudioSource *sources, lwmLargeUInt numSources, lwmLargeUInt numSamples);
 
 		static void SDLCALL StaticPullFromSDL(void *userdata, Uint8 * stream, int len);
 
@@ -34,9 +38,35 @@ namespace lwplay
 		void PullFromSDL(lwmUInt8 *targetBytes, lwmUInt32 len);
 
 		bool m_underrunOccurred;
+		bool m_initedOK;
+		bool m_isPaused;
+		SDL_AudioDeviceID m_audioDeviceID;
+		lwmUInt8 m_sampleSizeBytes;
 		lwmUInt32 m_numBytesQueued;
 		lwmUInt32 m_capacity;
 		lwmUInt8 *m_sampleBytes;
+	};
+
+	
+	class CFileReader : public lwmCakeFileReader
+	{
+	private:
+		FILE *m_f;
+
+		static int StaticIsEOF(lwmCakeFileReader *self);
+		static lwmLargeUInt StaticReadBytes(lwmCakeFileReader *self, void *dest, lwmLargeUInt numBytes);
+
+	public:
+		explicit CFileReader(FILE *f);
+	};
+
+	class CTimer : public lwmCakeTimeReader
+	{
+	private:
+		static lwmUInt64 StaticGetTime(lwmCakeTimeReader *timeReader);
+		static lwmUInt32 StaticGetResolution(lwmCakeTimeReader *timeReader);
+	public:
+		CTimer();
 	};
 }
 
@@ -56,16 +86,61 @@ void lwplay::CAllocator::StaticFree(lwmSAllocator *alloc, void *ptr)
 	_aligned_free(ptr);
 }
 
-lwplay::CAudioQueue::CAudioQueue(lwmUInt32 numBytes)
+lwplay::CAudioQueue::CAudioQueue(const lwmCakeAudioStreamInfo *streamInfo, lwmUInt32 numSamples)
 	: m_numBytesQueued(0)
-	, m_capacity(numBytes)
 	, m_underrunOccurred(false)
+	, m_initedOK(false)
+	, m_isPaused(true)
+	, m_audioDeviceID(0)
+	, m_sampleSizeBytes(0)
 {
-	m_sampleBytes = new lwmUInt8[numBytes];
+
+	int neededChannels = 0;
+
+	if(streamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
+	{
+		m_sampleSizeBytes = 2;
+		neededChannels = 1;
+	}
+	else if(streamInfo->speakerLayout == lwmSPEAKERLAYOUT_Stereo_LR)
+	{
+		m_sampleSizeBytes = 4;
+		neededChannels = 2;
+	}
+	else
+		return;
+
+	m_capacity = m_sampleSizeBytes * numSamples;
+	m_sampleBytes = new lwmUInt8[m_capacity];
+	
+	SDL_AudioSpec wantAudio, haveAudio;
+
+	SDL_zero(wantAudio);
+	wantAudio.freq = static_cast<int>(streamInfo->sampleRate);
+	wantAudio.channels = static_cast<int>(neededChannels);
+	wantAudio.format = AUDIO_S16SYS;
+	wantAudio.samples = 512;
+	wantAudio.userdata = this;
+	wantAudio.callback = StaticPullFromSDL;
+	m_audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &wantAudio, &haveAudio, 0);
+	if(m_audioDeviceID == 0)
+		return;
+
+	if(haveAudio.format != wantAudio.format ||
+		haveAudio.channels != wantAudio.channels ||
+		haveAudio.freq != wantAudio.freq)
+	{
+		SDL_CloseAudioDevice(m_audioDeviceID);
+		m_audioDeviceID = 0;
+	}
+
+	m_initedOK = true;
 }
 
 lwplay::CAudioQueue::~CAudioQueue()
 {
+	if(m_audioDeviceID != 0)
+		SDL_CloseAudioDevice(m_audioDeviceID);
 	delete[] m_sampleBytes;
 }
 
@@ -84,9 +159,9 @@ bool lwplay::CAudioQueue::UnderrunOccurred() const
 	return m_underrunOccurred;
 }
 
-void lwplay::CAudioQueue::ClearUnderrun()
+bool lwplay::CAudioQueue::InitedOK() const
 {
-	m_underrunOccurred = false;
+	return m_initedOK;
 }
 
 lwmUInt32 lwplay::CAudioQueue::Capacity() const
@@ -102,6 +177,41 @@ void *lwplay::CAudioQueue::GetQueuePoint()
 void lwplay::CAudioQueue::CommitQueuedData(lwmUInt32 numBytes)
 {
 	m_numBytesQueued += numBytes;
+}
+
+void lwplay::CAudioQueue::Reset()
+{
+	m_isPaused = true;
+	SDL_PauseAudioDevice(m_audioDeviceID, 1);
+	SDL_LockAudioDevice(m_audioDeviceID);
+	m_numBytesQueued = 0;
+	m_underrunOccurred = false;
+	SDL_UnlockAudioDevice(m_audioDeviceID);
+}
+
+
+lwmLargeUInt lwplay::CAudioQueue::QueueSamples(lwmCake *cake, const lwmCakeAudioSource *sources, lwmLargeUInt numSources, lwmLargeUInt numSamples)
+{
+	SDL_LockAudioDevice(m_audioDeviceID);
+	void *dest = m_sampleBytes + m_numBytesQueued;
+	lwmLargeUInt numBytesAvailable = m_capacity - m_numBytesQueued;
+	lwmLargeUInt numSamplesAvailable = numBytesAvailable / m_sampleSizeBytes;
+	if(numSamplesAvailable > numSamples)
+		numSamplesAvailable = numSamples;
+	numBytesAvailable = numSamplesAvailable * m_sampleSizeBytes;
+
+	lwmCake_ReadAudioSamples(cake, sources + 0, dest, numSamplesAvailable);
+
+	m_numBytesQueued += numBytesAvailable;
+	SDL_UnlockAudioDevice(m_audioDeviceID);
+	
+	if(m_isPaused)
+	{
+		m_isPaused = false;
+		SDL_PauseAudioDevice(m_audioDeviceID, 0);
+	}
+
+	return numSamplesAvailable;
 }
 
 void SDLCALL lwplay::CAudioQueue::StaticPullFromSDL(void *userdata, Uint8 * stream, int len)
@@ -126,6 +236,40 @@ void lwplay::CAudioQueue::PullFromSDL(lwmUInt8 *dest, lwmUInt32 len)
 	}
 }
 
+int lwplay::CFileReader::StaticIsEOF(lwmCakeFileReader *self)
+{
+	return feof(static_cast<lwplay::CFileReader*>(self)->m_f);
+}
+	
+lwmLargeUInt lwplay::CFileReader::StaticReadBytes(lwmCakeFileReader *self, void *dest, lwmLargeUInt numBytes)
+{
+	return fread(dest, 1, numBytes, static_cast<lwplay::CFileReader*>(self)->m_f);
+}
+
+lwplay::CFileReader::CFileReader(FILE *f)
+	: m_f(f)
+{
+	this->isEOFFunc = StaticIsEOF;
+	this->readBytesFunc = StaticReadBytes;
+}
+
+lwmUInt64 lwplay::CTimer::StaticGetTime(lwmCakeTimeReader *timeReader)
+{
+	return SDL_GetTicks();
+}
+
+lwmUInt32 lwplay::CTimer::StaticGetResolution(lwmCakeTimeReader *timeReader)
+{
+	return 10;
+}
+
+lwplay::CTimer::CTimer()
+{
+	this->getTimeMillisecondsFunc = StaticGetTime;
+	this->getResolutionMillisecondsFunc = StaticGetResolution;
+}
+
+
 int main(int argc, char **argv)
 {
 	if(argc != 2)
@@ -142,269 +286,168 @@ int main(int argc, char **argv)
 	lwmInitialize();
 
 	lwplay::CAllocator myAllocator;
+
 	char dataBuffer[4000];
 	char *unreadDataStart = NULL;
 	lwmLargeUInt numBytesAvailable = 0;
 	bool eof = false;
-	FILE *f = fopen(argv[1], "rb");
+	FILE *f2 = fopen(argv[1], "rb");
 
-	lwmMovieState *movieState = lwmCreateMovieState(&myAllocator, 0);
-	lwmSVideoFrameProvider *frameProvider = NULL;
-	lwmIVideoReconstructor *videoRecon = NULL;
+	if(!f2)
+		return -1;
+
+	lwplay::CFileReader myFileReader(f2);
+	lwplay::CTimer myTimer;
+
+	lwmCake *cake;
+	{
+		lwmCakeCreateOptions cakeOpts;
+		memset(&cakeOpts, 0, sizeof(cakeOpts));
+		cake = lwmCake_Create(&myAllocator, &myFileReader, &myTimer, &cakeOpts);
+	}
+
 	lwmVideoRGBConverter *rgbConverter = NULL;
 	SDL_Window *window = NULL;
 	SDL_Renderer *renderer = NULL;
 	SDL_Texture *texture = NULL;
 	bool textureIsYUV = false;
-	lwplay::CAudioQueue *audioQueue = NULL;
-	lwmUInt32 vidWidth, vidHeight, fpsNum, fpsDenom;
+	lwplay::CAudioQueue *audioDevice = NULL;
+	lwmCakeMovieInfo movieInfo;
 
-	bool playingAudio = false;
-	SDL_AudioSpec wantAudio, haveAudio;
-	SDL_AudioDeviceID audioDeviceID;
+	{
+		while(true)
+		{
+			lwmECakeResult cakeResult = lwmCake_ReadMovieInfo(cake, &movieInfo);
+			
+			if(cakeResult == lwmCAKE_RESULT_Initialized)
+				break;
+			if(cakeResult == lwmCAKE_RESULT_Waiting)
+				continue;
+			// Anything else is an error
+			return -1;
+		}
 
-	lwmUInt32 numFramesDecoded = 0;
-	lwmUInt32 playbackStartTime = 0;
-	lwmUInt32 audioSampleRate = 0;
-	lwmUInt8 sampleSizeBytes = 0;
+		window = SDL_CreateWindow("lwplay", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight), 0);
+		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+		if(movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar)
+		{
+			textureIsYUV = true;
+			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
+		}
+		else
+		{
+			// TODO: Cake
+			lwmIVideoReconstructor *recon = lwmCake_GetVideoReconstructor(cake);
+			rgbConverter = lwmVideoRGBConverter_Create(&myAllocator, recon, movieInfo.videoFrameFormat, movieInfo.videoChannelLayout, movieInfo.videoWidth, movieInfo.videoHeight, lwmVIDEOCHANNELLAYOUT_RGBA);
+
+			int sdlPixelFormat;
+			if(SDL_PIXELTYPE(SDL_PIXELFORMAT_RGBA8888) == SDL_PIXELTYPE_PACKED32 && SDL_BYTEORDER == SDL_LIL_ENDIAN)
+				sdlPixelFormat = SDL_PIXELFORMAT_ABGR8888;
+			else
+				sdlPixelFormat = SDL_PIXELFORMAT_RGBA8888;
+
+			texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
+			textureIsYUV = false;
+		}
+
+		if(movieInfo.numAudioStreams > 0)
+		{
+			lwmUInt8 sampleSizeBytes = 1;
+			audioDevice = new lwplay::CAudioQueue(movieInfo.audioStreamInfos + 0, 8192);
+			if(!audioDevice->InitedOK())
+			{
+				delete audioDevice;
+				audioDevice = NULL;
+			}
+		}
+	}
+
+	{
+		lwmCakeDecodeOptions decodeOptions;
+		memset(&decodeOptions, 0, sizeof(decodeOptions));
+		if(!lwmCake_BeginDecoding(cake, &decodeOptions))
+			return -1;
+	}
+	
+	if(movieInfo.numAudioStreams > 0 && audioDevice)
+		lwmCake_SetStreamAudioDevice(cake, 0, audioDevice);
 
 	while(true)
 	{
-		if(numBytesAvailable == 0 && !eof)
-		{
-			numBytesAvailable = fread(dataBuffer, 1, sizeof(dataBuffer), f);
-			if(numBytesAvailable == 0)
-				eof = true;
-			else
-				unreadDataStart = dataBuffer;
-		}
+		lwmCakeDecodeOutput decodeOutput;
+		lwmECakeResult result = lwmCake_Decode(cake, &decodeOutput);
 
-		lwmUInt32 numBytesDigested;
-		lwmUInt32 digestResult;
-		lwmMovieState_FeedData(movieState, unreadDataStart, static_cast<lwmUInt32>(numBytesAvailable), &digestResult, &numBytesDigested);
-		numBytesAvailable -= numBytesDigested;
-		unreadDataStart += numBytesDigested;
-
-		switch(digestResult)
+		switch(result)
 		{
-		case lwmDIGEST_Initialize:
+		case lwmCAKE_RESULT_Waiting:
+			if(decodeOutput.displayDelay)
+				SDL_Delay(decodeOutput.displayDelay);
+			break;
+		case lwmCAKE_RESULT_NewVideoFrame:
 			{
-				lwmUInt32 reconType;
-				lwmUInt32 frameFormat, channelLayout;
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &vidWidth);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &vidHeight);
+				const lwmUInt8 *yBuffer;
+				const lwmUInt8 *uBuffer;
+				const lwmUInt8 *vBuffer;
+				lwmUInt32 yStride, uStride, vStride;
 
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_PPSNumerator, &fpsNum);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_PPSDenominator, &fpsDenom);
+				lwmSVideoFrameProvider *frameProvider = lwmCake_GetVideoFrameProvider(cake);
+				lwmUInt32 frameIndex = decodeOutput.workFrameIndex;
 
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_VideoFrameFormat, &frameFormat);
-				lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_VideoChannelLayout, &channelLayout);
+				frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
 
-				frameProvider = lwmCreateSystemMemoryFrameProvider(&myAllocator, movieState);
-				videoRecon = lwmCreateSoftwareVideoReconstructor(movieState, &myAllocator, reconType, 0, frameProvider);
-				lwmMovieState_SetVideoReconstructor(movieState, videoRecon);
+				yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0, &yStride));
+				uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1, &uStride));
+				vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2, &vStride));
 
-				lwmUInt32 audioSpeakerLayout;
-				int neededChannels = 0;
-				lwmUInt8 audioStreamCount = lwmMovieState_GetAudioStreamCount(movieState);
+				SDL_Rect rect;
+				rect.x = rect.y = 0;
+				rect.w = static_cast<int>(movieInfo.videoWidth);
+				rect.h = static_cast<int>(movieInfo.videoHeight);
 
-				if(audioStreamCount)
-				{
-					// Activate audio stream 0
-					if(lwmMovieState_SetAudioStreamEnabled(movieState, 0, 1))
-					{
-						lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Audio, 0, lwmSTREAMPARAM_U32_SampleRate, &audioSampleRate);
-						lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Audio, 0, lwmSTREAMPARAM_U32_SpeakerLayout, &audioSpeakerLayout);
-
-						if(audioSpeakerLayout == lwmSPEAKERLAYOUT_Mono)
-						{
-							sampleSizeBytes = 2;
-							neededChannels = 1;
-						}
-						else if(audioSpeakerLayout == lwmSPEAKERLAYOUT_Stereo_LR)
-						{
-							neededChannels = 2;
-							sampleSizeBytes = 4;
-						}
-
-						SDL_zero(wantAudio);
-						wantAudio.freq = static_cast<int>(audioSampleRate);
-						wantAudio.channels = static_cast<int>(neededChannels);
-						wantAudio.format = AUDIO_S16SYS;
-						wantAudio.samples = 512;
-						wantAudio.userdata = audioQueue = new lwplay::CAudioQueue(sampleSizeBytes * 8192);
-						wantAudio.callback = lwplay::CAudioQueue::StaticPullFromSDL;
-						audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &wantAudio, &haveAudio, 0);
-						SDL_PauseAudioDevice(audioDeviceID, 0);
-
-						playingAudio = true;
-					}
-				}
-
-				// TODO: Check for failures
-				window = SDL_CreateWindow("lwplay", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, static_cast<int>(vidWidth), static_cast<int>(vidHeight), 0);
-				renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-				if(channelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 && frameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar)
-				{
-					textureIsYUV = true;
-					texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(vidWidth), static_cast<int>(vidHeight));
-				}
+				if(textureIsYUV)
+					SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
 				else
 				{
-					rgbConverter = lwmVideoRGBConverter_Create(&myAllocator, videoRecon, static_cast<lwmEFrameFormat>(frameFormat), static_cast<lwmEVideoChannelLayout>(channelLayout), vidWidth, vidHeight, lwmVIDEOCHANNELLAYOUT_RGBA);
-
-					int sdlPixelFormat;
-					if(SDL_PIXELTYPE(SDL_PIXELFORMAT_RGBA8888) == SDL_PIXELTYPE_PACKED32 && SDL_BYTEORDER == SDL_LIL_ENDIAN)
-						sdlPixelFormat = SDL_PIXELFORMAT_ABGR8888;
-					else
-						sdlPixelFormat = SDL_PIXELFORMAT_RGBA8888;
-
-					texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(vidWidth), static_cast<int>(vidHeight));
-					textureIsYUV = false;
+					void *pixels;
+					int pitch;
+					SDL_LockTexture(texture, &rect, &pixels, &pitch);
+					lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
+					SDL_UnlockTexture(texture);
 				}
+				SDL_RenderCopy(renderer, texture, NULL, NULL);
+				SDL_RenderPresent(renderer);
 
-				//PTP_WORK videoReconWork = CreateThreadpoolWork(MyVideoReconWorkCallback, videoRecon, NULL);
-				//videoReconNotifier.SetWork(videoReconWork);
-				//lwmVideoRecon_SetWorkNotifier(videoRecon, &videoReconNotifier);
-
+				frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
 			}
 			break;
-		case lwmDIGEST_VideoSync_Dropped:
-		case lwmDIGEST_VideoSync:
-			{
-				numFramesDecoded++;
-				Uint32 timeSinceStart = 0;
-				Uint32 currentTime = SDL_GetTicks();
-				if(playbackStartTime == 0)
-					playbackStartTime = currentTime;
-				else
-				{
-					lwmUInt32 thisFrameTime = playbackStartTime + static_cast<lwmUInt32>(static_cast<lwmUInt64>(numFramesDecoded) * 1000 * fpsDenom / fpsNum);
-					if(currentTime < thisFrameTime)
-					{
-						SDL_Delay(thisFrameTime - currentTime);
-					}
-					else
-					{
-						lwmUInt32 slip = currentTime - thisFrameTime;
-						if(slip > 1000)
-							playbackStartTime += slip;
-					}
-				}
-
-				SDL_Event e;
-				while(SDL_PollEvent(&e))
-				{
-					if(e.type == SDL_QUIT)
-						goto exitMovieLoop;
-				}
-
-				if(digestResult == lwmDIGEST_VideoSync)
-				{
-					const lwmUInt8 *yBuffer;
-					const lwmUInt8 *uBuffer;
-					const lwmUInt8 *vBuffer;
-					lwmUInt32 yStride, uStride, vStride;
-
-					lwmUInt32 frameIndex = lwmVideoRecon_GetWorkFrameIndex(videoRecon);
-					frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
-
-					yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0));
-					uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1));
-					vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2));
-
-					yStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 0);
-					uStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 1);
-					vStride = frameProvider->getWorkFramePlaneStrideFunc(frameProvider, 2);
-
-					SDL_Rect rect;
-					rect.x = rect.y = 0;
-					rect.w = static_cast<int>(vidWidth);
-					rect.h = static_cast<int>(vidHeight);
-
-					if(textureIsYUV)
-						SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
-					else
-					{
-						void *pixels;
-						int pitch;
-						SDL_LockTexture(texture, &rect, &pixels, &pitch);
-						lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
-						SDL_UnlockTexture(texture);
-					}
-					SDL_RenderCopy(renderer, texture, NULL, NULL);
-					SDL_RenderPresent(renderer);
-
-					frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
-				}
-
-				if(playingAudio)
-				{
-					bool canQueueSamples = false;
-					SDL_LockAudioDevice(audioDeviceID);
-					if(lwmMovieState_IsAudioPlaybackSynchronized(movieState))
-					{
-						if(audioQueue->UnderrunOccurred())
-						{
-							// Underrun occurred
-							lwmMovieState_NotifyAudioPlaybackUnderrun(movieState);
-							audioQueue->ClearUnderrun();
-						}
-						else
-						{
-							// Otherwise, queue more audio samples
-							canQueueSamples = true;
-						}
-					}
-					else
-					{
-						// Wait for any leftover playback to finish
-						if(audioQueue->NumBytesQueued() == 0)
-						{
-							if(lwmMovieState_SynchronizeAudioPlayback(movieState) != 0)
-							{
-								canQueueSamples = true;
-								audioQueue->ClearUnderrun();
-							}
-						}
-					}
-
-					if(canQueueSamples)
-					{
-						void *dest = audioQueue->GetQueuePoint();
-						lwmUInt32 numSamplesRead = lwmMovieState_ReadAudioSamples(movieState, 0, dest, audioQueue->NumBytesAvailable() / sampleSizeBytes);
-						audioQueue->CommitQueuedData(numSamplesRead * sampleSizeBytes);
-					}
-					SDL_UnlockAudioDevice(audioDeviceID);
-				}
-			}
-			break;
-		case lwmDIGEST_Error:
+		case lwmCAKE_RESULT_Finished:
+		case lwmCAKE_RESULT_Error:
 			goto exitMovieLoop;
+			break;
 		default:
 			break;
 		};
 
-		if(digestResult == lwmDIGEST_Nothing && eof)
+		SDL_Event e;
+		while(SDL_PollEvent(&e))
 		{
-			// End of movie
-			break;
+			if(e.type == SDL_QUIT)
+				goto exitMovieLoop;
 		}
 	}
 
 exitMovieLoop:
-	lwmMovieState_Destroy(movieState);
-	if(rgbConverter)
-		lwmVideoRGBConverter_Destroy(rgbConverter);
-	lwmIVideoReconstructor_Destroy(videoRecon);
-	lwmSVideoFrameProvider_Destroy(frameProvider);
+	lwmCake_Destroy(cake);
 
-	if(playingAudio)
-		SDL_CloseAudioDevice(audioDeviceID);
-	if(audioQueue)
-		delete audioQueue;
+	fclose(f2);
+
+	if(texture)
+		SDL_DestroyTexture(texture);
+	if(renderer)
+		SDL_DestroyRenderer(renderer);
+	if(audioDevice)
+		delete audioDevice;
 	SDL_Quit();
 
 	return 0;

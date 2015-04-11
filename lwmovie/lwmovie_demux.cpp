@@ -553,6 +553,7 @@ repeatFeed:;
 						movieState->audioFillable.Init(movieState->audioStreamInfoBytes);
 						movieState->numParsedAudioHeaders = 0;
 						movieState->demuxState = lwmDEMUX_AudioStreamHeader;
+						goto repeatFeed;
 					}
 					else
 						movieState->demuxState = lwmDEMUX_FatalError;
@@ -1022,7 +1023,13 @@ LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movie
 		if(numCommittedSamples > movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio])
 			audioBuffer->SkipSamples(numCommittedSamples - movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio]);
 	}
-	lwmUInt32 audioBufferStartPoint = movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio] - numCommittedSamples;
+
+	lwmUInt32 audioBufferStartPoint = 0;
+	lwmUInt32 truncatedSamples = 0;
+	if(movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio] > numCommittedSamples)
+		audioBufferStartPoint = movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio] - numCommittedSamples;
+	else
+		truncatedSamples = numCommittedSamples - movieState->streamSyncPeriods[lwmSTREAMTYPE_Audio];
 
 	if(audioBufferStartPoint > audioTime)
 		return 0;	// Audio starts in the future
@@ -1030,16 +1037,27 @@ LWMOVIE_API_LINK int lwmMovieState_SynchronizeAudioPlayback(lwmMovieState *movie
 		return 0;	// Audio ends in the past
 
 	// Audio starts immediately or in the past, trim any preceding samples and complete
-	if(audioTime != audioBufferStartPoint)
+	if(audioTime != audioBufferStartPoint || truncatedSamples > 0)
 	{
 		for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)
 		{
 			if(lwmCAudioBuffer *audioBuffer = movieState->GetAudioBuffer(i))
-				audioBuffer->SkipSamples(audioTime - audioBufferStartPoint);
+				audioBuffer->SkipSamples(audioTime - audioBufferStartPoint + truncatedSamples);
 		}
 	}
 	movieState->isAudioSynchronized = true;
 	return 1;
+}
+
+LWMOVIE_API_LINK lwmUInt32 lwmMovieState_GetNumAudioSamplesAvailable(struct lwmMovieState *movieState, lwmUInt8 streamIndex)
+{
+	if(!movieState->isAudioSynchronized)
+		return 0;
+	if(movieState->movieInfo.audioStreamType == lwmAST_None)
+		return 0;
+	if(streamIndex >= movieState->audioCommonInfo.numAudioStreams)
+		return 0;
+	return movieState->GetAudioBuffer(streamIndex)->GetNumCommittedSamples();
 }
 
 LWMOVIE_API_LINK lwmUInt32 lwmMovieState_ReadAudioSamples(lwmMovieState *movieState, lwmUInt8 streamIndex, void *samples, lwmUInt32 numSamples)

@@ -21,7 +21,8 @@
  */
 #include <stdlib.h>
 #include <new>
-#include "lwmovie_fp.hpp"
+#include "lwmovie.h"
+#include "lwmovie_cpp_shims.hpp"
 #include "lwmovie_simd_defs.hpp"
 
 namespace lwmovie
@@ -33,12 +34,11 @@ namespace lwmovie
 		~lwmCSystemMemFrameProvider();
 
 		virtual int CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
-		virtual void LockWorkFrame(lwmUInt32 workFrameIndex, lwmUInt32 lockType);
+		virtual void LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType);
 		virtual void UnlockWorkFrame(lwmUInt32 workFrameIndex);
-		virtual void *GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
-		virtual lwmUInt32 GetWorkFramePlaneStride(lwmUInt32 planeIndex);
-		virtual lwmUInt32 GetWorkFramePlaneWidth(lwmUInt32 planeIndex);
-		virtual lwmUInt32 GetWorkFramePlaneHeight(lwmUInt32 planeIndex);
+		virtual void *GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch);
+		virtual lwmUInt32 GetWorkFramePlaneWidth(lwmUInt32 planeIndex) const;
+		virtual lwmUInt32 GetWorkFramePlaneHeight(lwmUInt32 planeIndex) const;
 		virtual void Destroy();
 
 	private:
@@ -117,7 +117,7 @@ int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames,
 	return 1;
 }
 
-void lwmovie::lwmCSystemMemFrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmUInt32 lockType)
+void lwmovie::lwmCSystemMemFrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType)
 {
 }
 
@@ -125,22 +125,19 @@ void lwmovie::lwmCSystemMemFrameProvider::UnlockWorkFrame(lwmUInt32 workFrameInd
 {
 }
 
-void *lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex)
+void *lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch)
 {
+	if(outPitch)
+		*outPitch = m_channelStrides[planeIndex];
 	return m_frameBytes + workFrameIndex * m_frameSize + m_channelOffsets[planeIndex];
 }
 
-lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneStride(lwmUInt32 planeIndex)
-{
-	return this->m_channelStrides[planeIndex];
-}
-
-lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex)
+lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex) const
 {
 	return this->m_channelWidths[planeIndex];
 }
 
-lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex)
+lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex) const
 {
 	return this->m_channelHeights[planeIndex];
 }

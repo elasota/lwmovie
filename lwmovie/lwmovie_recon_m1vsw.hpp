@@ -121,11 +121,24 @@ namespace lwmovie
 			lwmCM1VSoftwareReconstructor *recon;
 		};
 
+		struct SStrideTriplet
+		{
+			lwmUInt32 y, u, v;
+
+			inline void MakeMBStrides(SStrideTriplet &dest) const
+			{
+				dest.y = this->y * 16;
+				dest.u = this->u * 8;
+				dest.v = this->v * 8;
+			}
+		};
+
 		struct STarget
 		{
 			lwmUInt8 *yPlane;
 			lwmUInt8 *uPlane;
 			lwmUInt8 *vPlane;
+			SStrideTriplet strides;
 			lwmUInt32 frameIndex;
 			bool isOpen;
 
@@ -134,12 +147,16 @@ namespace lwmovie
 		};
 
 		static void PutDCTBlock(const lwmDCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
-		void ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks, lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
-			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv, lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv, lwmCProfileTagSet *profileTags);
+		void ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks,
+			lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
+			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv,
+			lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv,
+			SStrideTriplet cStride, SStrideTriplet fStride, SStrideTriplet pStride,
+			lwmCProfileTagSet *profileTags);
 		static void ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
+			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags);
 		static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt stride, lwmCProfileTagSet *profileTags);
+			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags);
 
 		static void STWNJoinFunc(lwmSWorkNotifier *workNotifier);
 		static void STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier);
@@ -160,10 +177,6 @@ namespace lwmovie
 		STarget m_futureTarget;
 
 		lwmUInt32 m_outputTarget;
-
-		lwmUInt32 m_yStride;
-		lwmUInt32 m_uStride;
-		lwmUInt32 m_vStride;
 
 		lwmSAllocator *m_alloc;
 		lwmSVideoFrameProvider *m_frameProvider;
