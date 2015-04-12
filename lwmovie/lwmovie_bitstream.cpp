@@ -42,7 +42,7 @@ lwmUInt32 lwmovie::lwmCBitstream::show_bits32()
 	return cur_bits;
 }
 
-lwmUInt32 lwmovie::lwmCBitstream::show_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift)
+LWMOVIE_FORCEINLINE lwmUInt32 lwmovie::lwmCBitstream::show_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift)
 {
 	lwmFastUInt8 bO = bit_offset + num;
 	if(bO > 32)
@@ -87,7 +87,7 @@ lwmUInt32 lwmovie::lwmCBitstream::show_bits29() { return show_bitsX(29, 0xffffff
 lwmUInt32 lwmovie::lwmCBitstream::show_bits30() { return show_bitsX(30, 0xfffffffc,  2); }
 lwmUInt32 lwmovie::lwmCBitstream::show_bits31() { return show_bitsX(31, 0xfffffffe,  1); }
 
-lwmUInt32 lwmovie::lwmCBitstream::get_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift)
+LWMOVIE_FORCEINLINE lwmUInt32 lwmovie::lwmCBitstream::get_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift)
 {
 	/* Check for underflow. */
 	bit_offset += num;
