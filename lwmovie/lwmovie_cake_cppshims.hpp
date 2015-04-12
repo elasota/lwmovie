@@ -34,4 +34,29 @@ public:
 	}
 };
 
+
+struct lwmICakeWorkNotifierFactory : public lwmCakeWorkNotifierFactory
+{
+public:
+	virtual lwmSWorkNotifier *CreateWorkNotifier(void *obj, lwmCakeParticipateCallback participationCallback) = 0;
+	virtual void DestroyWorkNotifier(struct lwmSWorkNotifier *notifier) = 0;
+private:
+	static lwmSWorkNotifier *StaticCreateWorkNotifier(struct lwmCakeWorkNotifierFactory *workNotifierFactory, void *obj, lwmCakeParticipateCallback participationCallback)
+	{
+		return static_cast<lwmICakeWorkNotifierFactory*>(workNotifierFactory)->CreateWorkNotifier(obj, participationCallback);
+	}
+
+	static void StaticDestroyWorkNotifier(struct lwmCakeWorkNotifierFactory *workNotifierFactory, struct lwmSWorkNotifier *notifier)
+	{
+		static_cast<lwmICakeWorkNotifierFactory*>(workNotifierFactory)->DestroyWorkNotifier(notifier);
+	}
+
+public:
+	lwmICakeWorkNotifierFactory()
+	{
+		this->createWorkNotifierFunc = StaticCreateWorkNotifier;
+		this->destroyWorkNotifierFunc = StaticDestroyWorkNotifier;
+	}
+};
+
 #endif

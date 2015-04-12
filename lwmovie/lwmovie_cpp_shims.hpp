@@ -63,4 +63,29 @@ public:
 };
 
 
+struct lwmIWorkNotifier : public lwmSWorkNotifier
+{
+public:
+	virtual void NotifyAvailable() = 0;
+	virtual void Join() = 0;
+private:
+	static void StaticNotifyAvailable(struct lwmSWorkNotifier *workNotifier)
+	{
+		static_cast<lwmIWorkNotifier*>(workNotifier)->NotifyAvailable();
+	}
+
+	static void StaticJoin(struct lwmSWorkNotifier *workNotifier)
+	{
+		static_cast<lwmIWorkNotifier*>(workNotifier)->Join();
+	}
+
+public:
+	lwmIWorkNotifier()
+	{
+		this->notifyAvailableFunc = StaticNotifyAvailable;
+		this->joinFunc = StaticJoin;
+	}
+};
+
+
 #endif
