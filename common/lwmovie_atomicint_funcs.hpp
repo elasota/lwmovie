@@ -29,14 +29,20 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+#include <intrin.h>
+
+#pragma intrinsic(_InterlockedIncrement)
+#pragma intrinsic(_InterlockedDecrement)
+#pragma intrinsic(_InterlockedCompareExchange)
+
 __forceinline lwmAtomicInt lwmAtomicIncrement(lwmAtomicInt volatile* ptr)
 {
-	return InterlockedIncrement(ptr);
+	return _InterlockedIncrement(ptr);
 }
 
 __forceinline lwmAtomicInt lwmAtomicDecrement(lwmAtomicInt volatile* ptr)
 {
-	return InterlockedDecrement(ptr);
+	return _InterlockedDecrement(ptr);
 }
 
 __forceinline void *lwmAtomicCompareAndSwap(void *volatile* destination, void *newValue, void *comp)
