@@ -10,19 +10,19 @@ struct lwmICakeAudioDevice : public lwmCakeAudioDevice
 	virtual void Reset() = 0;
 
 private:
-	static lwmLargeUInt StaticQueueSamples(lwmCakeAudioDevice *soundDevice, class lwmCake *cake, const lwmCakeAudioSource *sources, lwmLargeUInt numSources, lwmLargeUInt numSamples)
+	static lwmLargeUInt StaticQueueSamples(lwmCakeAudioDevice *audioDevice, class lwmCake *cake, const lwmCakeAudioSource *sources, lwmLargeUInt numSources, lwmLargeUInt numSamples)
 	{
-		return static_cast<lwmICakeAudioDevice*>(soundDevice)->QueueSamples(cake, sources, numSources, numSamples);
+		return static_cast<lwmICakeAudioDevice*>(audioDevice)->QueueSamples(cake, sources, numSources, numSamples);
 	}
 
-	static int StaticUnderrunOccurred(lwmCakeAudioDevice *soundDevice)
+	static int StaticUnderrunOccurred(lwmCakeAudioDevice *audioDevice)
 	{
-		return static_cast<lwmICakeAudioDevice*>(soundDevice)->UnderrunOccurred();
+		return static_cast<lwmICakeAudioDevice*>(audioDevice)->UnderrunOccurred();
 	}
 
-	static void StaticReset(lwmCakeAudioDevice *soundDevice)
+	static void StaticReset(lwmCakeAudioDevice *audioDevice)
 	{
-		static_cast<lwmICakeAudioDevice*>(soundDevice)->Reset();
+		static_cast<lwmICakeAudioDevice*>(audioDevice)->Reset();
 	}
 
 public:
