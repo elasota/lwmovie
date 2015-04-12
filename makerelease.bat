@@ -43,6 +43,7 @@ xcopy /Y /E Release\ffmpeg lwmovie-release\bin\ffmpeg
 xcopy /Y /E external-sources lwmovie-release\external-sources
 
 del deploy.7z
+del deploy.7z.tmp
 "C:\Program Files\7-zip\7z.exe" a -mx=9 deploy.7z lwmovie-release
 rmdir /S /Q lwmovie-release
 pause
