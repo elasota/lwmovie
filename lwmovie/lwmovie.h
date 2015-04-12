@@ -106,6 +106,8 @@ enum lwmEStreamParameter
 	lwmSTREAMPARAM_U32_VideoFrameFormat,
 	lwmSTREAMPARAM_U32_VideoChannelLayout,
 	lwmSTREAMPARAM_U32_LongestFrameReadAhead,
+	lwmSTREAMPARAM_U32_NumReadWriteWorkFrames,
+	lwmSTREAMPARAM_U32_NumWriteOnlyWorkFrames,
 
 	lwmSTREAMPARAM_U32_SampleRate,
 	lwmSTREAMPARAM_U32_SpeakerLayout,

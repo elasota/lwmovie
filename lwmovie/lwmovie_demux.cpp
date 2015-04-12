@@ -436,7 +436,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			movieState->m1vDecoder = alloc->NAlloc<lwmovie::lwmVidStream>(1);
 			if(!movieState->m1vDecoder)
 				goto cleanup;
-			new (movieState->m1vDecoder) lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
+			new (movieState->m1vDecoder) lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, (movieState->videoInfo.numWriteOnlyWorkFrames > 0), movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
 			movieState->needVideoStreamParameters = true;
 		}
 		break;
@@ -789,6 +789,12 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 				return 1;
 			case lwmSTREAMPARAM_U32_Height:
 				*outValue = movieState->videoInfo.videoHeight;
+				return 1;
+			case lwmSTREAMPARAM_U32_NumReadWriteWorkFrames:
+				*outValue = movieState->videoInfo.numReadWriteWorkFrames;
+				return 1;
+			case lwmSTREAMPARAM_U32_NumWriteOnlyWorkFrames:
+				*outValue = movieState->videoInfo.numWriteOnlyWorkFrames;
 				return 1;
 			case lwmSTREAMPARAM_U32_PPSNumerator:
 				*outValue = movieState->videoInfo.periodsPerSecondNum;

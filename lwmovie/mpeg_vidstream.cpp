@@ -152,6 +152,9 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParseSeqHead_MPEG(lwmC
 			m_sequence.m_non_intra_quant_matrix[constants::ZIGZAG[i]] = static_cast<lwmUInt8>(bitstream->get_bits8());
 	}
 
+	lwmUInt32 wasteBits = bitstream->get_bits16();
+	lwmUInt32 wasteBits2 = bitstream->get_bits16();
+
 	return constants::PARSE_OK;
 }
 
@@ -224,7 +227,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 
 	if(m_picture.code_type == constants::MPEG_B_TYPE)
 	{
-		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_B)
+		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_B && !m_allowBFrames)
 			m_current = m_outputSlot = lwmRECONSLOT_B;
 		else
 			m_current = m_outputSlot = lwmRECONSLOT_Dropped_B;
@@ -297,10 +300,11 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 	return constants::PARSE_OK;
 }
 
-lwmovie::lwmVidStream::lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
+lwmovie::lwmVidStream::lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
 	: m_stDeslicerJob((width + 15) / 16, (height + 15) / 16)
 	, m_deslicerMemPool(alloc, useThreadedDeslicer ? 150000 : 0)
 	, m_dropAggressiveness(lwmDROPAGGRESSIVENESS_None)
+	, m_allowBFrames(allowBFrames)
 {
 	m_alloc = alloc;
 

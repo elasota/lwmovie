@@ -70,10 +70,12 @@ lwmovie::lwmCM1VSoftwareReconstructor::~lwmCM1VSoftwareReconstructor()
 
 bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState, bool useRowJobs)
 {
-	lwmUInt32 width, height;
+	lwmUInt32 width, height, numWFrames, numRWFrames;
 
 	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &width);
 	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &height);
+	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_NumReadWriteWorkFrames, &numRWFrames);
+	lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_NumWriteOnlyWorkFrames, &numWFrames);
 
 	lwmUInt32 mbWidth = (width + 15) / 16;
 	lwmUInt32 mbHeight = (height + 15) / 16;
@@ -82,7 +84,10 @@ bool lwmovie::lwmCM1VSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwm
 	m_frameProvider = frameProvider;
 	m_useRowJobs = useRowJobs;
 
-	if(!frameProvider->createWorkFramesFunc(frameProvider, 2, 1, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_8Bit_420P_Planar))
+	if(numWFrames > 1 || numRWFrames != 2)
+		return false;
+
+	if(!frameProvider->createWorkFramesFunc(frameProvider, numRWFrames, numWFrames, mbWidth * 16, mbHeight * 16, lwmFRAMEFORMAT_8Bit_420P_Planar))
 		return false;
 
 	if(m_useRowJobs)

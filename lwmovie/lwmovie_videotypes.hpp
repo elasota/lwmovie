@@ -248,7 +248,7 @@ namespace lwmovie
 	class lwmVidStream
 	{
 	public:
-		lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
+		lwmVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
 		~lwmVidStream();
 
 		bool DigestStreamParameters(const void *bytes, lwmUInt32 packetSize);
@@ -310,6 +310,8 @@ namespace lwmovie
 		bool m_const_param_flag;				/* Contrained parameter flag. */
 		mpegPict m_picture;						/* Current picture.           */
 		mpegSequence m_sequence;				/* Current sequence.          */
+
+		bool m_allowBFrames;
 
 		lwmEReconSlot		m_past;				/* Past predictive frame.         */
 		lwmEReconSlot		m_future;			/* Future predictive frame.       */

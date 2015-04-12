@@ -109,11 +109,6 @@ static bool ParseSeqStart(lwmVideoStreamInfo &vsi, lwmOSFile *mpegFile, videoTag
 	return true;
 }
 
-
-int globalSync = 0;
-int globalPacket = 0;
-int globalOther = 0;
-
 static void ParsePicture(lwmOSFile *mpegFile, videoTagLink *scanLink)
 {
 	lwmUInt8 pictInfo[2];
@@ -150,10 +145,6 @@ static void ConvertPacket(lwmEPacketType packetType, bool includeCode, videoTagL
 		outFile->WriteBytes(copyBuffer, copyBlockSize);
 		sizeRemaining -= copyBlockSize;
 	}
-
-	globalOther += lwmPlanHandler<lwmPacketHeader>::SIZE;
-	globalOther += lwmPlanHandler<lwmPacketHeaderFull>::SIZE;
-	globalPacket += packetHeaderFull.packetSize;
 }
 
 void EmitFrameSync(lwmOSFile *outFile, lwmUInt32 frameNumber, bool isRandomAccess)
@@ -178,8 +169,6 @@ void EmitFrameSync(lwmOSFile *outFile, lwmUInt32 frameNumber, bool isRandomAcces
 	lwmWritePlanToFile(packetHeader, outFile);
 	lwmWritePlanToFile(packetHeaderFull, outFile);
 	outFile->WriteBytes(packetData, sizeof(packetData));
-
-	globalSync += 7;
 }
 
 void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
@@ -219,6 +208,8 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
 	lwmVideoStreamInfo vsi;
 	vsi.frameFormat = lwmFRAMEFORMAT_8Bit_420P_Planar;
 	vsi.channelLayout = (isExpandedRange ? lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG : lwmVIDEOCHANNELLAYOUT_YCbCr_BT601);
+	vsi.numWriteOnlyWorkFrames = 0;
+	vsi.numReadWriteWorkFrames = 2;
 
 	videoTagLink *vsiLink = NULL;
 	void *seqData = NULL;
@@ -276,6 +267,7 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
 	lwmWritePlanToFile(movieHeader, outFile);
 
 	// Write VSI
+	lwmUInt64 vsiPos = outFile->FilePos();
 	lwmWritePlanToFile(vsi, outFile);
 
 	// Write stream parameters
@@ -284,6 +276,7 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
 	lwmUInt32 frameNumber = 0;
 
 	bool hasFutureFrame = false;
+	bool hasBFrames = false;
 	lwmUInt8 workingFrameCode = 0;
 
 	for(videoTagLink *scanLink=linkHead;scanLink;scanLink=scanLink->next)
@@ -325,6 +318,7 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
 				// I/P frames preceding B don't emit frame syncs
 				if(workingFrameCode == MPEG_B_TYPE)
 					EmitFrameSync(outFile, ++frameNumber, false);
+				hasBFrames = true;
 				break;
 			default:
 				fprintf(stderr, "D picture used, this is not supported!\n");
@@ -348,4 +342,11 @@ void ConvertM1V(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRange)
 	}
 	else if(workingFrameCode != 0)
 		EmitFrameSync(outFile, ++frameNumber, false);	// Flush I/P-frame
+
+	if(hasBFrames)
+	{
+		outFile->Seek(vsiPos, lwmOSFile::SM_Start);
+		vsi.numWriteOnlyWorkFrames = 1;
+		lwmWritePlanToFile<lwmVideoStreamInfo>(vsi, outFile);
+	}
 }
