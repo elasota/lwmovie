@@ -28,7 +28,7 @@ copy /Y Release\lwenctools.dll lwmovie-release\bin\lwenctools.dll
 copy /Y Release\lwplay.exe lwmovie-release\bin\lwplay.exe
 copy /Y Release\lwrerange.exe lwmovie-release\bin\lwrerange.exe
 copy /Y Release\lwmux.exe lwmovie-release\bin\lwmux.exe
-copy /Y Release\lwfe.exe lwmovie-release\bin\lwfe.exe
+copy /Y Release\lwfe.exe "lwmovie-release\bin\lwmovie Encoder.exe"
 copy /Y Release\SDL2.dll lwmovie-release\bin\SDL2.dll
 
 copy /Y CommandLineOptions.txt lwmovie-release\doc\
