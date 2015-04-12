@@ -265,17 +265,9 @@ namespace lwfe
 
         private void GenerateExecutionPlans()
         {
-            string currentExePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
-            string currentExeDir = currentExePath.Substring(0, currentExePath.LastIndexOf('\\'));
-            string lwmuxPath = currentExeDir + "\\lwmux.exe";
-            string lwrerangePath = currentExeDir + "\\lwrerange.exe";
-            string ffmpegPath = currentExeDir + "\\ffmpeg\\bin\\ffmpeg.exe";
             Dictionary<string, object> settings = new Dictionary<string, object>();
 
-            settings["lwmuxPath"] = lwmuxPath;
-            settings["lwrerangePath"] = lwrerangePath;
-            settings["ffmpegPath"] = ffmpegPath;
-
+            _project.CreateDefaultSettings(settings);
             List<ExecutionPlan> ePlans = _project.CreateExecutionPlans(settings);
 
             TaskMonitor tm = new TaskMonitor(ePlans);

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("lwenc")]
+[assembly: AssemblyTitle("lwenccmd")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("lwenc")]
+[assembly: AssemblyProduct("lwenccmd")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("30ace34a-638c-423d-80cd-3f6326750f36")]
+[assembly: Guid("593c8351-001d-42c8-a9bf-27c8bf78b6ee")]
 
 // Version information for an assembly consists of the following four values:
 //

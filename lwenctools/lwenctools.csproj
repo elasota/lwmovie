@@ -76,7 +76,10 @@
     <Compile Include="ExecutionSet.cs" />
     <Compile Include="ICodecSettingsControl.cs" />
     <Compile Include="IExecutionPlanSettings.cs" />
+    <Compile Include="ITaskRunnerMonitor.cs" />
+    <Compile Include="ProcessIOConnector.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TaskRunner.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Codec Settings\ADPCMAudioOptionsControl.resx">

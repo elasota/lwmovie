@@ -178,6 +178,19 @@ namespace lwenctools
             return doc;
         }
 
+        public void CreateDefaultSettings(Dictionary<string, object> settings)
+        {
+            string currentExePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            string currentExeDir = currentExePath.Substring(0, currentExePath.LastIndexOf('\\'));
+            string lwmuxPath = currentExeDir + "\\lwmux.exe";
+            string lwrerangePath = currentExeDir + "\\lwrerange.exe";
+            string ffmpegPath = currentExeDir + "\\ffmpeg\\bin\\ffmpeg.exe";
+
+            settings["lwmuxPath"] = lwmuxPath;
+            settings["lwrerangePath"] = lwrerangePath;
+            settings["ffmpegPath"] = ffmpegPath;
+        }
+
         public List<ExecutionPlan> CreateExecutionPlans(Dictionary<string, object> inSettings)
         {
             Dictionary<string, object> settings = new Dictionary<string, object>();

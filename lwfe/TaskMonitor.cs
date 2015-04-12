@@ -12,53 +12,34 @@ using lwenctools;
 
 namespace lwfe
 {
-    public partial class TaskMonitor : Form
+    public partial class TaskMonitor : Form, ITaskRunnerMonitor
     {
-        private class ProcessIOConnector
+        private TaskRunner _taskRunner;
+
+        public TaskMonitor(IEnumerable<ExecutionPlan> executionPlans)
         {
-            private Process _sourceProcess;
-            private Process _destProcess;
+            InitializeComponent();
 
-            private byte[] _buffer = new byte[32768];
-
-            public ProcessIOConnector(Process sourceProcess, Process destProcess)
-            {
-                _sourceProcess = sourceProcess;
-                _destProcess = destProcess;
-            }
-
-            private void ThreadConnectIO(object o)
-            {
-                while (true)
-                {
-                    int nRead = _sourceProcess.StandardOutput.BaseStream.Read(_buffer, 0, _buffer.Length);
-                    if (nRead == 0)
-                        break;
-                    try
-                    {
-                        _destProcess.StandardInput.BaseStream.Write(_buffer, 0, nRead);
-                    }
-                    catch (System.IO.IOException)
-                    {
-                        // TODO?
-                        break;
-                    }
-                }
-                _destProcess.StandardInput.Close();
-            }
-
-            public void RunThreaded()
-            {
-                Thread t = new Thread(this.ThreadConnectIO);
-                t.Start(null);
-            }
+            _taskRunner = new TaskRunner(this, executionPlans);
         }
 
-        private class LogRelay
+        private void TaskMonitor_Load(object sender, EventArgs e)
+        {
+            _taskRunner.RunExecutionPlans();
+        }
+
+        void ITaskRunnerMonitor.OnStarted(int numPlans)
+        {
+            pbTaskProgressBar.Minimum = 0;
+            pbTaskProgressBar.Value = 0;
+            pbTaskProgressBar.Maximum = numPlans;
+        }
+
+        private class StageMonitor : IStageMonitor
         {
             private TaskLogView _logView;
 
-            public LogRelay(TaskLogView logView)
+            public StageMonitor(TaskLogView logView)
             {
                 _logView = logView;
             }
@@ -76,49 +57,45 @@ namespace lwfe
             }
         }
 
-        private Queue<ExecutionPlan> _planQueue = new Queue<ExecutionPlan>();
-        private IEnumerable<ExecutionPlan> _executionPlans;
-
-        public TaskMonitor(IEnumerable<ExecutionPlan> executionPlans)
+        private class PlanMonitor : IPlanMonitor
         {
-            InitializeComponent();
+            private List<TabPage> _tabPages = new List<TabPage>();
+            private TaskMonitor _taskMonitor;
+            private int _numStages;
 
-            _executionPlans = executionPlans;
-        }
-
-        private void ExecuteStages(ExecutionStage[] stages)
-        {
-            System.Diagnostics.Process[] stageProcesses = new System.Diagnostics.Process[stages.Length];
-            List<TabPage> tabPages = new List<TabPage>();
-            for (int i = 0; i < stages.Length; i++)
+            public PlanMonitor(TaskMonitor taskMonitor, int numStages)
             {
-                ExecutionStage stage = stages[i];
+                _taskMonitor = taskMonitor;
+                _numStages = numStages;
+            }
 
-                LogRelay logRelay = null;
-                this.Invoke((MethodInvoker)delegate
+            IStageMonitor IPlanMonitor.AddStage(string exePath, string[] args, int stageNum)
+            {
+                TaskLogView logView = null;
+                _taskMonitor.Invoke((MethodInvoker)delegate
                 {
                     string desc;
-                    if (stages.Length == 1)
+                    if (_numStages == 1)
                         desc = "Task (Running)";
-                    else if (i == 0)
+                    else if (stageNum == 0)
                         desc = "Task (Running) ->";
-                    else if (i == stages.Length - 1)
+                    else if (stageNum == _numStages - 1)
                         desc = "-> Task (Running)";
                     else
                         desc = "-> Task (Running) ->";
 
                     TabPage tabPage = new TabPage(desc);
-                    tabPages.Add(tabPage);
-                    tabLogFiles.TabPages.Add(tabPage);
+                    _tabPages.Add(tabPage);
+                    _taskMonitor.tabLogFiles.TabPages.Add(tabPage);
 
-                    TaskLogView logView = new TaskLogView();
+                    logView = new TaskLogView();
 
                     tabPage.Controls.Add(logView);
 
-                    logView.ProcessPath = (stage.ExePath);
+                    logView.ProcessPath = exePath;
                     {
                         string displayArgs = "";
-                        foreach (string arg in stage.Args)
+                        foreach (string arg in args)
                         {
                             if (displayArgs != "")
                                 displayArgs += " ";
@@ -129,90 +106,30 @@ namespace lwfe
 
                     logView.Size = tabPage.Size;
                     logView.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom;
-
-                    logRelay = new LogRelay(logView);
                 });
 
-                ExecutionSet eSet = new ExecutionSet();
-                System.Diagnostics.Process p = ExecutionSet.LaunchProcess(stage.ExePath, stage.Args, i != 0, i != stages.Length - 1, true);
-                stageProcesses[i] = p;
-                p.ErrorDataReceived += logRelay.OnErrorLogMessage;
-                p.BeginErrorReadLine();
+                return new StageMonitor(logView);
+            }
 
-                if (i != 0)
+            void IPlanMonitor.OnFinished()
+            {
+                _taskMonitor.Invoke((MethodInvoker)delegate
                 {
-                    ProcessIOConnector connector = new ProcessIOConnector(stageProcesses[i - 1], p);
-                    connector.RunThreaded();
-                }
-            }
+                    foreach (TabPage page in _tabPages)
+                        page.Text = page.Text.Replace("(Running)", "(Done)");
 
-            foreach (System.Diagnostics.Process p in stageProcesses)
-            {
-                p.WaitForExit();
+                    _taskMonitor.pbTaskProgressBar.Value++;
+                });
             }
-
-            this.Invoke((MethodInvoker)delegate
-            {
-                foreach (TabPage page in tabPages)
-                    page.Text = page.Text.Replace("(Running)", "(Done)");
-            });
         }
 
-        private void ExecutePlan(ExecutionPlan plan)
+        IPlanMonitor ITaskRunnerMonitor.CreatePlanMonitor(int numStages)
         {
-            List<ExecutionStage> stageList = new List<ExecutionStage>();
-            foreach (ExecutionStage stage in plan.Stages)
-                stageList.Add(stage);
-            ExecuteStages(stageList.ToArray());
-
-            this.Invoke((MethodInvoker)delegate
-            {
-                this.pbTaskProgressBar.Value++;
-            });
-            if (plan.CompletionCallback != null)
-                plan.CompletionCallback();
+            return new PlanMonitor(this, numStages);
         }
 
-        private void ThreadRunExecutionPlans(object o)
+        void ITaskRunnerMonitor.OnFinished()
         {
-            HashSet<string> delayedCleanupFiles = new HashSet<string>();
-            while(_planQueue.Count != 0)
-            {
-                ExecutionPlan plan = _planQueue.Dequeue();
-                foreach (string filePath in plan.TemporaryFiles)
-                    delayedCleanupFiles.Add(filePath);
-                ExecutePlan(plan);
-                foreach (string filePath in plan.CleanupFiles)
-                {
-                    // TODO: Catch delete failures
-                    System.IO.File.Delete(filePath);
-                    delayedCleanupFiles.Remove(filePath);
-                }
-            }
-
-            foreach (string filePath in delayedCleanupFiles)
-                System.IO.File.Delete(filePath);
-        }
-
-        private void RunExecutionPlans()
-        {
-            int numPlans = 0;
-            foreach (ExecutionPlan plan in _executionPlans)
-            {
-                _planQueue.Enqueue(plan);
-                numPlans++;
-            }
-            pbTaskProgressBar.Minimum = 0;
-            pbTaskProgressBar.Value = 0;
-            pbTaskProgressBar.Maximum = numPlans;
-
-            Thread t = new Thread(this.ThreadRunExecutionPlans);
-            t.Start(null);
-        }
-
-        private void TaskMonitor_Load(object sender, EventArgs e)
-        {
-            RunExecutionPlans();
         }
     }
 }
