@@ -20,4 +20,4 @@ Some of its advantages:
 
 ###Permissive:###
 - All components are under very permissive MIT/BSD-like licenses.
-- Uses only codecs that are free of any known patent restrictions.
+- Uses only codecs that are free of any known patent restrictions or are under royalty-free licenses.
