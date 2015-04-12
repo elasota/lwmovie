@@ -227,7 +227,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmVidStream::ParsePicture(lwmCBitst
 
 	if(m_picture.code_type == constants::MPEG_B_TYPE)
 	{
-		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_B && !m_allowBFrames)
+		if(m_dropAggressiveness < lwmDROPAGGRESSIVENESS_B && m_allowBFrames)
 			m_current = m_outputSlot = lwmRECONSLOT_B;
 		else
 			m_current = m_outputSlot = lwmRECONSLOT_Dropped_B;
