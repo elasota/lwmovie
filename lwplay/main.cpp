@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "SDL2-2.0.3/include/SDL.h"
+#include "threadpool.hpp"
 #include "../lwmovie/lwmovie.h"
 #include "../lwmovie/lwmovie_cake.h"
 #include "../lwmovie/lwmovie_cake_cppshims.hpp"
@@ -46,7 +47,6 @@ namespace lwplay
 		lwmUInt32 m_capacity;
 		lwmUInt8 *m_sampleBytes;
 	};
-
 	
 	class CFileReader : public lwmCakeFileReader
 	{
@@ -300,11 +300,6 @@ int main(int argc, char **argv)
 	lwplay::CTimer myTimer;
 
 	lwmCake *cake;
-	{
-		lwmCakeCreateOptions cakeOpts;
-		memset(&cakeOpts, 0, sizeof(cakeOpts));
-		cake = lwmCake_Create(&myAllocator, &myFileReader, &myTimer, &cakeOpts);
-	}
 
 	lwmVideoRGBConverter *rgbConverter = NULL;
 	SDL_Window *window = NULL;
@@ -313,6 +308,17 @@ int main(int argc, char **argv)
 	bool textureIsYUV = false;
 	lwplay::CAudioQueue *audioDevice = NULL;
 	lwmCakeMovieInfo movieInfo;
+	lwplay::CWorkNotifierFactory *workNotifierFactory = new lwplay::CWorkNotifierFactory();
+
+	
+	{
+		lwmCakeCreateOptions cakeOpts;
+		memset(&cakeOpts, 0, sizeof(cakeOpts));
+		cakeOpts.bUseThreadedDeslicer = 1;
+		cakeOpts.bUseThreadedReconstructor = 1;
+		cakeOpts.customNotifierFactory = workNotifierFactory;
+		cake = lwmCake_Create(&myAllocator, &myFileReader, &myTimer, &cakeOpts);
+	}
 
 	{
 		while(true)

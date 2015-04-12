@@ -73,21 +73,21 @@ struct lwmCakeCreateOptions
 {
 	int bUseThreadedDeslicer;
 	int bUseThreadedReconstructor;
+	struct lwmCakeWorkNotifierFactory *customNotifierFactory;
 };
 
 typedef void (*lwmCakeParticipateCallback)(void *obj);
 
 struct lwmCakeWorkNotifierFactory
 {
-	struct lwmSWorkNotifier *(*createWorkNotifierFunc)(void *obj, lwmCakeParticipateCallback participationCallback);
-	void (*destroyWorkNotifierFunc)(struct lwmSWorkNotifier *notifier);
+	struct lwmSWorkNotifier *(*createWorkNotifierFunc)(struct lwmCakeWorkNotifierFactory *workNotifierFactory, void *obj, lwmCakeParticipateCallback participationCallback);
+	void (*destroyWorkNotifierFunc)(struct lwmCakeWorkNotifierFactory *workNotifierFactory, struct lwmSWorkNotifier *notifier);
 };
 
 struct lwmCakeDecodeOptions
 {
 	struct lwmSVideoFrameProvider *customFrameProvider;
 	struct lwmIVideoReconstructor *customReconstructor;
-	struct lwmCakeWorkNotifierFactory *customNotifierFactory;
 };
 
 struct lwmCakeDecodeOutput

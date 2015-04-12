@@ -58,6 +58,7 @@ private:
 	lwmUInt8 m_byteBuffer[BUFFER_SIZE];
 	lwmUInt32 m_bufferStart;
 	lwmUInt32 m_bufferUsed;
+	lwmUInt32 m_userFlags;
 	bool m_eof;
 };
 
@@ -85,6 +86,7 @@ lwmCake::lwmCake(lwmSAllocator *alloc, lwmCakeFileReader *fileReader, lwmCakeTim
 	, m_waitingFrameIsDropped(false)
 	, m_currentVideoTimestamp(0)
 	, m_timeResolution(0)
+	, m_userFlags(0)
 {
 }
 
@@ -98,9 +100,9 @@ lwmCake::~lwmCake()
 		lwmSVideoFrameProvider_Destroy(m_frameProvider);
 
 	if(m_digestNotifier)
-		m_notifierFactory->destroyWorkNotifierFunc(m_digestNotifier);
+		m_notifierFactory->destroyWorkNotifierFunc(m_notifierFactory, m_digestNotifier);
 	if(m_reconNotifier)
-		m_notifierFactory->destroyWorkNotifierFunc(m_reconNotifier);
+		m_notifierFactory->destroyWorkNotifierFunc(m_notifierFactory, m_reconNotifier);
 
 	if(m_audioStreamInfos)
 		m_alloc->Free(m_audioStreamInfos);
@@ -108,23 +110,37 @@ lwmCake::~lwmCake()
 
 bool lwmCake::Init(const lwmCakeCreateOptions *createOptions)
 {
-	lwmUInt32 userFlags;
+	m_userFlags = 0;
 	if(createOptions->bUseThreadedDeslicer)
 	{
 		m_threadedDigest = true;
-		userFlags |= lwmUSERFLAG_ThreadedDeslicer;
+		m_userFlags |= lwmUSERFLAG_ThreadedDeslicer;
 	}
 	if(createOptions->bUseThreadedReconstructor)
 	{
 		m_threadedRecon = true;
-		userFlags |= lwmUSERFLAG_ThreadedReconstructor;
+		m_userFlags |= lwmUSERFLAG_ThreadedReconstructor;
 	}
 
-	m_movieState = lwmCreateMovieState(m_alloc, userFlags);
+	m_movieState = lwmCreateMovieState(m_alloc, m_userFlags);
 	if(!m_movieState)
 		return false;
 
 	m_timeResolution = m_timeReader->getResolutionMillisecondsFunc(m_timeReader);
+	m_notifierFactory = createOptions->customNotifierFactory;
+
+	if(m_notifierFactory && m_threadedDigest)
+	{
+		struct Shim
+		{
+			static void Participate(void *obj) { lwmMovieState_VideoDigestParticipate(static_cast<lwmMovieState*>(obj)); }
+		};
+
+		m_digestNotifier = m_notifierFactory->createWorkNotifierFunc(m_notifierFactory, m_movieState, Shim::Participate);
+		if(!m_digestNotifier)
+			return false;
+		lwmMovieState_SetVideoDigestWorkNotifier(m_movieState, m_digestNotifier);
+	}
 
 	return true;
 }
@@ -143,7 +159,8 @@ bool lwmCake::BeginDecoding(const lwmCakeDecodeOptions *decodeOptions)
 	{
 		lwmUInt32 reconType;
 		lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
-		recon = lwmCreateSoftwareVideoReconstructor(m_movieState, m_alloc, reconType, 0, m_frameProvider);
+
+		recon = lwmCreateSoftwareVideoReconstructor(m_movieState, m_alloc, reconType, m_userFlags, m_frameProvider);
 		if(recon == NULL)
 			return false;
 	}
@@ -151,22 +168,8 @@ bool lwmCake::BeginDecoding(const lwmCakeDecodeOptions *decodeOptions)
 
 	lwmMovieState_SetVideoReconstructor(m_movieState, m_reconstructor);
 
-	m_notifierFactory = decodeOptions->customNotifierFactory;
-
 	if(m_notifierFactory)
 	{
-		if(m_threadedDigest)
-		{
-			struct Shim
-			{
-				static void Participate(void *obj) { lwmMovieState_VideoDigestParticipate(static_cast<lwmMovieState*>(obj)); }
-			};
-
-			m_digestNotifier = m_notifierFactory->createWorkNotifierFunc(m_movieState, Shim::Participate);
-			if(!m_digestNotifier)
-				return false;
-			lwmMovieState_SetVideoDigestWorkNotifier(m_movieState, m_digestNotifier);
-		}
 		if(m_threadedRecon)
 		{
 			struct Shim
@@ -174,7 +177,7 @@ bool lwmCake::BeginDecoding(const lwmCakeDecodeOptions *decodeOptions)
 				static void Participate(void *obj) { lwmVideoRecon_Participate(static_cast<lwmIVideoReconstructor*>(obj)); }
 			};
 
-			m_reconNotifier = m_notifierFactory->createWorkNotifierFunc(m_reconstructor, Shim::Participate);
+			m_reconNotifier = m_notifierFactory->createWorkNotifierFunc(m_notifierFactory, m_reconstructor, Shim::Participate);
 
 			if(!m_reconNotifier)
 				return false;

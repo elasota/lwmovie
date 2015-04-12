@@ -65,11 +65,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="threadpool_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\lwmovie\lwmovie.vcxproj">
       <Project>{4d50a48b-d801-4ae7-b4d5-922d461c8354}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="threadpool.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
