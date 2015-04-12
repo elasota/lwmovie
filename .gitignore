@@ -2,6 +2,7 @@ lwfe/bin/Debug
 lwfe/bin/Release
 lwfe/obj
 cov-int
+deploy
 Debug
 Release
 CMakeCache.txt
@@ -19,3 +20,9 @@ lwmovie-cov.tar.gz
 *.dll
 *.exe
 *.pdf
+*.tmp
+*.zip
+*.7z
+*.gz
+*.tar
+*.xz
