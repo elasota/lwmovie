@@ -833,6 +833,7 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 				*outValue = movieState->movieInfo.longestFrameReadahead;
 				return 1;
 			};
+			break;
 		}
 	case lwmSTREAMTYPE_Audio:
 		{
@@ -852,6 +853,7 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 			default:
 				return 0;
 			};
+			break;
 		}
 	};
 	return 0;
