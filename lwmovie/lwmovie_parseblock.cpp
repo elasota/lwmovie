@@ -138,7 +138,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VB
 				diff = (next16bits >> (16-flushed));
 				if((diff & bits::bitTest(32-size)) == 0)
 					diff = (static_cast<lwmSInt32>(bits::rBitMask(size)) | (diff + 1));
-					diff <<= 3;
+				diff <<= 3;
 			}
 			else
 				diff = 0;
