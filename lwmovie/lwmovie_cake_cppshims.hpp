@@ -3,6 +3,30 @@
 
 #include "lwmovie_cake.h"
 
+struct lwmICakeFileReader : public lwmCakeFileReader
+{
+	virtual bool IsEOF() = 0;
+	virtual lwmLargeUInt ReadBytes(void *dest, lwmLargeUInt numBytes) = 0;
+
+private:
+	static int StaticIsEOF(lwmCakeFileReader *fileReader)
+	{
+		return static_cast<lwmICakeFileReader*>(fileReader)->IsEOF() ? 1 : 0;
+	}
+
+	static lwmLargeUInt StaticReadBytes(lwmCakeFileReader *fileReader, void *dest, lwmLargeUInt numBytes)
+	{
+		return static_cast<lwmICakeFileReader*>(fileReader)->ReadBytes(dest, numBytes);
+	}
+
+public:
+	lwmICakeFileReader()
+	{
+		this->isEOFFunc = StaticIsEOF;
+		this->readBytesFunc = StaticReadBytes;
+	}
+};
+
 struct lwmICakeAudioDevice : public lwmCakeAudioDevice
 {
 	virtual lwmLargeUInt QueueSamples(lwmCake *cake, const lwmCakeAudioSource *sources, lwmLargeUInt numSources, lwmLargeUInt numSamples) = 0;
@@ -56,6 +80,31 @@ public:
 	{
 		this->createWorkNotifierFunc = StaticCreateWorkNotifier;
 		this->destroyWorkNotifierFunc = StaticDestroyWorkNotifier;
+	}
+};
+
+struct lwmICakeTimeReader : public lwmCakeTimeReader
+{
+public:
+	virtual lwmUInt64 GetTimeMilliseconds() = 0;
+	virtual lwmUInt32 GetTimeResolutionMilliseconds() = 0;
+
+private:
+	static lwmUInt64 StaticGetTimeMilliseconds(struct lwmCakeTimeReader *timeReader)
+	{
+		return static_cast<lwmICakeTimeReader*>(timeReader)->GetTimeMilliseconds();
+	}
+
+	static lwmUInt32 StaticGetResolutionMilliseconds(struct lwmCakeTimeReader *timeReader)
+	{
+		return static_cast<lwmICakeTimeReader*>(timeReader)->GetTimeResolutionMilliseconds();
+	}
+
+public:
+	lwmICakeTimeReader()
+	{
+		this->getTimeMillisecondsFunc = StaticGetTimeMilliseconds;
+		this->getResolutionMillisecondsFunc = StaticGetResolutionMilliseconds;
 	}
 };
 
