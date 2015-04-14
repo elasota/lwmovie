@@ -87,7 +87,7 @@ struct lwmICakeTimeReader : public lwmCakeTimeReader
 {
 public:
 	virtual lwmUInt64 GetTimeMilliseconds() = 0;
-	virtual lwmUInt32 GetTimeResolutionMilliseconds() = 0;
+	virtual lwmUInt32 GetResolutionMilliseconds() = 0;
 
 private:
 	static lwmUInt64 StaticGetTimeMilliseconds(struct lwmCakeTimeReader *timeReader)
@@ -97,7 +97,7 @@ private:
 
 	static lwmUInt32 StaticGetResolutionMilliseconds(struct lwmCakeTimeReader *timeReader)
 	{
-		return static_cast<lwmICakeTimeReader*>(timeReader)->GetTimeResolutionMilliseconds();
+		return static_cast<lwmICakeTimeReader*>(timeReader)->GetResolutionMilliseconds();
 	}
 
 public:

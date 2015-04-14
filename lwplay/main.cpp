@@ -6,16 +6,15 @@
 #include "../lwmovie/lwmovie.h"
 #include "../lwmovie/lwmovie_cake.h"
 #include "../lwmovie/lwmovie_cake_cppshims.hpp"
+#include "../lwmovie/lwmovie_cpp_shims.hpp"
 
 namespace lwplay
 {
-	class CAllocator : public lwmSAllocator
+	class CAllocator : public lwmIAllocator
 	{
 	public:
-		CAllocator();
-	private:
-		static void *StaticAlloc(lwmSAllocator *alloc, lwmLargeUInt sz);
-		static void StaticFree(lwmSAllocator *alloc, void *ptr);
+		virtual void *Alloc(lwmLargeUInt sz);
+		virtual void Free(void *ptr);
 	};
 
 	class CAudioQueue : public lwmICakeAudioDevice
@@ -48,40 +47,31 @@ namespace lwplay
 		lwmUInt8 *m_sampleBytes;
 	};
 	
-	class CFileReader : public lwmCakeFileReader
+	class CFileReader : public lwmICakeFileReader
 	{
+	public:
+		virtual bool IsEOF();
+		virtual lwmLargeUInt ReadBytes(void *dest, lwmLargeUInt numBytes);
+		explicit CFileReader(FILE *f);
+
 	private:
 		FILE *m_f;
-
-		static int StaticIsEOF(lwmCakeFileReader *self);
-		static lwmLargeUInt StaticReadBytes(lwmCakeFileReader *self, void *dest, lwmLargeUInt numBytes);
-
-	public:
-		explicit CFileReader(FILE *f);
 	};
 
-	class CTimer : public lwmCakeTimeReader
+	class CTimer : public lwmICakeTimeReader
 	{
-	private:
-		static lwmUInt64 StaticGetTime(lwmCakeTimeReader *timeReader);
-		static lwmUInt32 StaticGetResolution(lwmCakeTimeReader *timeReader);
 	public:
-		CTimer();
+		virtual lwmUInt64 GetTimeMilliseconds();
+		virtual lwmUInt32 GetResolutionMilliseconds();
 	};
 }
 
-lwplay::CAllocator::CAllocator()
-{
-	this->allocFunc = StaticAlloc;
-	this->freeFunc = StaticFree;
-}
-
-void *lwplay::CAllocator::StaticAlloc(lwmSAllocator *alloc, lwmLargeUInt sz)
+void *lwplay::CAllocator::Alloc(lwmLargeUInt sz)
 {
 	return _aligned_malloc(sz, 16);
 }
 
-void lwplay::CAllocator::StaticFree(lwmSAllocator *alloc, void *ptr)
+void lwplay::CAllocator::Free(void *ptr)
 {
 	_aligned_free(ptr);
 }
@@ -236,37 +226,29 @@ void lwplay::CAudioQueue::PullFromSDL(lwmUInt8 *dest, lwmUInt32 len)
 	}
 }
 
-int lwplay::CFileReader::StaticIsEOF(lwmCakeFileReader *self)
+bool lwplay::CFileReader::IsEOF()
 {
-	return feof(static_cast<lwplay::CFileReader*>(self)->m_f);
+	return (feof(m_f) != 0);
 }
 	
-lwmLargeUInt lwplay::CFileReader::StaticReadBytes(lwmCakeFileReader *self, void *dest, lwmLargeUInt numBytes)
+lwmLargeUInt lwplay::CFileReader::ReadBytes(void *dest, lwmLargeUInt numBytes)
 {
-	return fread(dest, 1, numBytes, static_cast<lwplay::CFileReader*>(self)->m_f);
+	return fread(dest, 1, numBytes, m_f);
 }
 
 lwplay::CFileReader::CFileReader(FILE *f)
 	: m_f(f)
 {
-	this->isEOFFunc = StaticIsEOF;
-	this->readBytesFunc = StaticReadBytes;
 }
 
-lwmUInt64 lwplay::CTimer::StaticGetTime(lwmCakeTimeReader *timeReader)
+lwmUInt64 lwplay::CTimer::GetTimeMilliseconds()
 {
 	return SDL_GetTicks();
 }
 
-lwmUInt32 lwplay::CTimer::StaticGetResolution(lwmCakeTimeReader *timeReader)
+lwmUInt32 lwplay::CTimer::GetResolutionMilliseconds()
 {
 	return 10;
-}
-
-lwplay::CTimer::CTimer()
-{
-	this->getTimeMillisecondsFunc = StaticGetTime;
-	this->getResolutionMillisecondsFunc = StaticGetResolution;
 }
 
 
@@ -285,10 +267,6 @@ int main(int argc, char **argv)
 
 	lwplay::CAllocator myAllocator;
 
-	char dataBuffer[4000];
-	char *unreadDataStart = NULL;
-	lwmLargeUInt numBytesAvailable = 0;
-	bool eof = false;
 	FILE *f2 = fopen(argv[1], "rb");
 
 	if(!f2)
