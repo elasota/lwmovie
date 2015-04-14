@@ -283,8 +283,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	lwmInitialize();
-
 	lwplay::CAllocator myAllocator;
 
 	char dataBuffer[4000];
@@ -310,6 +308,7 @@ int main(int argc, char **argv)
 	lwmCakeMovieInfo movieInfo;
 	lwplay::CWorkNotifierFactory *workNotifierFactory = new lwplay::CWorkNotifierFactory();
 
+	lwmInitialize();
 	
 	{
 		lwmCakeCreateOptions cakeOpts;
