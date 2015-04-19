@@ -22,7 +22,7 @@ copy /Y lwmovie\lwmovie_cake_cppshims.hpp lwmovie-release\include\lwmovie\lwmovi
 copy /Y lwmovie\lwmovie_cpp_shims.hpp lwmovie-release\include\lwmovie\lwmovie_cpp_shims.hpp
 copy /Y lwmovie\lwmovie_api.h lwmovie-release\include\lwmovie\lwmovie_api.h
 copy /Y lwmovie\lwmovie_external_types.h lwmovie-release\include\lwmovie\lwmovie_external_types.h
-copy /Y common\lwmovie_config.h lwmovie-release\include\common\lwmovie_common.h
+copy /Y common\lwmovie_config.h lwmovie-release\include\common\lwmovie_config.h
 copy /Y common\lwmovie_attribs.h lwmovie-release\include\common\lwmovie_attribs.h
 copy /Y common\lwmovie_coretypes.h lwmovie-release\include\common\lwmovie_coretypes.h
 
