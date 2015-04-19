@@ -26,14 +26,11 @@
 
 #ifdef _MSC_VER
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
 #include <intrin.h>
 
 #pragma intrinsic(_InterlockedIncrement)
 #pragma intrinsic(_InterlockedDecrement)
-#pragma intrinsic(_InterlockedCompareExchange)
+#pragma intrinsic(_InterlockedCompareExchangePointer)
 
 __forceinline lwmAtomicInt lwmAtomicIncrement(lwmAtomicInt volatile* ptr)
 {
@@ -47,7 +44,7 @@ __forceinline lwmAtomicInt lwmAtomicDecrement(lwmAtomicInt volatile* ptr)
 
 __forceinline void *lwmAtomicCompareAndSwap(void *volatile* destination, void *newValue, void *comp)
 {
-	return InterlockedCompareExchangePointer(destination, newValue, comp);
+	return _InterlockedCompareExchangePointer(destination, newValue, comp);
 }
 
 #endif	// _MSC_VER
