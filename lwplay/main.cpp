@@ -7,16 +7,10 @@
 #include "../lwmovie/lwmovie_cake.h"
 #include "../lwmovie/lwmovie_cake_cppshims.hpp"
 #include "../lwmovie/lwmovie_cpp_shims.hpp"
+#include "lwplay_interfaces.hpp"
 
 namespace lwplay
 {
-	class CAllocator : public lwmIAllocator
-	{
-	public:
-		virtual void *Alloc(lwmLargeUInt sz);
-		virtual void Free(void *ptr);
-	};
-
 	class CAudioQueue : public lwmICakeAudioDevice
 	{
 	public:
@@ -46,35 +40,8 @@ namespace lwplay
 		lwmUInt32 m_capacity;
 		lwmUInt8 *m_sampleBytes;
 	};
-	
-	class CFileReader : public lwmICakeFileReader
-	{
-	public:
-		virtual bool IsEOF();
-		virtual lwmLargeUInt ReadBytes(void *dest, lwmLargeUInt numBytes);
-		explicit CFileReader(FILE *f);
-
-	private:
-		FILE *m_f;
-	};
-
-	class CTimer : public lwmICakeTimeReader
-	{
-	public:
-		virtual lwmUInt64 GetTimeMilliseconds();
-		virtual lwmUInt32 GetResolutionMilliseconds();
-	};
 }
 
-void *lwplay::CAllocator::Alloc(lwmLargeUInt sz)
-{
-	return _aligned_malloc(sz, 16);
-}
-
-void lwplay::CAllocator::Free(void *ptr)
-{
-	_aligned_free(ptr);
-}
 
 lwplay::CAudioQueue::CAudioQueue(const lwmCakeAudioStreamInfo *streamInfo, lwmUInt32 numSamples)
 	: m_numBytesQueued(0)
@@ -224,31 +191,6 @@ void lwplay::CAudioQueue::PullFromSDL(lwmUInt8 *dest, lwmUInt32 len)
 		memmove(m_sampleBytes, m_sampleBytes + len, m_numBytesQueued - len);
 		m_numBytesQueued -= len;
 	}
-}
-
-bool lwplay::CFileReader::IsEOF()
-{
-	return (feof(m_f) != 0);
-}
-	
-lwmLargeUInt lwplay::CFileReader::ReadBytes(void *dest, lwmLargeUInt numBytes)
-{
-	return fread(dest, 1, numBytes, m_f);
-}
-
-lwplay::CFileReader::CFileReader(FILE *f)
-	: m_f(f)
-{
-}
-
-lwmUInt64 lwplay::CTimer::GetTimeMilliseconds()
-{
-	return SDL_GetTicks();
-}
-
-lwmUInt32 lwplay::CTimer::GetResolutionMilliseconds()
-{
-	return 10;
 }
 
 

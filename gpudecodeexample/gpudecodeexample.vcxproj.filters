@@ -18,19 +18,13 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="threadpool_win32.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="lwplay_interfaces.cpp">
+    <ClCompile Include="..\lwplay\lwplay_interfaces.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="threadpool.hpp">
+    <ClInclude Include="d3d11_shaders.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lwplay_interfaces.hpp">
-      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

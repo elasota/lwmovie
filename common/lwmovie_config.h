@@ -21,6 +21,8 @@
 // Define this to compile lwmovie as a DLL
 #define LWMOVIE_DLL
 
+// Define this to support D3D11
+#define LWMOVIE_D3D11
 
 #ifdef LWMOVIE_SSE41
 	#define LWMOVIE_SSE2

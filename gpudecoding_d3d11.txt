@@ -1,0 +1,45 @@
+lwmovie supports GPU decoding using Direct3D 11 at the 10.0 feature level
+or higher.
+
+There are two modes that you can use it in:
+- You can create a D3D11 frame provider, which performs reconstruction on the
+  CPU, but outputs directly to D3D11 textures.
+- You can create a D3D11 reconstructor as well, which uses a mix of pixel and
+  compute shaders to perform the bulk of the computational work.
+
+The second option is much faster, but also consumes about 6.125 additional
+bytes of memory per pixel of video resolution.
+
+In both modes, the frame provider will output to textures accessible using
+SRVs provided by the frame provider instead of to memory.  Most importantly,
+you should never attempt to lock frames from the D3D11 frame provider.  Doing
+so will frequently fail if using software reconstruction and will always fail
+when using D3D11 reconstruction.
+
+The D3D11 frame provider is intended to be accessed via shader resource views
+rather than directly.  You can get the SRV of a work frame using the
+lwmD3D11FrameProvider_GetWorkFramePlaneSRV call.
+
+If you use the D3D11 reconstructor, lwmMovieState_FeedData and lwmCake_Decode
+may clear the device context state and may do so even if they don't produce
+a renderable video frame.
+
+The work frames may be a different size from the video output, in which case
+you will need to clip them when rendering.  You can determine the size of the
+work frame textures using the getWorkFramePlaneWidthFunc and
+getWorkFramePlaneHeightFunc functions in the frame provider API, and the draw
+area using lwmMovieState_GetStreamParameterU32 with the
+lwmSTREAMPARAM_U32_Width and lwmSTREAMPARAM_U32_Height stream parameters.
+
+If you are using Cake, you can inspect the lowerRightTexCoords field
+of the decode output instead, which will contain normalized texture
+coordinates of the lower-right corner of the drawable area in the work frame
+textures.
+
+Also important is that lwmovie supports two YCbCr formats: BT.601 and JPEG.
+You can determine which format the video is in using
+lwmMovieState_GetStreamParameterU32 with the
+lwmSTREAMPARAM_U32_VideoChannelLayout stream parameter, which will return a
+value from the lwmEVideoChannelLayout enum.
+
+If you are using Cake, then you can use lwmCake_GetYCbCrWeights instead.

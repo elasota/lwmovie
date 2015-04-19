@@ -12,11 +12,18 @@ public:
 	bool BeginDecoding(const lwmCakeDecodeOptions *decodeOptions);
 	lwmECakeResult Decode(lwmCakeDecodeOutput *decodeOutput);
 	lwmECakeResult ReadMovieInfo(lwmCakeMovieInfo *outMovieInfo);
+	lwmMovieState *GetMovieState() const;
 	lwmIVideoReconstructor *GetVideoReconstructor() const;
 	lwmSVideoFrameProvider *GetVideoFrameProvider() const;
 	void SetStreamAudioDevice(lwmUInt8 streamIndex, lwmCakeAudioDevice *audioDevice);
 	void ReadAudioSamples(const lwmCakeAudioSource *audioSource, void *samples, lwmUInt32 numSamples);
+	void GetDrawTexCoords(lwmFloat32 outTopLeft[2], lwmFloat32 outBottomRight[2]);
+	void GetYCbCrWeights(lwmCakeYCbCrWeights *outWeights);
 	void Destroy();
+
+#ifdef LWMOVIE_D3D11
+	bool SetD3D11DecodeOptions(lwmCakeDecodeOptions *decodeOptions, ID3D11Device *device, ID3D11DeviceContext *deviceContext, bool useHardwareReconstructor);
+#endif
 
 private:
 	void FillBuffer();
@@ -147,6 +154,10 @@ bool lwmCake::Init(const lwmCakeCreateOptions *createOptions)
 
 bool lwmCake::BeginDecoding(const lwmCakeDecodeOptions *decodeOptions)
 {
+	// We want to set these now so that they're owned by Cake if anything in this function fails.
+	m_frameProvider = decodeOptions->customFrameProvider;
+	m_reconstructor = decodeOptions->customReconstructor;
+
 	lwmSVideoFrameProvider *fp = decodeOptions->customFrameProvider;
 	if(fp == NULL)
 		fp = lwmCreateSystemMemoryFrameProvider(m_alloc, m_movieState);
@@ -298,7 +309,13 @@ lwmECakeResult lwmCake::Decode(lwmCakeDecodeOutput *decodeOutput)
 		}
 		m_waitingForDisplay = false;
 		this->HandleVideoSync(decodeOutput, m_waitingFrameIsDropped);
-		return m_waitingFrameIsDropped ? lwmCAKE_RESULT_Waiting : lwmCAKE_RESULT_NewVideoFrame;
+		if (m_waitingFrameIsDropped)
+		{
+			decodeOutput->displayDelay = 0;
+			return lwmCAKE_RESULT_Waiting;
+		}
+
+		return lwmCAKE_RESULT_NewVideoFrame;
 	}
 
 	while(true)
@@ -439,6 +456,11 @@ void lwmCake::HandleVideoSync(lwmCakeDecodeOutput *decodeOutput, bool isDropped)
 	}
 }
 
+lwmMovieState *lwmCake::GetMovieState() const
+{
+	return this->m_movieState;
+}
+
 lwmIVideoReconstructor *lwmCake::GetVideoReconstructor() const
 {
 	return m_reconstructor;
@@ -491,6 +513,77 @@ void lwmCake::ReadAudioSamples(const lwmCakeAudioSource *audioSource, void *samp
 	lwmMovieState_ReadAudioSamples(m_movieState, static_cast<lwmUInt8>(audioSource->audioStreamInfo - m_audioStreamInfos), samples, numSamples);
 }
 
+void lwmCake::GetDrawTexCoords(lwmFloat32 outTopLeft[2], lwmFloat32 outBottomRight[2])
+{
+	outTopLeft[0] = outTopLeft[1] = 0.0f;
+
+	lwmUInt32 vidWidth, vidHeight;
+	lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &vidWidth);
+	lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &vidHeight);
+
+	lwmUInt32 workWidth = m_frameProvider->getWorkFramePlaneWidthFunc(m_frameProvider, 0);
+	lwmUInt32 workHeight = m_frameProvider->getWorkFramePlaneHeightFunc(m_frameProvider, 0);
+
+	outBottomRight[0] = static_cast<lwmFloat32>(vidWidth) / static_cast<lwmFloat32>(workWidth);
+	outBottomRight[1] = static_cast<lwmFloat32>(vidHeight) / static_cast<lwmFloat32>(workHeight);
+}
+
+void lwmCake::GetYCbCrWeights(lwmCakeYCbCrWeights *outWeights)
+{
+	lwmUInt32 channelLayout = 0;
+	lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_VideoChannelLayout, &channelLayout);
+
+	if (channelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_BT601)
+	{
+		outWeights->addR = -0.87420222f;
+		outWeights->addG = 0.53166782f;
+		outWeights->addB = -1.08563079f;
+		outWeights->yToAll = 1.16438356f;
+		outWeights->crToR = 1.59602679f;
+		outWeights->crToG = -0.81296765f;
+		outWeights->cbToG = -0.39176229f;
+		outWeights->cbToB = 2.017232143f;
+	}
+	else if (channelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG)
+	{
+		outWeights->addR = -0.70374902f;
+		outWeights->addG = 0.53121506f;
+		outWeights->addB = -0.88947451f;
+		outWeights->yToAll = 1.0f;
+		outWeights->crToR = 1.402f;
+		outWeights->crToG = -0.71414f;
+		outWeights->cbToG = -0.34414f;
+		outWeights->cbToB = 1.772f;
+	}
+}
+
+#ifdef LWMOVIE_D3D11
+bool lwmCake::SetD3D11DecodeOptions(lwmCakeDecodeOptions *decodeOptions, ID3D11Device *device, ID3D11DeviceContext *deviceContext, bool useHardwareReconstructor)
+{
+	lwmSVideoFrameProvider *vfp = lwmCreateD3D11FrameProvider(m_alloc, device, deviceContext, useHardwareReconstructor ? 1 : 0);
+	if (!vfp)
+		return false;
+
+	if (useHardwareReconstructor)
+	{
+		lwmUInt32 reconType;
+		lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
+		lwmIVideoReconstructor *recon = lwmCreateD3D11VideoReconstructor(m_movieState, m_alloc, reconType, device, deviceContext, vfp);
+		if (!recon)
+		{
+			vfp->destroyFunc(vfp);
+			return false;
+		}
+		decodeOptions->customReconstructor = recon;
+	}
+
+	decodeOptions->customFrameProvider = vfp;
+
+	return true;
+}
+#endif
+
+
 void lwmCake::Destroy()
 {
 	lwmSAllocator *alloc = m_alloc;
@@ -523,14 +616,29 @@ LWMOVIE_API_LINK lwmECakeResult lwmCake_ReadMovieInfo(lwmCake *cake, lwmCakeMovi
 	return cake->ReadMovieInfo(outMovieInfo);
 }
 
-LWMOVIE_API_LINK int lwmCake_BeginDecoding(LWMOVIE_API_CLASS lwmCake *cake, const lwmCakeDecodeOptions *decodeOptions)
+LWMOVIE_API_LINK int lwmCake_BeginDecoding(lwmCake *cake, const lwmCakeDecodeOptions *decodeOptions)
 {
 	return cake->BeginDecoding(decodeOptions) ? 1 : 0;
 }
 
-LWMOVIE_API_LINK lwmECakeResult lwmCake_Decode(LWMOVIE_API_CLASS lwmCake *cake, lwmCakeDecodeOutput *decodeOutput)
+LWMOVIE_API_LINK void lwmCake_GetDrawTexCoords(lwmCake *cake, lwmFloat32 outTopLeft[2], lwmFloat32 outBottomRight[2])
+{
+	cake->GetDrawTexCoords(outTopLeft, outBottomRight);
+}
+
+LWMOVIE_API_LINK void lwmCake_GetYCbCrWeights(lwmCake *cake, lwmCakeYCbCrWeights *outWeights)
+{
+	cake->GetYCbCrWeights(outWeights);
+}
+
+LWMOVIE_API_LINK lwmECakeResult lwmCake_Decode(lwmCake *cake, lwmCakeDecodeOutput *decodeOutput)
 {
 	return cake->Decode(decodeOutput);
+}
+
+LWMOVIE_API_LINK lwmMovieState *lwmCake_GetMovieState(const lwmCake *cake)
+{
+	return cake->GetMovieState();
 }
 
 LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCake_GetVideoReconstructor(const LWMOVIE_API_CLASS lwmCake *cake)
@@ -557,3 +665,12 @@ LWMOVIE_API_LINK void lwmCake_Destroy(LWMOVIE_API_CLASS lwmCake *cake)
 {
 	cake->Destroy();
 }
+
+#ifdef LWMOVIE_D3D11
+
+LWMOVIE_API_LINK int lwmCake_SetD3D11DecodeOptions(lwmCake *cake, lwmCakeDecodeOptions *decodeOptions, ID3D11Device *device, ID3D11DeviceContext *deviceContext, int useHardwareReconstructor)
+{
+	return cake->SetD3D11DecodeOptions(decodeOptions, device, deviceContext, useHardwareReconstructor != 0) ? 1 : 0;
+}
+
+#endif

@@ -412,9 +412,3 @@ static void ApplyChromaDCT(lwmUInt8 *c, const lwmUInt8 *motion, const lwmovie::l
 		blockData += 8;
 	}
 }
-
-void lwmovie::lwmDCTBLOCK::FastZeroFill()
-{
-	memset(this->data, 0, sizeof(lwmSInt16) * 64);
-}
-

@@ -174,3 +174,24 @@ void lwmovie::lwmBlockInfo::IDCT(lwmDCTBLOCK *block) const
 		block->FastZeroFill();
 	}
 }
+
+#ifdef LWMOVIE_SSE2
+void lwmovie::lwmDCTBLOCK::FastZeroFill()
+{
+	int rows = 8;
+	__m128i zero = _mm_setzero_si128();
+	lwmSInt16 *coeffs = data;
+	while (rows--)
+	{
+		_mm_store_si128(reinterpret_cast<__m128i*>(coeffs), zero);
+		coeffs += 8;
+	}
+}
+#endif
+
+#ifdef LWMOVIE_NOSIMD
+inline void lwmovie::lwmDCTBLOCK::FastZeroFill()
+{
+	memset(this->data, 0, sizeof(lwmSInt16) * 64);
+}
+#endif

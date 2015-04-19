@@ -142,6 +142,7 @@
     <ClCompile Include="lwmovie_decodedct.cpp" />
     <ClCompile Include="lwmovie_demux.cpp" />
     <ClCompile Include="lwmovie_exportpixels.cpp" />
+    <ClCompile Include="lwmovie_fp_d3d11.cpp" />
     <ClCompile Include="lwmovie_fp_systemmem.cpp" />
     <ClCompile Include="lwmovie_idct.cpp" />
     <ClCompile Include="lwmovie_init.cpp" />
@@ -151,6 +152,7 @@
     <ClCompile Include="lwmovie_constants.cpp" />
     <ClCompile Include="lwmovie_profile.cpp" />
     <ClCompile Include="lwmovie_recon.cpp" />
+    <ClCompile Include="lwmovie_recon_d3d11.cpp" />
     <ClCompile Include="lwmovie_recon_m1vsw.cpp" />
     <ClCompile Include="lwmovie_vlc.cpp" />
     <ClCompile Include="lwmovie_vlctables.cpp" />
@@ -173,12 +175,14 @@
     <ClInclude Include="lwmovie_demux.hpp" />
     <ClInclude Include="lwmovie_external_types.h" />
     <ClInclude Include="lwmovie_fillable.hpp" />
+    <ClInclude Include="lwmovie_fp_d3d11.hpp" />
     <ClInclude Include="lwmovie_idct.hpp" />
     <ClInclude Include="lwmovie_mp2_decoder.hpp" />
     <ClInclude Include="lwmovie_package.hpp" />
     <ClInclude Include="lwmovie_packetplan.hpp" />
     <ClInclude Include="lwmovie_profile.hpp" />
     <ClInclude Include="lwmovie_recon.hpp" />
+    <ClInclude Include="lwmovie_recon_d3d11.hpp" />
     <ClInclude Include="lwmovie_recon_m1v.hpp" />
     <ClInclude Include="lwmovie_recon_m1vsw.hpp" />
     <ClInclude Include="lwmovie_simd_defs.hpp" />

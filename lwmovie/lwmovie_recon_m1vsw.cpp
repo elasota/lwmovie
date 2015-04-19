@@ -590,12 +590,12 @@ void lwmovie::lwmCM1VSoftwareReconstructor::StartNewFrame(lwmUInt32 current, lwm
 
 	m_frameProvider->lockWorkFrameFunc(m_frameProvider, current - 1, currentIsB ? lwmVIDEOLOCK_Write_Only : lwmVIDEOLOCK_Write_ReadLater);
 	m_currentTarget.LoadFromFrameProvider(m_frameProvider, current - 1);
-	if(future)
+	if(future && future != current)
 	{
 		m_frameProvider->lockWorkFrameFunc(m_frameProvider, future - 1, lwmVIDEOLOCK_Read);
 		m_futureTarget.LoadFromFrameProvider(m_frameProvider, future - 1);
 	}
-	if(past)
+	if (past && past != current)
 	{
 		m_frameProvider->lockWorkFrameFunc(m_frameProvider, past - 1, lwmVIDEOLOCK_Read);
 		m_pastTarget.LoadFromFrameProvider(m_frameProvider, past - 1);

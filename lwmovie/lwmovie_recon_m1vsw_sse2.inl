@@ -522,17 +522,3 @@ static void ApplyChromaDCT(lwmUInt8 *c, const lwmUInt8 *motion, const lwmovie::l
 		blockData += 16;
 	}
 }
-
-
-
-void lwmovie::lwmDCTBLOCK::FastZeroFill()
-{
-	int rows = 8;
-	__m128i zero = _mm_setzero_si128();
-	lwmSInt16 *coeffs = data;
-	while(rows--)
-	{
-		_mm_store_si128(reinterpret_cast<__m128i*>(coeffs), zero);
-		coeffs += 8;
-	}
-}

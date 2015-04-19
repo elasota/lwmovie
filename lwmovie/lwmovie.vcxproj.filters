@@ -93,6 +93,12 @@
     <ClCompile Include="lwmovie_cake.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lwmovie_fp_d3d11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lwmovie_recon_d3d11.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lwmovie_bitstream.hpp">
@@ -174,6 +180,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_cake_cppshims.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_recon_d3d11.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_fp_d3d11.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

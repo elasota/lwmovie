@@ -32,6 +32,7 @@ LWMOVIE_API_CLASS lwmCProfileTagSet;
 
 enum lwmEVideoLockType
 {
+	lwmVIDEOLOCK_None,
 	lwmVIDEOLOCK_Write_Only,		// Target will be written to and never read from
 	lwmVIDEOLOCK_Write_ReadLater,	// Target will be written to and possibly read from later
 	lwmVIDEOLOCK_Read,				// Target is being read from
@@ -207,5 +208,16 @@ LWMOVIE_API_LINK void lwmVideoRGBConverter_SetWorkNotifier(struct lwmVideoRGBCon
 LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *converter, void *outPixels, lwmLargeUInt outStride, int conversionFlags);
 LWMOVIE_API_LINK void lwmVideoRGBConverter_Destroy(struct lwmVideoRGBConverter *converter);
 LWMOVIE_API_LINK void lwmVideoRGBConverter_ConvertParticipate(struct lwmVideoRGBConverter *converter);
+
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+struct ID3D11ShaderResourceView;
+
+LWMOVIE_API_LINK struct lwmSVideoFrameProvider *lwmCreateD3D11FrameProvider(struct lwmSAllocator *alloc, struct ID3D11Device *device, struct ID3D11DeviceContext *context, int isUsingHardwareReconstructor);
+LWMOVIE_API_LINK struct ID3D11ShaderResourceView *lwmD3D11FrameProvider_GetWorkFramePlaneSRV(struct lwmSVideoFrameProvider *vfp, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
+
+LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, struct ID3D11Device *device, struct ID3D11DeviceContext *context, struct lwmSVideoFrameProvider *frameProvider);
+LWMOVIE_API_LINK void lwmD3D11Reconstructor_ExecuteIDCT(struct lwmIVideoReconstructor *reconstructor);
+LWMOVIE_API_LINK void lwmD3D11Reconstructor_ExecuteForFrame(struct lwmIVideoReconstructor *reconstructor);
 
 #endif
