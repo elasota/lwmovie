@@ -159,6 +159,15 @@ namespace lwenccmd
                     audioStream.UseIntermediate = false;
             }
 
+            List<string> errors = new List<string>();
+            if (!proj.Validate(errors))
+            {
+                Console.Error.WriteLine("Errors occurred while validating the encode project:");
+                foreach (string error in errors)
+                    Console.Error.WriteLine(errors);
+                return -1;
+            }
+
             Dictionary<string, object> settings = new Dictionary<string, object>();
 
             proj.CreateDefaultSettings(settings);

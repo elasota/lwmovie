@@ -48,6 +48,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ErrorList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ErrorList.Designer.cs">
+      <DependentUpon>ErrorList.cs</DependentUpon>
+    </Compile>
     <Compile Include="FileSelector.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -74,6 +80,9 @@
     <Compile Include="TaskMonitor.Designer.cs">
       <DependentUpon>TaskMonitor.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="ErrorList.resx">
+      <DependentUpon>ErrorList.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FileSelector.resx">
       <DependentUpon>FileSelector.cs</DependentUpon>
     </EmbeddedResource>

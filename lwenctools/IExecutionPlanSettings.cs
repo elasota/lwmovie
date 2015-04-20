@@ -13,6 +13,8 @@ namespace lwenctools
         void SaveToXml(XmlElement xml);
         void LoadFromXml(XmlElement xml);
 
+        bool Validate(List<string> outErrors);
+
         void CreateCommands(List<ExecutionPlan> plan, Dictionary<string, object> externalSettings, PlanCompletionDelegate completionDelegate);
     }
 }

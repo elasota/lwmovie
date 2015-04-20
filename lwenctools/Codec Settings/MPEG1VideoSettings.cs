@@ -118,7 +118,10 @@ namespace lwenctools
 
             if (UseCBR)
             {
-                // TODO
+                ffEncArgs.Add("-b:v");
+                ffEncArgs.Add(((BitrateMin + BitrateMax) / 2).ToString() + "k");
+                ffEncArgs.Add("-minrate");
+                ffEncArgs.Add(BitrateMin.ToString() + "k");
             }
 
             if (UseQuality)
@@ -129,7 +132,7 @@ namespace lwenctools
                 // Stupid trick to avoid problems where ffmpeg rejects the video because the bitrate is too low, even though
                 // it'll make no attempt to actually hit the rate.
                 ffEncArgs.Add("-b:v");
-                ffEncArgs.Add("15000k");
+                ffEncArgs.Add(BitrateMax.ToString() + "k");
             }
 
             ffEncArgs.Add("-threads");
@@ -347,6 +350,20 @@ namespace lwenctools
                 plan.AddCleanupFile(outputFile + ".m1v");
                 plans.Add(plan);
             }
+        }
+
+        bool IExecutionPlanSettings.Validate(List<string> outErrors)
+        {
+            bool isOK = true;
+            if (UseCBR)
+            {
+                if (BitrateMax < BitrateMin)
+                {
+                    outErrors.Add("M1V: Bitrate minimum was set higher than bitrate maximum");
+                    isOK = false;
+                }
+            }
+            return isOK;
         }
 
         public MPEG1VideoSettings()

@@ -53,6 +53,11 @@ namespace lwenctools
             }
         }
 
+        bool IExecutionPlanSettings.Validate(List<string> outErrors)
+        {
+            return true;
+        }
+
         public MP2AudioSettings()
         {
             BitRate = 192000;

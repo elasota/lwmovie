@@ -56,6 +56,11 @@ namespace lwenctools
             }
         }
 
+        bool IExecutionPlanSettings.Validate(List<string> outErrors)
+        {
+            return true;
+        }
+
         public CELTAudioSettings()
         {
             BitRate = 192000;

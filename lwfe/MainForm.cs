@@ -268,14 +268,25 @@ namespace lwfe
         private void GenerateExecutionPlans()
         {
             Dictionary<string, object> settings = new Dictionary<string, object>();
+            List<string> errors = new List<string>();
 
             _project.CreateDefaultSettings(settings);
-            List<ExecutionPlan> ePlans = _project.CreateExecutionPlans(settings);
+            if (_project.Validate(errors))
+            {
+                List<ExecutionPlan> ePlans = _project.CreateExecutionPlans(settings);
 
-            TaskMonitor tm = new TaskMonitor(ePlans);
-            tm.ShowDialog();
+                TaskMonitor tm = new TaskMonitor(ePlans);
+                tm.ShowDialog();
 
-            LoadProject(_project);
+                LoadProject(_project);
+            }
+            else
+            {
+                ErrorList errorList = new ErrorList();
+                foreach (string error in errors)
+                    errorList.AddError(error);
+                errorList.ShowDialog();
+            }
         }
 
         private void btnGo_Click(object sender, EventArgs e)

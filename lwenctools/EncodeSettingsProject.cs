@@ -194,6 +194,85 @@ namespace lwenctools
             settings["ffmpegPath"] = ffmpegPath;
         }
 
+        public bool Validate(List<string> errors)
+        {
+            bool isOK = true;
+
+            if (VideoUseIntermediate)
+            {
+                if (VideoIntermediateFile == "" || VideoIntermediateFile == null)
+                {
+                    errors.Add("Video intermediate file was not specified");
+                    isOK = false;
+                }
+                else if (!System.IO.File.Exists(VideoIntermediateFile))
+                {
+                    errors.Add("Video intermediate file does not exist");
+                    isOK = false;
+                }
+            }
+            else
+            {
+                if (!VideoCodecSettings[VideoCodecID].Validate(errors))
+                    isOK = false;
+                if (VideoEncodeInputFile == "" || VideoEncodeInputFile == null)
+                {
+                    errors.Add("Video input file was not specified");
+                    isOK = false;
+                }
+                else if (!System.IO.File.Exists(VideoEncodeInputFile))
+                {
+                    errors.Add("Video input file does not exist");
+                    isOK = false;
+                }
+            }
+
+            int streamIndex = 0;
+            foreach (EncodeSettingsProject.AudioStreamSettings audioStream in AudioStreams)
+            {
+                streamIndex = streamIndex + 1;
+                string streamPrefix = "Audio stream " + streamIndex.ToString();
+                if (audioStream.UseIntermediate)
+                {
+                    string checkFile = audioStream.IntermediateFile;
+                    if (checkFile == "" || checkFile == null)
+                    {
+                        errors.Add(streamPrefix + " intermediate file was not specified");
+                        isOK = false;
+                    }
+                    else if (!System.IO.File.Exists(VideoEncodeInputFile))
+                    {
+                        errors.Add(streamPrefix + " intermediate file does not exist");
+                        isOK = false;
+                    }
+                }
+                else
+                {
+                    if (!audioStream.AudioCodecSettings[AudioCodecID].Validate(errors))
+                        isOK = false;
+
+                    string checkFile = audioStream.EncodeInputFile;
+                    if (checkFile == "" || checkFile == null)
+                    {
+                        errors.Add(streamPrefix + " input file was not specified");
+                        isOK = false;
+                    }
+                    else if (!System.IO.File.Exists(VideoEncodeInputFile))
+                    {
+                        errors.Add(streamPrefix + " input file does not exist");
+                        isOK = false;
+                    }
+                }
+            }
+
+            if (MuxOutputFile == null || MuxOutputFile.Length == 0)
+            {
+                errors.Add("No final output file was specified");
+                isOK = false;
+            }
+            return isOK;
+        }
+
         public List<ExecutionPlan> CreateExecutionPlans(Dictionary<string, object> inSettings)
         {
             Dictionary<string, object> settings = new Dictionary<string, object>();

@@ -46,6 +46,11 @@ namespace lwenctools
             }
         }
 
+        bool IExecutionPlanSettings.Validate(List<string> outErrors)
+        {
+            return true;
+        }
+
         public ADPCMAudioSettings()
         {
         }
