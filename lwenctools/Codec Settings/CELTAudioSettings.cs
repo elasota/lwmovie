@@ -36,6 +36,7 @@ namespace lwenctools
             string ffmpegPath = (string)externalSettings["ffmpegPath"];
             string inputFile = (string)externalSettings["InputFile"];
             string outputFile = (string)externalSettings["OutputFile"];
+            string metaID = (string)externalSettings["MetaID"];
 
             {
                 ExecutionPlan plan = new ExecutionPlan();
@@ -46,7 +47,7 @@ namespace lwenctools
             }
             {
                 ExecutionPlan plan = new ExecutionPlan();
-                ExecutionStage stage = new ExecutionStage(lwmuxPath, new string[] { "importwav_celt", BitRate.ToString(), VBR ? "1" : "0", outputFile + ".wav", outputFile });
+                ExecutionStage stage = new ExecutionStage(lwmuxPath, new string[] { "importwav_celt", BitRate.ToString(), VBR ? "1" : "0", outputFile + ".wav", outputFile, metaID });
                 plan.AddStage(stage);
 
                 plan.CompletionCallback = pcd;

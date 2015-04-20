@@ -5,10 +5,9 @@
 #include "lwmux_osfile.hpp"
 
 void ConvertM1V(lwmOSFile *inFile, lwmOSFile *outFile, bool isExpandedRange);
-void ConvertMP2(lwmOSFile *inFile, lwmOSFile *outFile);
-void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr);
-void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile);
-void ConvertCVID(lwmOSFile *inFile, lwmOSFile *outFile);
+void ConvertMP2(lwmOSFile *inFile, lwmOSFile *outFile, const char *metaID);
+void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr, const char *metaID);
+void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile, const char *metaID);
 int Mux(lwmLargeUInt audioReadAhead, lwmOSFile **audioFiles, lwmLargeUInt numAudioFiles, lwmOSFile *videoFile, lwmOSFile *outFile);
 
 int main(int argc, const char **argv)
@@ -23,7 +22,7 @@ int main(int argc, const char **argv)
 	{
 		lwmOSFile *mp2file = lwmOSFile::Open(argv[2], lwmOSFile::FM_Read);
 		lwmOSFile *outFile = lwmOSFile::Open(argv[3], lwmOSFile::FM_Create);
-		ConvertMP2(mp2file, outFile);
+		ConvertMP2(mp2file, outFile, argv[4]);
 	}
 	else if(!strcmp(argv[1], "finalize"))
 	{
@@ -47,13 +46,13 @@ int main(int argc, const char **argv)
 	{
 		lwmOSFile *wavFile = lwmOSFile::Open(argv[4], lwmOSFile::FM_Read);
 		lwmOSFile *outFile = lwmOSFile::Open(argv[5], lwmOSFile::FM_Create);
-		ConvertWAV_CELT(wavFile, outFile, atoi(argv[2]), (atoi(argv[3]) != 0));
+		ConvertWAV_CELT(wavFile, outFile, atoi(argv[2]), (atoi(argv[3]) != 0), argv[6]);
 	}
 	else if(!strcmp(argv[1], "importwav_adpcm"))
 	{
 		lwmOSFile *wavFile = lwmOSFile::Open(argv[2], lwmOSFile::FM_Read);
 		lwmOSFile *outFile = lwmOSFile::Open(argv[3], lwmOSFile::FM_Create);
-		ConvertWAV_ADPCM(wavFile, outFile);
+		ConvertWAV_ADPCM(wavFile, outFile, argv[4]);
 	}
 
 	return 0;

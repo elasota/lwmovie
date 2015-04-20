@@ -14,6 +14,7 @@ namespace lwenctools
             public string EncodeInputFile { get; set; }
             public string EncodeOutputFile { get; set; }
             public string IntermediateFile { get; set; }
+            public string MetaID { get; set; }
             public bool UseIntermediate { get; set; }
 
             public AudioStreamSettings()
@@ -94,6 +95,7 @@ namespace lwenctools
                     audioStream.IntermediateFile = aStreamElement.GetAttribute("IntermediateFile");
                     audioStream.EncodeInputFile = aStreamElement.GetAttribute("EncodeInputFile");
                     audioStream.EncodeOutputFile = aStreamElement.GetAttribute("EncodeOutputFile");
+                    audioStream.MetaID = aStreamElement.GetAttribute("MetaID");
                     foreach (XmlNode aCodecSettingsListNode in aStreamElement.GetElementsByTagName("AudioCodecSettingsList"))
                     {
                         foreach (XmlNode aCodecNode in ((XmlElement)aCodecSettingsListNode).GetElementsByTagName("AudioCodecSettings"))
@@ -157,6 +159,7 @@ namespace lwenctools
                     aStreamNode.SetAttribute("IntermediateFile", audioStream.IntermediateFile);
                     aStreamNode.SetAttribute("EncodeInputFile", audioStream.EncodeInputFile);
                     aStreamNode.SetAttribute("EncodeOutputFile", audioStream.EncodeOutputFile);
+                    aStreamNode.SetAttribute("MetaID", audioStream.MetaID);
                     {
                         XmlElement aCodecSettingsListNode = doc.CreateElement("AudioCodecSettingsList");
                         {
@@ -224,6 +227,7 @@ namespace lwenctools
                 {
                     settings["InputFile"] = audioStream.EncodeInputFile;
                     settings["OutputFile"] = audioStream.EncodeOutputFile;
+                    settings["MetaID"] = audioStream.MetaID;
 
                     EncodeSettingsProject.AudioStreamSettings currentStream = audioStream;
                     audioStream.AudioCodecSettings[AudioCodecID].CreateCommands(ePlans, settings, delegate()

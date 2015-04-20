@@ -25,7 +25,7 @@ static void myFree(lwmSAllocator *alloc, void *ptr)
 	free(ptr);
 }
 
-void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr)
+void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr, const char *metaID)
 {
 	CRIFFDataList *rootAtom = static_cast<CRIFFDataList*>(lwmovie::riff::ParseAtom(inFile));
 	CRIFFDataChunk *fmtAtom = rootAtom->FindDataChild(SFourCC('f', 'm', 't', ' '));
@@ -65,6 +65,8 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Mono;
 		if(wavFormat.numChannels == 2)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Stereo_LR;
+
+		EncodeMetaID(metaID, asi.metaID);
 
 		lwmWritePlanToFile(pkgHeader, outFile);
 		lwmWritePlanToFile(aci, outFile);

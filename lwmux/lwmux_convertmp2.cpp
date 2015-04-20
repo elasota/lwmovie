@@ -71,7 +71,7 @@ static bool DecodeMP2Header(lwmAudioCommonInfo &aci, lwmAudioStreamInfo &asi, co
 }
 
 
-void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
+void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile, const char *metaID)
 {
 	lwmUInt32 mp2FrameSamples = 1152;
 	lwmUInt32 emittedSamples = 0;
@@ -88,6 +88,9 @@ void ConvertMP2(lwmOSFile *mpegFile, lwmOSFile *outFile)
 		lwmUInt32 outFrameSize;
 		bool isPadded;
 		bool hasChecksum;
+
+		EncodeMetaID(metaID, asi.metaID);
+
 		if(!DecodeMP2Header(aci, asi, frameHeader, isPadded, hasChecksum, inFrameSize))
 		{
 			fprintf(stderr, "FATAL ERROR: MP2 frame decode failed");

@@ -41,6 +41,7 @@ struct lwmCakeAudioStreamInfo
 {
 	lwmUInt32 sampleRate;
 	enum lwmESpeakerLayout speakerLayout;
+	char metaID[9];
 	struct lwmCakeAudioDevice *attachedAudioDevice;
 };
 

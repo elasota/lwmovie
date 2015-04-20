@@ -26,7 +26,7 @@ static void EncodeADPCM(lwmUInt8 *output, const lwmSInt16 *samples, lwmUInt32 nu
 	}
 }
 
-void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile)
+void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile, const char *metaID)
 {
 	CRIFFDataList *rootAtom = static_cast<CRIFFDataList*>(lwmovie::riff::ParseAtom(inFile));
 	CRIFFDataChunk *fmtAtom = rootAtom->FindDataChild(SFourCC('f', 'm', 't', ' '));
@@ -64,6 +64,8 @@ void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Mono;
 		if(wavFormat.numChannels == 2)
 			asi.speakerLayout = lwmSPEAKERLAYOUT_Stereo_LR;
+
+		EncodeMetaID(metaID, asi.metaID);
 
 		lwmWritePlanToFile(pkgHeader, outFile);
 		lwmWritePlanToFile(aci, outFile);

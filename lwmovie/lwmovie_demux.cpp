@@ -883,6 +883,21 @@ LWMOVIE_API_LINK void lwmMovieState_SetStreamParameterU32(lwmMovieState *movieSt
 	}
 }
 
+LWMOVIE_API_LINK int lwmMovieState_GetStreamMetaID(const lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, char outMetaID[8])
+{
+	const lwmUInt32 *metaIDChunks = NULL;
+	if (streamType == lwmSTREAMTYPE_Audio)
+		metaIDChunks = movieState->audioStreamInfos[streamIndex].metaID;
+
+	if (metaIDChunks != NULL)
+	{
+		for (lwmFastUInt8 i = 0; i < 8; i++)
+			outMetaID[i] = static_cast<char>((metaIDChunks[i / 4] >> ((i % 4) * 8)) & 0xff);
+		return 1;
+	}
+	return 0;
+}
+
 LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, lwmUInt32 flags, lwmSVideoFrameProvider *frameProvider)
 {
 	switch(reconstructorType)

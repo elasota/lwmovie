@@ -175,6 +175,7 @@ LWMOVIE_API_LINK lwmUInt8 lwmMovieState_GetAudioStreamCount(const struct lwmMovi
 LWMOVIE_API_LINK int lwmMovieState_SetAudioStreamEnabled(struct lwmMovieState *movieState, lwmUInt8 streamIndex, int enable);
 LWMOVIE_API_LINK int lwmMovieState_GetCommonParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt32 commonParameterU32, lwmUInt32 *output);
 LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 *output);
+LWMOVIE_API_LINK int lwmMovieState_GetStreamMetaID(const struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, char outMetaID[8]);
 LWMOVIE_API_LINK void lwmMovieState_SetStreamParameterU32(struct lwmMovieState *movieState, lwmUInt32 streamType, lwmUInt8 streamIndex, lwmUInt32 streamParameterU32, lwmUInt32 value);
 LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(struct lwmMovieState *movieState, struct lwmIVideoReconstructor *recon);
 LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(struct lwmMovieState *movieState);

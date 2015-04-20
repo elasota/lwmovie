@@ -263,6 +263,8 @@ lwmECakeResult lwmCake::ReadMovieInfo(lwmCakeMovieInfo *outMovieInfo)
 			lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Audio, i, lwmSTREAMPARAM_U32_SpeakerLayout, &value);
 			m_audioStreamInfos[i].speakerLayout = static_cast<lwmESpeakerLayout>(value);
 			m_audioStreamInfos[i].attachedAudioDevice = NULL;
+			lwmMovieState_GetStreamMetaID(m_movieState, lwmSTREAMTYPE_Audio, i, m_audioStreamInfos[i].metaID);
+			m_audioStreamInfos[i].metaID[sizeof(m_audioStreamInfos[i].metaID) - 1] = '\0';
 			m_audioSources[i].audioStreamInfo = m_audioStreamInfos + i;
 		}
 	}
@@ -490,6 +492,9 @@ void lwmCake::SetStreamAudioDevice(lwmUInt8 streamIndex, lwmCakeAudioDevice *aud
 			if(a->speakerLayout > b->speakerLayout) return 1;
 			if(a < b) return -1;
 			if(a > b) return 1;
+			int metaCmp = memcmp(a->metaID, b->metaID, sizeof(b->metaID));
+			if (metaCmp != 0)
+				return metaCmp;
 			return 0;
 		}
 	};

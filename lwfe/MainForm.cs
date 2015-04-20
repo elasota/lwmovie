@@ -183,6 +183,7 @@ namespace lwfe
                     audioStreamSettings.EncodeOutputFile = fsAudioEncodeOutput.FileName;
                     audioStreamSettings.IntermediateFile = fsExistingAudioIntermediate.FileName;
                     audioStreamSettings.UseIntermediate = radAudioUseIF.Checked;
+                    audioStreamSettings.MetaID = txtMetaID.Text;
                 }
             }
         }
@@ -234,6 +235,7 @@ namespace lwfe
                 fsExistingAudioIntermediate.FileName = audioSettings.IntermediateFile;
                 radAudioEncode.Checked = !audioSettings.UseIntermediate;
                 radAudioUseIF.Checked = audioSettings.UseIntermediate;
+                txtMetaID.Text = audioSettings.MetaID;
 
                 _audioCodecSettingsControl.LoadFromSettings(settings);
             }

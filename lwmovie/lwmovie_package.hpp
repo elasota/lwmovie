@@ -106,8 +106,11 @@ LWM_DECLARE_PLAN(lwmAudioCommonInfo);
 struct lwmAudioStreamInfo
 {
 	lwmESpeakerLayout	speakerLayout;
+	lwmUInt32			metaID[2];
 };
 LWM_DECLARE_PLAN_ENUM_MEMBER	(0, lwmAudioStreamInfo, lwmESpeakerLayout, lwmSPEAKERLAYOUT_Count, lwmUInt8, speakerLayout);
+LWM_DECLARE_PLAN_MEMBER			(1, lwmAudioStreamInfo, lwmUInt32, metaID[0]);
+LWM_DECLARE_PLAN_MEMBER			(2, lwmAudioStreamInfo, lwmUInt32, metaID[1]);
 LWM_DECLARE_PLAN(lwmAudioStreamInfo);
 
 enum lwmEPacketType
