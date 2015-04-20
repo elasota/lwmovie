@@ -157,6 +157,7 @@ OPUS_CUSTOM_EXPORT_STATIC OPUS_WARN_UNUSED_RESULT int opus_custom_encoder_get_si
   */
 OPUS_CUSTOM_EXPORT int opus_custom_encoder_init(
     OpusCustomEncoder *st,
+    struct lwmSAllocator *alloc,
     const OpusCustomMode *mode,
     int channels
 ) OPUS_ARG_NONNULL(1) OPUS_ARG_NONNULL(2);

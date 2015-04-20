@@ -152,7 +152,7 @@ CELTEncoder *opus_custom_encoder_create(struct lwmSAllocator *alloc, const CELTM
    int ret;
    CELTEncoder *st = (CELTEncoder *)opus_alloc(alloc, opus_custom_encoder_get_size(mode, channels));
    /* init will handle the NULL case */
-   ret = opus_custom_encoder_init(st, mode, channels);
+   ret = opus_custom_encoder_init(st, alloc, mode, channels);
    if (ret != OPUS_OK)
    {
       opus_custom_encoder_destroy(st);
@@ -164,7 +164,7 @@ CELTEncoder *opus_custom_encoder_create(struct lwmSAllocator *alloc, const CELTM
 }
 #endif /* CUSTOM_MODES */
 
-static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
+static int opus_custom_encoder_init_arch(CELTEncoder *st, struct lwmSAllocator *alloc, const CELTMode *mode,
                                          int channels, int arch)
 {
    if (channels < 0 || channels > 2)
@@ -175,6 +175,7 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
 
    OPUS_CLEAR((char*)st, opus_custom_encoder_get_size(mode, channels));
 
+   st->alloc = alloc;
    st->mode = mode;
    st->overlap = mode->overlap;
    st->stream_channels = st->channels = channels;
@@ -201,9 +202,9 @@ static int opus_custom_encoder_init_arch(CELTEncoder *st, const CELTMode *mode,
 }
 
 #ifdef CUSTOM_MODES
-int opus_custom_encoder_init(CELTEncoder *st, const CELTMode *mode, int channels)
+int opus_custom_encoder_init(CELTEncoder *st, struct lwmSAllocator *alloc, const CELTMode *mode, int channels)
 {
-   return opus_custom_encoder_init_arch(st, mode, channels, opus_select_arch());
+   return opus_custom_encoder_init_arch(st, alloc, mode, channels, opus_select_arch());
 }
 #endif
 
@@ -211,7 +212,7 @@ int celt_encoder_init(CELTEncoder *st, struct lwmSAllocator *alloc, opus_int32 s
                       int arch)
 {
    int ret;
-   ret = opus_custom_encoder_init_arch(st,
+   ret = opus_custom_encoder_init_arch(st, alloc,
            opus_custom_mode_create(alloc, 48000, 960, NULL), channels, arch);
    if (ret != OPUS_OK)
       return ret;
