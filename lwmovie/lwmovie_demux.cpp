@@ -39,16 +39,6 @@ namespace lwmovie
 	class lwmCADPCMDecoder;
 }
 
-
-static void lwmPassThroughDigestNotifyAvailable(void *opaque)
-{
-	lwmMovieState_VideoDigestParticipate(static_cast<lwmMovieState*>(opaque));
-}
-
-static void lwmPassThroughJoin(void *opaque)
-{
-}
-
 enum lwmDemuxState
 {
 	lwmDEMUX_MovieHeader,
