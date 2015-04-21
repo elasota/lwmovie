@@ -27,9 +27,6 @@
 #include "lwmovie_simd_defs.hpp"
 #include "lwmovie_fp_d3d11.hpp"
 
-#include <stdio.h>
-
-
 lwmovie::lwmCD3D11FrameProvider::lwmCD3D11FrameProvider(lwmSAllocator *alloc, ID3D11Device *device, ID3D11DeviceContext *context, bool isUsingHardwareReconstructor)
 	: lwmIVideoFrameProvider()
 	, m_device(device)
@@ -209,7 +206,6 @@ int lwmovie::lwmCD3D11FrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwm
 
 void lwmovie::lwmCD3D11FrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType)
 {
-	printf("LockWorkFrame: %i / %i\n", workFrameIndex, lockType);
 	ChannelTextureBundle *ctb = m_channelTextureBundles + workFrameIndex;
 	for (lwmLargeUInt ch = 0; ch < m_numChannels; ch++)
 	{
@@ -220,7 +216,6 @@ void lwmovie::lwmCD3D11FrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lw
 		case lwmVIDEOLOCK_Write_ReadLater:
 		case lwmVIDEOLOCK_Write_Only:
 			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			printf("Map %p\n", ctex->m_texture);
 			if (FAILED(m_context->Map(ctex->m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)))
 				return;
 			ctex->m_activeLock = lockType;
@@ -238,7 +233,6 @@ void lwmovie::lwmCD3D11FrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lw
 
 void lwmovie::lwmCD3D11FrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
 {
-	printf("UnlockWorkFrame: %i\n", workFrameIndex);
 	ChannelTextureBundle *ctb = m_channelTextureBundles + workFrameIndex;
 	for (lwmLargeUInt ch = 0; ch < m_numChannels; ch++)
 	{
@@ -257,7 +251,6 @@ void lwmovie::lwmCD3D11FrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
 				destBytes += ctex->m_lockPitch;
 				srcBytes += m_channelStrides[ch];
 			}
-			printf("Unmap %p\n", ctex->m_texture);
 			m_context->Unmap(ctex->m_texture, 0);
 		}
 		else if (ctex->m_activeLock == lwmVIDEOLOCK_Write_Only)
