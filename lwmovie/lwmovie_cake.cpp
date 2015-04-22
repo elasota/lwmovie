@@ -426,25 +426,6 @@ void lwmCake::HandleVideoSync(lwmCakeDecodeOutput *decodeOutput, bool isDropped)
 
 		lwmUInt32 requiredSampleRate = m_audioSources[firstSource].audioStreamInfo->sampleRate;
 
-		lwmUInt32 minSamplesAvailable = lwmMovieState_GetNumAudioSamplesAvailable(m_movieState, firstSource);
-		lwmUInt8 lastSource = firstSource;
-		for(lwmUInt8 scanSource=firstSource+1;scanSource!=streamCount;scanSource++)
-		{
-			if(m_audioSources[scanSource].audioStreamInfo->attachedAudioDevice != device)
-				break;
-			lastSource = scanSource;
-			
-			lwmUInt32 numSamples = lwmMovieState_GetNumAudioSamplesAvailable(m_movieState, scanSource);
-			lwmUInt32 sampleRate = m_audioSources[scanSource].audioStreamInfo->sampleRate;
-			if(numSamples < minSamplesAvailable)
-				minSamplesAvailable = 0;
-			if(sampleRate != requiredSampleRate)
-			{
-				minSamplesAvailable = 0;	// Incompatible audio streams
-				break;
-			}
-		}
-
 		bool canQueueSamples = false;
 		if(lwmMovieState_IsAudioPlaybackSynchronized(m_movieState))
 		{
@@ -466,6 +447,26 @@ void lwmCake::HandleVideoSync(lwmCakeDecodeOutput *decodeOutput, bool isDropped)
 			device->resetFunc(device);
 			if(lwmMovieState_SynchronizeAudioPlayback(m_movieState) != 0)
 				canQueueSamples = true;
+		}
+
+		lwmUInt8 lastSource = firstSource;
+
+		lwmUInt32 minSamplesAvailable = lwmMovieState_GetNumAudioSamplesAvailable(m_movieState, firstSource);
+		for (lwmUInt8 scanSource = firstSource + 1; scanSource != streamCount; scanSource++)
+		{
+			if (m_audioSources[scanSource].audioStreamInfo->attachedAudioDevice != device)
+				break;
+			lastSource = scanSource;
+
+			lwmUInt32 numSamples = lwmMovieState_GetNumAudioSamplesAvailable(m_movieState, scanSource);
+			lwmUInt32 sampleRate = m_audioSources[scanSource].audioStreamInfo->sampleRate;
+			if (numSamples < minSamplesAvailable)
+				minSamplesAvailable = 0;
+			if (sampleRate != requiredSampleRate)
+			{
+				minSamplesAvailable = 0;	// Incompatible audio streams
+				break;
+			}
 		}
 
 		if(minSamplesAvailable != 0 && canQueueSamples)
