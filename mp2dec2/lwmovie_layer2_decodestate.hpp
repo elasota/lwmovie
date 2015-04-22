@@ -30,7 +30,7 @@ namespace lwmovie
 {
 	namespace layerii
 	{
-		class lwmCMP2DecodeState
+		class CDecodeState
 		{
 			LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB	lwmFixedReal22		m_accumulators[MAX_CHANNELS][FILTER_SIZE][NUM_SUBBANDS];
 			int					m_sbsRotator;
@@ -49,7 +49,7 @@ namespace lwmovie
 			EMPEGVersion		m_mpegVersion;
 
 		public:
-			lwmCMP2DecodeState();
+			CDecodeState();
 			bool ParseHeader(const void *bytes);
 
 			bool DecodeFrame(const void *bytes, lwmSInt16 *output);

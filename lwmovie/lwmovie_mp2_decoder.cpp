@@ -2,7 +2,7 @@
 #include "lwmovie_package.hpp"
 #include <string.h>
 
-lwmovie::lwmCMP2Decoder::lwmCMP2Decoder(lwmSAllocator *alloc)
+lwmovie::layerii::CDecoder::CDecoder(lwmSAllocator *alloc)
 	: m_alloc(alloc)
 	, m_numChannels(0)
 	, m_audioBuffer(alloc)
@@ -10,11 +10,11 @@ lwmovie::lwmCMP2Decoder::lwmCMP2Decoder(lwmSAllocator *alloc)
 	memset(m_frameData, 0, sizeof(m_frameData));
 }
 
-lwmovie::lwmCMP2Decoder::~lwmCMP2Decoder()
+lwmovie::layerii::CDecoder::~CDecoder()
 {
 }
 
-bool lwmovie::lwmCMP2Decoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo)
+bool lwmovie::layerii::CDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo)
 {
 	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
 		m_numChannels = 1;
@@ -29,7 +29,7 @@ bool lwmovie::lwmCMP2Decoder::Init(const lwmMovieHeader *movieHeader, const lwmA
 	return true;
 }
 
-bool lwmovie::lwmCMP2Decoder::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun)
+bool lwmovie::layerii::CDecoder::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun)
 {
 	outOverrun = false;
 	if(packetSize > lwmovie::layerii::MAX_FRAME_SIZE_BYTES || packetSize < lwmovie::layerii::HEADER_SIZE_BYTES)
@@ -53,7 +53,7 @@ bool lwmovie::lwmCMP2Decoder::DigestDataPacket(const void *bytes, lwmUInt32 pack
 	return true;
 }
 
-lwmCAudioBuffer *lwmovie::lwmCMP2Decoder::GetAudioBuffer()
+lwmovie::CAudioBuffer *lwmovie::layerii::CDecoder::GetAudioBuffer()
 {
 	return &m_audioBuffer;
 }

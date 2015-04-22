@@ -7,7 +7,7 @@
 static const unsigned int FRAME_SIZE = 1024;
 static const unsigned int CELT_MAX_FRAME_BYTES = 1275;
 
-lwmovie::lwmCCELTDecoder::lwmCCELTDecoder(lwmSAllocator *alloc)
+lwmovie::celt::CDecoder::CDecoder(lwmSAllocator *alloc)
 	: m_alloc(alloc)
 	, m_numChannels(0)
 	, m_audioBuffer(alloc)
@@ -16,7 +16,7 @@ lwmovie::lwmCCELTDecoder::lwmCCELTDecoder(lwmSAllocator *alloc)
 {
 }
 
-lwmovie::lwmCCELTDecoder::~lwmCCELTDecoder()
+lwmovie::celt::CDecoder::~CDecoder()
 {
 	if(m_celtDecoder)
 		opus_custom_decoder_destroy(m_celtDecoder);
@@ -24,7 +24,7 @@ lwmovie::lwmCCELTDecoder::~lwmCCELTDecoder()
 		opus_custom_mode_destroy(m_celtMode);
 }
 
-bool lwmovie::lwmCCELTDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo)
+bool lwmovie::celt::CDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo)
 {
 	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
 		m_numChannels = 1;
@@ -47,7 +47,7 @@ bool lwmovie::lwmCCELTDecoder::Init(const lwmMovieHeader *movieHeader, const lwm
 	return true;
 }
 
-bool lwmovie::lwmCCELTDecoder::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun)
+bool lwmovie::celt::CDecoder::DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun)
 {
 	outOverrun = false;
 	if(packetSize > 1275)
@@ -64,7 +64,7 @@ bool lwmovie::lwmCCELTDecoder::DigestDataPacket(const void *bytes, lwmUInt32 pac
 	return true;
 }
 
-lwmCAudioBuffer *lwmovie::lwmCCELTDecoder::GetAudioBuffer()
+lwmovie::CAudioBuffer *lwmovie::celt::CDecoder::GetAudioBuffer()
 {
 	return &m_audioBuffer;
 }

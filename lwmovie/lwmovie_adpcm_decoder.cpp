@@ -6,7 +6,7 @@
 #include "lwmovie_adpcm_decoder.hpp"
 #include "lwmovie_package.hpp"
 
-lwmovie::lwmCADPCMDecoder::lwmCADPCMDecoder(lwmSAllocator *alloc)
+lwmovie::adpcm::CDecoder::CDecoder(lwmSAllocator *alloc)
 	: m_alloc(alloc)
 	, m_numChannels(0)
 	, m_audioBuffer(alloc)
@@ -14,13 +14,13 @@ lwmovie::lwmCADPCMDecoder::lwmCADPCMDecoder(lwmSAllocator *alloc)
 {
 }
 
-lwmovie::lwmCADPCMDecoder::~lwmCADPCMDecoder()
+lwmovie::adpcm::CDecoder::~CDecoder()
 {
 	if(m_predictors)
 		m_alloc->Free(m_predictors);
 }
 
-bool lwmovie::lwmCADPCMDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo)
+bool lwmovie::adpcm::CDecoder::Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo)
 {
 	if(audioStreamInfo->speakerLayout == lwmSPEAKERLAYOUT_Mono)
 		m_numChannels = 1;
@@ -42,7 +42,7 @@ bool lwmovie::lwmCADPCMDecoder::Init(const lwmMovieHeader *movieHeader, const lw
 	return true;
 }
 
-bool lwmovie::lwmCADPCMDecoder::DigestDataPacket(const void *data, lwmUInt32 packetSize, bool &outOverrun)
+bool lwmovie::adpcm::CDecoder::DigestDataPacket(const void *data, lwmUInt32 packetSize, bool &outOverrun)
 {
 	const lwmUInt8 *bytes = static_cast<const lwmUInt8 *>(data);
 	lwmUInt32 numChannelBytes = packetSize / m_numChannels;
@@ -90,7 +90,7 @@ bool lwmovie::lwmCADPCMDecoder::DigestDataPacket(const void *data, lwmUInt32 pac
 	return true;
 }
 
-lwmCAudioBuffer *lwmovie::lwmCADPCMDecoder::GetAudioBuffer()
+lwmovie::CAudioBuffer *lwmovie::adpcm::CDecoder::GetAudioBuffer()
 {
 	return &m_audioBuffer;
 }

@@ -12,22 +12,25 @@ struct OpusCustomDecoder;
 
 namespace lwmovie
 {
-	class lwmCCELTDecoder : public lwmCAudioCodec
+	namespace celt
 	{
-	public:
-		explicit lwmCCELTDecoder(lwmSAllocator *alloc);
-		~lwmCCELTDecoder();
-		bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo);
-		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
-		lwmCAudioBuffer *GetAudioBuffer();
+		class CDecoder : public CAudioCodec
+		{
+		public:
+			explicit CDecoder(lwmSAllocator *alloc);
+			~CDecoder();
+			bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *audioCommonInfo, const lwmAudioStreamInfo *audioStreamInfo);
+			bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
+			CAudioBuffer *GetAudioBuffer();
 
-	private:
-		lwmSAllocator *m_alloc;
-		lwmUInt8 m_numChannels;
-		OpusCustomMode *m_celtMode;
-		OpusCustomDecoder *m_celtDecoder;
-		lwmCAudioBuffer m_audioBuffer;
-	};
+		private:
+			lwmSAllocator *m_alloc;
+			lwmUInt8 m_numChannels;
+			OpusCustomMode *m_celtMode;
+			OpusCustomDecoder *m_celtDecoder;
+			CAudioBuffer m_audioBuffer;
+		};
+	}
 }
 
 #endif

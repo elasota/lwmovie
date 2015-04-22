@@ -4,7 +4,7 @@
 #include "lwmovie_audiobuffer.hpp"
 #include "lwmovie_external_types.h"
 
-lwmCAudioBuffer::lwmCAudioBuffer(lwmSAllocator *alloc)
+lwmovie::CAudioBuffer::CAudioBuffer(lwmSAllocator *alloc)
 	: m_alloc(alloc)
 	, m_startPeriod(0)
 	, m_topOffset(0)
@@ -19,14 +19,14 @@ lwmCAudioBuffer::lwmCAudioBuffer(lwmSAllocator *alloc)
 {
 }
 
-lwmCAudioBuffer::~lwmCAudioBuffer()
+lwmovie::CAudioBuffer::~CAudioBuffer()
 {
 	if(m_samples)
 		m_alloc->Free(m_samples);
 }
 
 
-bool lwmCAudioBuffer::Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 numChannels)
+bool lwmovie::CAudioBuffer::Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 numChannels)
 {
 	lwmUInt32 intMax = ~static_cast<lwmUInt32>(0);
 	m_sampleSizeBytes = 2 * numChannels;
@@ -41,7 +41,7 @@ bool lwmCAudioBuffer::Init(lwmSAllocator *alloc, lwmUInt32 numSamples, lwmUInt8 
 	return true;
 }
 
-lwmUInt32 lwmCAudioBuffer::ReadCommittedSamples(void *output, lwmUInt32 numSamples)
+lwmUInt32 lwmovie::CAudioBuffer::ReadCommittedSamples(void *output, lwmUInt32 numSamples)
 {
 	if(numSamples > m_numCommittedSamples)
 		numSamples = m_numCommittedSamples;
@@ -93,7 +93,7 @@ lwmUInt32 lwmCAudioBuffer::ReadCommittedSamples(void *output, lwmUInt32 numSampl
 	}
 }
 
-void *lwmCAudioBuffer::ReserveNewContiguous(lwmUInt32 numSamples, lwmUInt32 &outNumDroppedSamples)
+void *lwmovie::CAudioBuffer::ReserveNewContiguous(lwmUInt32 numSamples, lwmUInt32 &outNumDroppedSamples)
 {
 	if(numSamples > m_capacity)
 		return NULL;
@@ -168,7 +168,7 @@ void *lwmCAudioBuffer::ReserveNewContiguous(lwmUInt32 numSamples, lwmUInt32 &out
 	}
 }
 
-void lwmCAudioBuffer::SkipSamples(lwmUInt32 numSamples)
+void lwmovie::CAudioBuffer::SkipSamples(lwmUInt32 numSamples)
 {
 	if(numSamples >= m_numCommittedSamples)
 		m_numCommittedSamples = 0;

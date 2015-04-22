@@ -11,22 +11,25 @@ struct lwmMovieHeader;
 
 namespace lwmovie
 {
-	class lwmCMP2Decoder : public lwmCAudioCodec
+	namespace layerii
 	{
-	public:
-		explicit lwmCMP2Decoder(lwmSAllocator *alloc);
-		~lwmCMP2Decoder();
-		bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo);
-		bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
-		lwmCAudioBuffer *GetAudioBuffer();
+		class CDecoder : public CAudioCodec
+		{
+		public:
+			explicit CDecoder(lwmSAllocator *alloc);
+			~CDecoder();
+			bool Init(const lwmMovieHeader *movieHeader, const lwmAudioCommonInfo *commonInfo, const lwmAudioStreamInfo *audioStreamInfo);
+			bool DigestDataPacket(const void *bytes, lwmUInt32 packetSize, bool &outOverrun);
+			CAudioBuffer *GetAudioBuffer();
 
-	private:
-		lwmSAllocator *m_alloc;
-		lwmUInt8 m_numChannels;
-		lwmovie::layerii::lwmCMP2DecodeState m_decodeState;
-		lwmUInt8 m_frameData[lwmovie::layerii::MAX_FRAME_SIZE_BYTES];
-		lwmCAudioBuffer m_audioBuffer;
-	};
+		private:
+			lwmSAllocator *m_alloc;
+			lwmUInt8 m_numChannels;
+			lwmovie::layerii::CDecodeState m_decodeState;
+			lwmUInt8 m_frameData[lwmovie::layerii::MAX_FRAME_SIZE_BYTES];
+			CAudioBuffer m_audioBuffer;
+		};
+	}
 }
 
 #endif

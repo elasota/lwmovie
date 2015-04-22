@@ -30,7 +30,7 @@ namespace layerii
 {
 }
 
-lwmovie::layerii::lwmCMP2DecodeState::lwmCMP2DecodeState()
+lwmovie::layerii::CDecodeState::CDecodeState()
 {
 	for(int i=0;i<MAX_CHANNELS;i++)
 		for(int j=0;j<FILTER_SIZE;j++)
@@ -39,7 +39,7 @@ lwmovie::layerii::lwmCMP2DecodeState::lwmCMP2DecodeState()
 	m_sbsRotator = 0;
 }
 
-lwmUInt16 lwmovie::layerii::lwmCMP2DecodeState::GetFrameSizeBytes() const
+lwmUInt16 lwmovie::layerii::CDecodeState::GetFrameSizeBytes() const
 {
 	// 1152 * 1000 / 8
 	// totalBitrate * 1000 * 1152 / sampleRate
@@ -51,17 +51,17 @@ lwmUInt16 lwmovie::layerii::lwmCMP2DecodeState::GetFrameSizeBytes() const
 	return frameBytes;
 }
 
-lwmUInt8 lwmovie::layerii::lwmCMP2DecodeState::GetChannelCount() const
+lwmUInt8 lwmovie::layerii::CDecodeState::GetChannelCount() const
 {
 	return m_numChannels;
 }
 
-lwmUInt32 lwmovie::layerii::lwmCMP2DecodeState::GetSampleRate() const
+lwmUInt32 lwmovie::layerii::CDecodeState::GetSampleRate() const
 {
 	return m_sampleRate;
 }
 
-bool lwmovie::layerii::lwmCMP2DecodeState::ParseHeader(const void *data)
+bool lwmovie::layerii::CDecodeState::ParseHeader(const void *data)
 {
 	const lwmUInt8 *bytes = static_cast<const lwmUInt8 *>(data);
 	lwmUInt32 header = (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | (bytes[3]);
@@ -114,7 +114,7 @@ bool lwmovie::layerii::lwmCMP2DecodeState::ParseHeader(const void *data)
 
 
 template<lwmFastUInt8 numChannels>
-bool lwmovie::layerii::lwmCMP2DecodeState::DecodeFrameCH(const void *bytes, lwmSInt16 *output)
+bool lwmovie::layerii::CDecodeState::DecodeFrameCH(const void *bytes, lwmSInt16 *output)
 {
 	lwmCMemBitstream bitstream(bytes);
 
@@ -300,7 +300,7 @@ bool lwmovie::layerii::lwmCMP2DecodeState::DecodeFrameCH(const void *bytes, lwmS
 	return true;
 }
 
-bool lwmovie::layerii::lwmCMP2DecodeState::DecodeFrame(const void *bytes, lwmSInt16 *output)
+bool lwmovie::layerii::CDecodeState::DecodeFrame(const void *bytes, lwmSInt16 *output)
 {
 	switch(m_numChannels)
 	{
