@@ -66,19 +66,19 @@
 #include "lwmovie_recon_m1v.hpp"
 #include "lwmovie_profile.hpp"
 
-lwmovie::lwmDeslicerJob::lwmDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
+lwmovie::m1v::CDeslicerJob::CDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
 {
 	m_mb_width = mbWidth;
 	m_mb_height = mbHeight;
 }
 
-bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, lwmIM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, lwmIM1VReconstructor *recon)
+bool lwmovie::m1v::CDeslicerJob::Digest(const mpegSequence *sequenceData, IM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, IM1VReconstructor *recon)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(&m_profileTags, lwmEPROFILETAG_Deslice);
 #endif
 
-	lwmCBitstream bitstream;
+	CBitstream bitstream;
 	bitstream.Initialize(sliceData, sliceSize);
 	m_sequence = sequenceData;
 	m_picture = pictData;
@@ -103,7 +103,7 @@ bool lwmovie::lwmDeslicerJob::Digest(const mpegSequence *sequenceData, lwmIM1VBl
 	return true;
 }
 
-bool lwmovie::lwmDeslicerJob::ParseSliceHeader(lwmCBitstream *bitstream)
+bool lwmovie::m1v::CDeslicerJob::ParseSliceHeader(CBitstream *bitstream)
 {
 	lwmUInt32 basePos = bitstream->get_bits8();
 
@@ -135,7 +135,7 @@ bool lwmovie::lwmDeslicerJob::ParseSliceHeader(lwmCBitstream *bitstream)
 	m_slice.quant_scale = data;
 
 	/* Parse off extra bit slice info. */
-	lwmVidStream::SkipExtraBitInfo(bitstream);
+	CVidStream::SkipExtraBitInfo(bitstream);
 
 	/* Reset past intrablock address. */
 	m_mblock.past_intra_addr = -2;
@@ -177,7 +177,7 @@ bool lwmovie::lwmDeslicerJob::ParseSliceHeader(lwmCBitstream *bitstream)
  *
  *--------------------------------------------------------------
  */
-lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwmCBitstream *bitstream, lwmIM1VBlockCursor *blockCursor, lwmSInt32 max_mb_addr, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags )
+lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBlock(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 max_mb_addr, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseBlock);
@@ -201,26 +201,26 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 
 		addr_incr = DecodeMBAddrInc(bitstream);
 
-		if (addr_incr == lwmovie::vlc::UERROR8)
+		if (addr_incr == lwmovie::m1v::vlc::UERROR8)
 			return constants::PARSE_SKIP_TO_START_CODE;
 
-		if (lwmovie::vlc::mb_addr_inc[ind].num_bits == 0)
+		if (lwmovie::m1v::vlc::mb_addr_inc[ind].num_bits == 0)
 			addr_incr = 1;
-		else if (addr_incr == lwmovie::constants::MPEG_MB_ESCAPE)
+		else if (addr_incr == lwmovie::m1v::constants::MPEG_MB_ESCAPE)
 		{
 			m_mblock.mb_address += 33;
-			addr_incr = lwmovie::constants::MPEG_MB_STUFFING;
+			addr_incr = lwmovie::m1v::constants::MPEG_MB_STUFFING;
 			if(m_mblock.mb_address > max_mb_addr)
 				return constants::PARSE_SKIP_TO_START_CODE;
 		}
-	} while (addr_incr == lwmovie::constants::MPEG_MB_STUFFING);
+	} while (addr_incr == lwmovie::m1v::constants::MPEG_MB_STUFFING);
 
 	m_mblock.mb_address += addr_incr;
 	if(m_mblock.mb_address > max_mb_addr)
-		return lwmovie::constants::PARSE_SKIP_TO_START_CODE;
+		return lwmovie::m1v::constants::PARSE_SKIP_TO_START_CODE;
 
 	if( m_mblock.mb_address < 0 )
-		return lwmovie::constants::PARSE_SKIP_TO_START_CODE;
+		return lwmovie::m1v::constants::PARSE_SKIP_TO_START_CODE;
 
 	/*
 	 * If macroblocks have been skipped, process skipped macroblocks.
@@ -290,7 +290,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* Parse off and decode horizontal forward motion vector. */
 		m_mblock.motion_h_forw_code = DecodeMotionVectors(bitstream);
 
-		if(m_mblock.motion_h_forw_code == lwmovie::vlc::ERROR8)
+		if (m_mblock.motion_h_forw_code == lwmovie::m1v::vlc::ERROR8)
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If horiz. forward r data exists, parse off. */
@@ -303,7 +303,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* Parse off and decode vertical forward motion vector. */
 		m_mblock.motion_v_forw_code = DecodeMotionVectors(bitstream);
 
-		if(m_mblock.motion_v_forw_code == lwmovie::vlc::ERROR8)
+		if (m_mblock.motion_v_forw_code == lwmovie::m1v::vlc::ERROR8)
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If vert. forw. r data exists, parse off. */
@@ -320,7 +320,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* Parse off and decode horiz. back motion vector. */
 		m_mblock.motion_h_back_code = DecodeMotionVectors(bitstream);
 		
-		if(m_mblock.motion_h_back_code == lwmovie::vlc::ERROR8)
+		if (m_mblock.motion_h_back_code == lwmovie::m1v::vlc::ERROR8)
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If horiz. back r data exists, parse off. */
@@ -333,7 +333,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		/* Parse off and decode vert. back motion vector. */
 		m_mblock.motion_v_back_code = DecodeMotionVectors(bitstream);
 
-		if(m_mblock.motion_v_back_code == lwmovie::vlc::ERROR8)
+		if (m_mblock.motion_v_back_code == lwmovie::m1v::vlc::ERROR8)
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If vert. back r data exists, parse off. */
@@ -350,7 +350,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 	{
 		m_mblock.cbp = DecodeCBP(bitstream);
 
-		if(m_mblock.cbp == lwmovie::vlc::UERROR8)
+		if (m_mblock.cbp == lwmovie::m1v::vlc::UERROR8)
 			return constants::PARSE_SKIP_TO_START_CODE;
 	}
 	/* Otherwise, set CBP to zero. */
@@ -361,7 +361,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 	lwmSInt32 recon_right_back, recon_down_back;
 
 	/* Reconstruct motion vectors depending on picture type. */
-	if (m_picture->code_type == lwmovie::constants::MPEG_P_TYPE)
+	if (m_picture->code_type == lwmovie::m1v::constants::MPEG_P_TYPE)
 	{
 		/*
 		 * If no forw motion vectors, reset previous and current vectors to 0.
@@ -384,7 +384,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		mb_motion_forw = !m_mblock.mb_intra;
 		recon_right_back = recon_down_back = 0;
 	}
-	else if (m_picture->code_type == lwmovie::constants::MPEG_B_TYPE)
+	else if (m_picture->code_type == lwmovie::m1v::constants::MPEG_B_TYPE)
 	{
 		/* Reset prev. and current vectors to zero if mblock is intracoded. */
 
@@ -443,7 +443,7 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 		if ((m_mblock.mb_intra) || ((m_mblock.cbp & mask) != 0))
 		{
 			if (!ParseReconBlock(bitstream, blockCursor, i, recon, profileTags))
-				return lwmovie::constants::PARSE_SKIP_TO_START_CODE;
+				return lwmovie::m1v::constants::PARSE_SKIP_TO_START_CODE;
 		}
 		else
 			zero_block_flag = true;
@@ -463,5 +463,5 @@ lwmovie::constants::lwmEParseState lwmovie::lwmDeslicerJob::ParseMacroBlock( lwm
 	if(m_mblock.mb_address == row_end_mb)
 		recon->MarkRowFinished(static_cast<lwmUInt32>(m_mblock.mb_address - (m_mb_width - 1)));
 
-	return lwmovie::constants::PARSE_OK;
+	return lwmovie::m1v::constants::PARSE_OK;
 }

@@ -29,166 +29,169 @@ struct lwmSVideoFrameProvider;
 
 namespace lwmovie
 {
-	class lwmCM1VSoftwareReconstructor;
-
-	class lwmCM1VBaseBlockCursor : public lwmIM1VBlockCursor
+	namespace m1v
 	{
-	public:
-		lwmCM1VBaseBlockCursor();
+		class CSoftwareReconstructor;
 
-		virtual void CloseMB();
-		virtual void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
-			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
-			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back);
-
-		virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag);
-		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex);
-
-		virtual void CommitZero();
-		virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
-		virtual void CommitFull();
-
-	protected:
-		lwmReconMBlock *m_currentMBlock;
-		lwmBlockInfo *m_currentBlockBase;
-		lwmDCTBLOCK *m_currentDCTBlockBase;
-
-		lwmBlockInfo *m_openedReconBlock;
-	};
-
-	
-	class lwmCM1VGridBlockCursor : public lwmCM1VBaseBlockCursor
-	{
-	public:
-		lwmCM1VGridBlockCursor(lwmReconMBlock *mblocks, lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks);
-
-		virtual void OpenMB(lwmSInt32 mbAddress);
-
-	private:
-		lwmReconMBlock *m_mblocks;
-		lwmBlockInfo *m_blocks;
-		lwmDCTBLOCK *m_dctBlocks;
-	};
-
-	class lwmCM1VSelfContainedBlockCursor : public lwmCM1VBaseBlockCursor
-	{
-	public:
-		explicit lwmCM1VSelfContainedBlockCursor(lwmCM1VSoftwareReconstructor *recon);
-
-		virtual void OpenMB(lwmSInt32 mbAddress);
-		virtual void CloseMB();
-
-	private:
-		lwmCM1VSoftwareReconstructor *m_recon;
-		lwmSInt32 m_targetMBAddress;
-
-		lwmReconMBlock m_mblock;
-		lwmBlockInfo m_blocks[6];
-
-		lwmDCTBLOCK m_dctBlocks[6];
-	};
-
-	class lwmCM1VSoftwareReconstructor : public lwmIM1VReconstructor
-	{
-	public:
-		lwmCM1VSoftwareReconstructor();
-		~lwmCM1VSoftwareReconstructor();
-
-		bool Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState, bool useRowJobs);
-
-		virtual lwmIM1VBlockCursor *CreateBlockCursor();
-
-		virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
-		virtual void WaitForFinish();
-		virtual void PresentFrame(lwmUInt32 workFrame);
-
-		virtual void Participate();
-		virtual void SetWorkNotifier(lwmSWorkNotifier *workNotifier);
-		virtual lwmUInt32 GetWorkFrameIndex() const;
-		virtual void StartNewFrame(lwmUInt32 currentTarget, lwmUInt32 futureTarget, lwmUInt32 pastTarget, bool currentIsB);
-		virtual void CloseFrame();
-
-		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
-		virtual lwmSVideoFrameProvider *GetFrameProvider() const;
-
-		virtual void Destroy();
-
-		void STReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock, lwmSInt32 mbAddress);
-
-	private:
-		struct STWorkNotifier : public lwmSWorkNotifier
+		class CBaseBlockCursor : public IM1VBlockCursor
 		{
-			lwmCM1VSoftwareReconstructor *recon;
+		public:
+			CBaseBlockCursor();
+
+			virtual void CloseMB();
+			virtual void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+				lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
+				lwmSInt32 recon_right_back, lwmSInt32 recon_down_back);
+
+			virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag);
+			virtual idct::DCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex);
+
+			virtual void CommitZero();
+			virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
+			virtual void CommitFull();
+
+		protected:
+			lwmReconMBlock *m_currentMBlock;
+			lwmBlockInfo *m_currentBlockBase;
+			idct::DCTBLOCK *m_currentDCTBlockBase;
+
+			lwmBlockInfo *m_openedReconBlock;
 		};
 
-		struct SStrideTriplet
-		{
-			lwmUInt32 y, u, v;
 
-			inline void MakeMBStrides(SStrideTriplet &dest) const
+		class CGridBlockCursor : public CBaseBlockCursor
+		{
+		public:
+			CGridBlockCursor(lwmReconMBlock *mblocks, lwmBlockInfo *blocks, idct::DCTBLOCK *dctBlocks);
+
+			virtual void OpenMB(lwmSInt32 mbAddress);
+
+		private:
+			lwmReconMBlock *m_mblocks;
+			lwmBlockInfo *m_blocks;
+			idct::DCTBLOCK *m_dctBlocks;
+		};
+
+		class CSelfContainedBlockCursor : public CBaseBlockCursor
+		{
+		public:
+			explicit CSelfContainedBlockCursor(CSoftwareReconstructor *recon);
+
+			virtual void OpenMB(lwmSInt32 mbAddress);
+			virtual void CloseMB();
+
+		private:
+			CSoftwareReconstructor *m_recon;
+			lwmSInt32 m_targetMBAddress;
+
+			lwmReconMBlock m_mblock;
+			lwmBlockInfo m_blocks[6];
+
+			idct::DCTBLOCK m_dctBlocks[6];
+		};
+
+		class CSoftwareReconstructor : public IM1VReconstructor
+		{
+		public:
+			CSoftwareReconstructor();
+			~CSoftwareReconstructor();
+
+			bool Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState, bool useRowJobs);
+
+			virtual IM1VBlockCursor *CreateBlockCursor();
+
+			virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
+			virtual void WaitForFinish();
+			virtual void PresentFrame(lwmUInt32 workFrame);
+
+			virtual void Participate();
+			virtual void SetWorkNotifier(lwmSWorkNotifier *workNotifier);
+			virtual lwmUInt32 GetWorkFrameIndex() const;
+			virtual void StartNewFrame(lwmUInt32 currentTarget, lwmUInt32 futureTarget, lwmUInt32 pastTarget, bool currentIsB);
+			virtual void CloseFrame();
+
+			virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
+			virtual lwmSVideoFrameProvider *GetFrameProvider() const;
+
+			virtual void Destroy();
+
+			void STReconstructBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, idct::DCTBLOCK *dctBlock, lwmSInt32 mbAddress);
+
+		private:
+			struct STWorkNotifier : public lwmSWorkNotifier
 			{
-				dest.y = this->y * 16;
-				dest.u = this->u * 8;
-				dest.v = this->v * 8;
-			}
-		};
+				CSoftwareReconstructor *recon;
+			};
 
-		struct STarget
-		{
-			lwmUInt8 *yPlane;
-			lwmUInt8 *uPlane;
-			lwmUInt8 *vPlane;
-			SStrideTriplet strides;
-			lwmUInt32 frameIndex;
-			bool isOpen;
+			struct SStrideTriplet
+			{
+				lwmUInt32 y, u, v;
 
-			void LoadFromFrameProvider(lwmSVideoFrameProvider *frameProvider, lwmUInt32 frameIndex);
-			void Close(lwmSVideoFrameProvider *frameProvider);
-		};
+				inline void MakeMBStrides(SStrideTriplet &dest) const
+				{
+					dest.y = this->y * 16;
+					dest.u = this->u * 8;
+					dest.v = this->v * 8;
+				}
+			};
 
-		static void PutDCTBlock(const lwmDCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
-		void ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, lwmDCTBLOCK *dctBlocks,
-			lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
-			lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv,
-			lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv,
-			SStrideTriplet cStride, SStrideTriplet fStride, SStrideTriplet pStride,
-			lwmCProfileTagSet *profileTags);
-		static void ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags);
-		static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, lwmDCTBLOCK *dctBlock,
-			lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags);
+			struct STarget
+			{
+				lwmUInt8 *yPlane;
+				lwmUInt8 *uPlane;
+				lwmUInt8 *vPlane;
+				SStrideTriplet strides;
+				lwmUInt32 frameIndex;
+				bool isOpen;
 
-		static void STWNJoinFunc(lwmSWorkNotifier *workNotifier);
-		static void STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier);
+				void LoadFromFrameProvider(lwmSVideoFrameProvider *frameProvider, lwmUInt32 frameIndex);
+				void Close(lwmSVideoFrameProvider *frameProvider);
+			};
 
-		bool m_useRowJobs;
-		
-		lwmReconMBlock *m_mblocks;
-		lwmBlockInfo *m_blocks;
-		lwmDCTBLOCK *m_dctBlocks;
-		lwmAtomicInt *m_rowCommitCounts;
-		lwmAtomicInt *m_workRowUsers;
+			static void PutDCTBlock(const idct::DCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
+			void ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, idct::DCTBLOCK *dctBlocks,
+				lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
+				lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv,
+				lwmUInt8 *py, lwmUInt8 *pu, lwmUInt8 *pv,
+				SStrideTriplet cStride, SStrideTriplet fStride, SStrideTriplet pStride,
+				lwmCProfileTagSet *profileTags);
+			static void ReconstructLumaBlocks(const lwmReconMBlock *mblock, const lwmBlockInfo *block, idct::DCTBLOCK *dctBlock,
+				lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags);
+			static void ReconstructChromaBlock(const lwmReconMBlock *mblock, const lwmBlockInfo *block, idct::DCTBLOCK *dctBlock,
+				lwmUInt8 *c, const lwmUInt8 *f, const lwmUInt8 *p, lwmLargeUInt cstride, lwmLargeUInt fstride, lwmLargeUInt pstride, lwmCProfileTagSet *profileTags);
+
+			static void STWNJoinFunc(lwmSWorkNotifier *workNotifier);
+			static void STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier);
+
+			bool m_useRowJobs;
+
+			lwmReconMBlock *m_mblocks;
+			lwmBlockInfo *m_blocks;
+			idct::DCTBLOCK *m_dctBlocks;
+			lwmAtomicInt *m_rowCommitCounts;
+			lwmAtomicInt *m_workRowUsers;
 #ifdef LWMOVIE_PROFILE
-		lwmCProfileTagSet *m_workRowProfileTags;
+			lwmCProfileTagSet *m_workRowProfileTags;
 #endif
 
-		STarget m_currentTarget;
-		STarget m_pastTarget;
-		STarget m_futureTarget;
+			STarget m_currentTarget;
+			STarget m_pastTarget;
+			STarget m_futureTarget;
 
-		lwmUInt32 m_outputTarget;
+			lwmUInt32 m_outputTarget;
 
-		lwmSAllocator *m_alloc;
-		lwmSVideoFrameProvider *m_frameProvider;
-		
-		lwmUInt32 m_mbWidth;
-		lwmUInt32 m_mbHeight;
+			lwmSAllocator *m_alloc;
+			lwmSVideoFrameProvider *m_frameProvider;
 
-		STWorkNotifier m_stWorkNotifier;
-		lwmSWorkNotifier *m_workNotifier;
+			lwmUInt32 m_mbWidth;
+			lwmUInt32 m_mbHeight;
 
-		lwmMovieState *m_movieState;
-	};
+			STWorkNotifier m_stWorkNotifier;
+			lwmSWorkNotifier *m_workNotifier;
+
+			lwmMovieState *m_movieState;
+		};
+	}
 }
 
 #endif

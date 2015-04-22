@@ -150,6 +150,7 @@
     <ClCompile Include="lwmovie_fp_systemmem.cpp" />
     <ClCompile Include="lwmovie_idct.cpp" />
     <ClCompile Include="lwmovie_init.cpp" />
+    <ClCompile Include="lwmovie_m1v_idct.cpp" />
     <ClCompile Include="lwmovie_motionvectors.cpp" />
     <ClCompile Include="lwmovie_mp2_decoder.cpp" />
     <ClCompile Include="lwmovie_parseblock.cpp" />

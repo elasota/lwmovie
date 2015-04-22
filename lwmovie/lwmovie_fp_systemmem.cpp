@@ -27,11 +27,11 @@
 
 namespace lwmovie
 {
-	class lwmCSystemMemFrameProvider : public lwmIVideoFrameProvider
+	class CSystemMemFrameProvider : public lwmIVideoFrameProvider
 	{
 	public:
-		explicit lwmCSystemMemFrameProvider(lwmSAllocator *alloc);
-		~lwmCSystemMemFrameProvider();
+		explicit CSystemMemFrameProvider(lwmSAllocator *alloc);
+		~CSystemMemFrameProvider();
 
 		virtual int CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat);
 		virtual void LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType);
@@ -55,20 +55,20 @@ namespace lwmovie
 	};
 }
 
-lwmovie::lwmCSystemMemFrameProvider::lwmCSystemMemFrameProvider(lwmSAllocator *alloc)
+lwmovie::CSystemMemFrameProvider::CSystemMemFrameProvider(lwmSAllocator *alloc)
 	: lwmIVideoFrameProvider()
 	, m_frameBytes(NULL)
 {
 	m_alloc = alloc;
 }
 
-lwmovie::lwmCSystemMemFrameProvider::~lwmCSystemMemFrameProvider()
+lwmovie::CSystemMemFrameProvider::~CSystemMemFrameProvider()
 {
 	if(m_frameBytes)
 		m_alloc->Free(m_frameBytes);
 }
 
-int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat)
+int lwmovie::CSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat)
 {
 	lwmLargeUInt channelStrides[MAX_CHANNELS];
 	lwmLargeUInt channelOffsets[MAX_CHANNELS + 1];
@@ -117,46 +117,47 @@ int lwmovie::lwmCSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames,
 	return 1;
 }
 
-void lwmovie::lwmCSystemMemFrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType)
+void lwmovie::CSystemMemFrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType)
 {
 }
 
-void lwmovie::lwmCSystemMemFrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
+void lwmovie::CSystemMemFrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
 {
 }
 
-void *lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch)
+void *lwmovie::CSystemMemFrameProvider::GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch)
 {
 	if(outPitch)
 		*outPitch = m_channelStrides[planeIndex];
 	return m_frameBytes + workFrameIndex * m_frameSize + m_channelOffsets[planeIndex];
 }
 
-lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex) const
+lwmUInt32 lwmovie::CSystemMemFrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex) const
 {
 	return this->m_channelWidths[planeIndex];
 }
 
-lwmUInt32 lwmovie::lwmCSystemMemFrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex) const
+lwmUInt32 lwmovie::CSystemMemFrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex) const
 {
 	return this->m_channelHeights[planeIndex];
 }
 
-void lwmovie::lwmCSystemMemFrameProvider::Destroy()
+void lwmovie::CSystemMemFrameProvider::Destroy()
 {
-	lwmCSystemMemFrameProvider *self = this;
+	CSystemMemFrameProvider *self = this;
 	lwmSAllocator *alloc = self->m_alloc;
-	self->~lwmCSystemMemFrameProvider();
+	self->~CSystemMemFrameProvider();
 	alloc->Free(self);
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+// C API
 LWMOVIE_API_LINK lwmSVideoFrameProvider *lwmCreateSystemMemoryFrameProvider(lwmSAllocator *alloc, const lwmMovieState *movieState)
 {
-	lwmovie::lwmCSystemMemFrameProvider *fp = alloc->NAlloc<lwmovie::lwmCSystemMemFrameProvider>(1);
+	lwmovie::CSystemMemFrameProvider *fp = alloc->NAlloc<lwmovie::CSystemMemFrameProvider>(1);
 	if(!fp)
 		return NULL;
-	new (fp) lwmovie::lwmCSystemMemFrameProvider(alloc);
+	new (fp)lwmovie::CSystemMemFrameProvider(alloc);
 	return fp;
 }
 

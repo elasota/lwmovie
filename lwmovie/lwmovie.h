@@ -218,7 +218,5 @@ LWMOVIE_API_LINK struct lwmSVideoFrameProvider *lwmCreateD3D11FrameProvider(stru
 LWMOVIE_API_LINK struct ID3D11ShaderResourceView *lwmD3D11FrameProvider_GetWorkFramePlaneSRV(struct lwmSVideoFrameProvider *vfp, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex);
 
 LWMOVIE_API_LINK struct lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(struct lwmMovieState *movieState, struct lwmSAllocator *alloc, lwmUInt32 reconstructorType, struct ID3D11Device *device, struct ID3D11DeviceContext *context, struct lwmSVideoFrameProvider *frameProvider);
-LWMOVIE_API_LINK void lwmD3D11Reconstructor_ExecuteIDCT(struct lwmIVideoReconstructor *reconstructor);
-LWMOVIE_API_LINK void lwmD3D11Reconstructor_ExecuteForFrame(struct lwmIVideoReconstructor *reconstructor);
 
 #endif

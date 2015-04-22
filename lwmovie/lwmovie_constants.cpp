@@ -21,7 +21,7 @@
  */
 #include "lwmovie_constants.hpp"
 
-lwmUInt8 lwmovie::constants::DEFAULT_INTRA_MATRIX[64] =
+lwmUInt8 lwmovie::m1v::constants::DEFAULT_INTRA_MATRIX[64] =
 {
 	8, 16, 19, 22, 26, 27, 29, 34,
 	16, 16, 22, 24, 27, 29, 34, 37,
@@ -33,7 +33,7 @@ lwmUInt8 lwmovie::constants::DEFAULT_INTRA_MATRIX[64] =
 	27, 29, 35, 38, 46, 56, 69, 83
 };
 
-lwmUInt8 lwmovie::constants::DEFAULT_NON_INTRA_MATRIX[64] =
+lwmUInt8 lwmovie::m1v::constants::DEFAULT_NON_INTRA_MATRIX[64] =
 {
 	16, 16, 16, 16, 16, 16, 16, 16,
 	16, 16, 16, 16, 16, 16, 16, 16,
@@ -45,7 +45,7 @@ lwmUInt8 lwmovie::constants::DEFAULT_NON_INTRA_MATRIX[64] =
 	16, 16, 16, 16, 16, 16, 16, 16,
 };
 
-lwmUInt8 lwmovie::constants::ZIGZAG_DIRECT[64] =
+lwmUInt8 lwmovie::m1v::constants::ZIGZAG_DIRECT[64] =
 {
 	0, 1, 8, 16, 9, 2, 3, 10, 17, 24, 32, 25, 18, 11, 4, 5, 12,
 	19, 26, 33, 40, 48, 41, 34, 27, 20, 13, 6, 7, 14, 21, 28, 35,
@@ -54,7 +54,7 @@ lwmUInt8 lwmovie::constants::ZIGZAG_DIRECT[64] =
 };
 
 
-lwmUInt8 lwmovie::constants::ZIGZAG[] =
+lwmUInt8 lwmovie::m1v::constants::ZIGZAG[] =
 {
 	0 + 0*8, 1 + 0*8, 0 + 1*8, 0 + 2*8, 1 + 1*8,
 	2 + 0*8, 3 + 0*8, 2 + 1*8, 1 + 2*8, 0 + 3*8,

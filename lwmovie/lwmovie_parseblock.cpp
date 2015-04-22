@@ -70,7 +70,7 @@
 #include "lwmovie_recon_m1v.hpp"
 #include "lwmovie_profile.hpp"
 
-bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VBlockCursor *blockCursor, lwmSInt32 n, lwmIM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
+bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffs);
@@ -79,7 +79,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VB
 	lwmFastSInt16 firstCoeff = 0;
 	lwmFastUInt8 firstCoeffPos = 0;
 
-	lwmDCTBLOCK *recondata = blockCursor->StartReconBlock(n);
+	idct::DCTBLOCK *recondata = blockCursor->StartReconBlock(n);
 
 	if(m_mblock.mb_intra)
 	{
@@ -124,7 +124,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VB
 				flushed = vlc::dct_dc_size_luminance1[index].num_bits;
 			}
 
-			if (size == lwmovie::vlc::UERROR8)
+			if (size == lwmovie::m1v::vlc::UERROR8)
 			{
 				bitstream->flush_bits(flushed);
 				return false;
@@ -176,7 +176,7 @@ bool lwmovie::lwmDeslicerJob::ParseReconBlock(lwmCBitstream *bitstream, lwmIM1VB
 				flushed = vlc::dct_dc_size_chrominance1[index].num_bits;
 			}
 
-			if (size == lwmovie::vlc::UERROR8)
+			if (size == lwmovie::m1v::vlc::UERROR8)
 			{
 				bitstream->flush_bits(flushed);
 				return false;

@@ -26,112 +26,115 @@
 
 namespace lwmovie
 {
-	class lwmVidStream;
-
-	class lwmCBitstream
+	namespace m1v
 	{
-	private:
-		lwmUInt32 cur_bits;
-		lwmUInt32 next_bits;
-		lwmFastUInt8 bit_offset;
+		class CVidStream;
 
-		const void *new_bits;
-		lwmUInt32 new_undigested_bytes;
-		bool new_emitted_zero;
+		class CBitstream
+		{
+		private:
+			lwmUInt32 cur_bits;
+			lwmUInt32 next_bits;
+			lwmFastUInt8 bit_offset;
 
-		lwmUInt32 *buf_start;
+			const void *new_bits;
+			lwmUInt32 new_undigested_bytes;
+			bool new_emitted_zero;
 
-		lwmVidStream *m_owner;
+			lwmUInt32 *buf_start;
 
-		lwmIOFuncs m_iofuncs;
-		void *m_stream;
+			CVidStream *m_owner;
 
-		lwmSAllocator *m_alloc;
+			lwmIOFuncs m_iofuncs;
+			void *m_stream;
 
-		lwmUInt32 get_more_bits();
-		lwmUInt32 show_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift);
-		lwmUInt32 get_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift);
+			lwmSAllocator *m_alloc;
 
-	public:
-		lwmCBitstream();
-		~lwmCBitstream();
+			lwmUInt32 get_more_bits();
+			lwmUInt32 show_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift);
+			lwmUInt32 get_bitsX(lwmFastUInt8 num, lwmUInt32 mask, lwmFastUInt8 shift);
 
-		//bool Initialize(lwmVidStream *ownerStream, const lwmSAllocator *alloc, const lwmIOFuncs *ioFuncs, void *ioStream, lwmLargeUInt preloadSize);
-		bool Initialize(const void *bytes, lwmUInt32 numBytes);
+		public:
+			CBitstream();
+			~CBitstream();
 
-		void flush_bits32();
-		void flush_bits(lwmFastUInt8 bits);
+			//bool Initialize(lwmVidStream *ownerStream, const lwmSAllocator *alloc, const lwmIOFuncs *ioFuncs, void *ioStream, lwmLargeUInt preloadSize);
+			bool Initialize(const void *bytes, lwmUInt32 numBytes);
 
-		lwmUInt32 show_bits1();
-		lwmUInt32 show_bits2();
-		lwmUInt32 show_bits3();
-		lwmUInt32 show_bits4();
-		lwmUInt32 show_bits5();
-		lwmUInt32 show_bits6();
-		lwmUInt32 show_bits7();
-		lwmUInt32 show_bits8();
-		lwmUInt32 show_bits9();
-		lwmUInt32 show_bits10();
-		lwmUInt32 show_bits11();
-		lwmUInt32 show_bits12();
-		lwmUInt32 show_bits13();
-		lwmUInt32 show_bits14();
-		lwmUInt32 show_bits15();
-		lwmUInt32 show_bits16();
-		lwmUInt32 show_bits17();
-		lwmUInt32 show_bits18();
-		lwmUInt32 show_bits19();
-		lwmUInt32 show_bits20();
-		lwmUInt32 show_bits21();
-		lwmUInt32 show_bits22();
-		lwmUInt32 show_bits23();
-		lwmUInt32 show_bits24();
-		lwmUInt32 show_bits25();
-		lwmUInt32 show_bits26();
-		lwmUInt32 show_bits27();
-		lwmUInt32 show_bits28();
-		lwmUInt32 show_bits29();
-		lwmUInt32 show_bits30();
-		lwmUInt32 show_bits31();
-		lwmUInt32 show_bits32();
-		lwmUInt32 show_bitsn(lwmFastUInt8 num);
+			void flush_bits32();
+			void flush_bits(lwmFastUInt8 bits);
 
-		lwmUInt32 get_bits1();
-		lwmUInt32 get_bits2();
-		lwmUInt32 get_bits3();
-		lwmUInt32 get_bits4();
-		lwmUInt32 get_bits5();
-		lwmUInt32 get_bits6();
-		lwmUInt32 get_bits7();
-		lwmUInt32 get_bits8();
-		lwmUInt32 get_bits9();
-		lwmUInt32 get_bits10();
-		lwmUInt32 get_bits11();
-		lwmUInt32 get_bits12();
-		lwmUInt32 get_bits13();
-		lwmUInt32 get_bits14();
-		lwmUInt32 get_bits15();
-		lwmUInt32 get_bits16();
-		lwmUInt32 get_bits17();
-		lwmUInt32 get_bits18();
-		lwmUInt32 get_bits19();
-		lwmUInt32 get_bits20();
-		lwmUInt32 get_bits21();
-		lwmUInt32 get_bits22();
-		lwmUInt32 get_bits23();
-		lwmUInt32 get_bits24();
-		lwmUInt32 get_bits25();
-		lwmUInt32 get_bits26();
-		lwmUInt32 get_bits27();
-		lwmUInt32 get_bits28();
-		lwmUInt32 get_bits29();
-		lwmUInt32 get_bits30();
-		lwmUInt32 get_bits31();
-		lwmUInt32 get_bits32();
-		lwmUInt32 get_bitsn(lwmFastUInt8 num);
+			lwmUInt32 show_bits1();
+			lwmUInt32 show_bits2();
+			lwmUInt32 show_bits3();
+			lwmUInt32 show_bits4();
+			lwmUInt32 show_bits5();
+			lwmUInt32 show_bits6();
+			lwmUInt32 show_bits7();
+			lwmUInt32 show_bits8();
+			lwmUInt32 show_bits9();
+			lwmUInt32 show_bits10();
+			lwmUInt32 show_bits11();
+			lwmUInt32 show_bits12();
+			lwmUInt32 show_bits13();
+			lwmUInt32 show_bits14();
+			lwmUInt32 show_bits15();
+			lwmUInt32 show_bits16();
+			lwmUInt32 show_bits17();
+			lwmUInt32 show_bits18();
+			lwmUInt32 show_bits19();
+			lwmUInt32 show_bits20();
+			lwmUInt32 show_bits21();
+			lwmUInt32 show_bits22();
+			lwmUInt32 show_bits23();
+			lwmUInt32 show_bits24();
+			lwmUInt32 show_bits25();
+			lwmUInt32 show_bits26();
+			lwmUInt32 show_bits27();
+			lwmUInt32 show_bits28();
+			lwmUInt32 show_bits29();
+			lwmUInt32 show_bits30();
+			lwmUInt32 show_bits31();
+			lwmUInt32 show_bits32();
+			lwmUInt32 show_bitsn(lwmFastUInt8 num);
 
-		bool check_next_bits(lwmUInt8 num, lwmUInt32 mask);
-	};
+			lwmUInt32 get_bits1();
+			lwmUInt32 get_bits2();
+			lwmUInt32 get_bits3();
+			lwmUInt32 get_bits4();
+			lwmUInt32 get_bits5();
+			lwmUInt32 get_bits6();
+			lwmUInt32 get_bits7();
+			lwmUInt32 get_bits8();
+			lwmUInt32 get_bits9();
+			lwmUInt32 get_bits10();
+			lwmUInt32 get_bits11();
+			lwmUInt32 get_bits12();
+			lwmUInt32 get_bits13();
+			lwmUInt32 get_bits14();
+			lwmUInt32 get_bits15();
+			lwmUInt32 get_bits16();
+			lwmUInt32 get_bits17();
+			lwmUInt32 get_bits18();
+			lwmUInt32 get_bits19();
+			lwmUInt32 get_bits20();
+			lwmUInt32 get_bits21();
+			lwmUInt32 get_bits22();
+			lwmUInt32 get_bits23();
+			lwmUInt32 get_bits24();
+			lwmUInt32 get_bits25();
+			lwmUInt32 get_bits26();
+			lwmUInt32 get_bits27();
+			lwmUInt32 get_bits28();
+			lwmUInt32 get_bits29();
+			lwmUInt32 get_bits30();
+			lwmUInt32 get_bits31();
+			lwmUInt32 get_bits32();
+			lwmUInt32 get_bitsn(lwmFastUInt8 num);
+
+			bool check_next_bits(lwmUInt8 num, lwmUInt32 mask);
+		};
+	}
 }
 
 #endif

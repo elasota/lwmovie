@@ -43,7 +43,7 @@ namespace lwmovie
 				lwmUInt8 *sbData = m_sparseBlockData + 15;
 				lwmLargeSInt diff = sbData - static_cast<const lwmUInt8 *>(NULL);
 				sbData -= (diff & 0xf);
-				m_sparseBlocks = reinterpret_cast<lwmDCTBLOCK*>(sbData);
+				m_sparseBlocks = reinterpret_cast<DCTBLOCK*>(sbData);
 
 				for(int i=0;i<64;i++)
 				{
@@ -53,7 +53,7 @@ namespace lwmovie
 				}
 			}
 
-			inline lwmDCTBLOCK *GetSparseBlock(lwmFastUInt8 index)
+			inline DCTBLOCK *GetSparseBlock(lwmFastUInt8 index)
 			{
 				return m_sparseBlocks + index;
 			}
@@ -61,8 +61,8 @@ namespace lwmovie
 			static SparseIDCTContainer staticInstance;
 
 		private:
-			lwmUInt8 m_sparseBlockData[sizeof(lwmDCTBLOCK) * 64 + 15];
-			lwmDCTBLOCK *m_sparseBlocks;
+			lwmUInt8 m_sparseBlockData[sizeof(DCTBLOCK) * 64 + 15];
+			DCTBLOCK *m_sparseBlocks;
 		};
 	}
 }
@@ -154,29 +154,8 @@ void lwmovie::idct::IDCT( lwmSInt16 data[64] )
 #endif
 }
 
-
-void lwmovie::lwmBlockInfo::IDCT(lwmDCTBLOCK *block) const
-{
-	if(needs_idct)
-	{
-		if(sparse_idct)
-		{
-			if(sparse_idct_index == 0)
-				lwmovie::idct::IDCT_SparseDC(block->data, sparse_idct_coef);
-			else
-				lwmovie::idct::IDCT_SparseAC(block->data, sparse_idct_index, sparse_idct_coef);
-		}
-		else
-			lwmovie::idct::IDCT(block->data);
-	}
-	else
-	{
-		block->FastZeroFill();
-	}
-}
-
 #ifdef LWMOVIE_SSE2
-void lwmovie::lwmDCTBLOCK::FastZeroFill()
+void lwmovie::idct::DCTBLOCK::FastZeroFill()
 {
 	int rows = 8;
 	__m128i zero = _mm_setzero_si128();
@@ -190,7 +169,7 @@ void lwmovie::lwmDCTBLOCK::FastZeroFill()
 #endif
 
 #ifdef LWMOVIE_NOSIMD
-inline void lwmovie::lwmDCTBLOCK::FastZeroFill()
+inline void lwmovie::idct::DCTBLOCK::FastZeroFill()
 {
 	memset(this->data, 0, sizeof(lwmSInt16) * 64);
 }

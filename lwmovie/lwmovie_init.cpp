@@ -22,6 +22,7 @@
 #include "../mp2dec2/lwmovie_layer2_constants.hpp"
 #include "lwmovie.h"
 #include "lwmovie_idct.hpp"
+#include "lwmovie_vlc.hpp"
 
 namespace lwmovie
 {
@@ -29,6 +30,7 @@ namespace lwmovie
 	{
 		lwmovie::layerii::InitializeTables();
 		lwmovie::idct::Initialize();
+		lwmovie::m1v::vlc::InitTables();
 	}
 }
 

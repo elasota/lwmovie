@@ -33,7 +33,8 @@
 
 namespace lwmovie
 {
-	class lwmVidStream;
+	class CVidStream;
+
 	namespace layerii
 	{
 		class CDecoder;
@@ -108,7 +109,7 @@ struct lwmMovieState
 
 	lwmSWorkNotifier *videoDigestWorkNotifier;
 	lwmIVideoReconstructor *videoReconstructor;
-	lwmovie::lwmVidStream *m1vDecoder;
+	lwmovie::m1v::CVidStream *m1vDecoder;
 	lwmovie::CAudioCodec **audioDecoders;
 
 	lwmMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
@@ -432,10 +433,10 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 				goto cleanup;
 			if(movieState->videoInfo.videoHeight > 4095)
 				goto cleanup;
-			movieState->m1vDecoder = alloc->NAlloc<lwmovie::lwmVidStream>(1);
+			movieState->m1vDecoder = alloc->NAlloc<lwmovie::m1v::CVidStream>(1);
 			if(!movieState->m1vDecoder)
 				goto cleanup;
-			new (movieState->m1vDecoder) lwmovie::lwmVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, (movieState->videoInfo.numWriteOnlyWorkFrames > 0), movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
+			new (movieState->m1vDecoder) lwmovie::m1v::CVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, (movieState->videoInfo.numWriteOnlyWorkFrames > 0), movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
 			movieState->needVideoStreamParameters = true;
 		}
 		break;
@@ -904,10 +905,10 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwm
 	case lwmRC_MPEG1Video:
 		{
 			bool useRowThreading = ((flags & lwmUSERFLAG_ThreadedReconstructor) != 0);
-			lwmovie::lwmCM1VSoftwareReconstructor *recon = alloc->NAlloc<lwmovie::lwmCM1VSoftwareReconstructor>(1);
+			lwmovie::m1v::CSoftwareReconstructor *recon = alloc->NAlloc<lwmovie::m1v::CSoftwareReconstructor>(1);
 			if(!recon)
 				return NULL;
-			new (recon) lwmovie::lwmCM1VSoftwareReconstructor();
+			new (recon) lwmovie::m1v::CSoftwareReconstructor();
 			// TODO: Low memory flag
 			if(!recon->Initialize(alloc, frameProvider, movieState, useRowThreading))
 			{
@@ -947,7 +948,7 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 		alloc->Free(movieState->packetDataBytes);
 	if(movieState->m1vDecoder)
 	{
-		movieState->m1vDecoder->~lwmVidStream();
+		movieState->m1vDecoder->~CVidStream();
 		alloc->Free(movieState->m1vDecoder);
 	}
 	if(movieState->audioDecoders)

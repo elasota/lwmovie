@@ -145,7 +145,7 @@ inline void ComputeVector(lwmSInt32 *recon_right_ptr, lwmSInt32 *recon_down_ptr,
 		*recon_down_ptr = (*recon_down_ptr) << 1;
 }
 
-void lwmovie::lwmDeslicerJob::ComputeForwVector( lwmSInt32 *recon_right_for_ptr, lwmSInt32 *recon_down_for_ptr )
+void lwmovie::m1v::CDeslicerJob::ComputeForwVector( lwmSInt32 *recon_right_for_ptr, lwmSInt32 *recon_down_for_ptr )
 {
 	ComputeVector(recon_right_for_ptr, recon_down_for_ptr,
 		&m_mblock.recon_right_for_prev,
@@ -156,7 +156,7 @@ void lwmovie::lwmDeslicerJob::ComputeForwVector( lwmSInt32 *recon_right_for_ptr,
 		m_mblock.motion_h_forw_r, m_mblock.motion_v_forw_r);
 }
 
-void lwmovie::lwmDeslicerJob::ComputeBackVector( lwmSInt32 *recon_right_back_ptr, lwmSInt32 *recon_down_back_ptr )
+void lwmovie::m1v::CDeslicerJob::ComputeBackVector(lwmSInt32 *recon_right_back_ptr, lwmSInt32 *recon_down_back_ptr)
 {
 	ComputeVector(recon_right_back_ptr, recon_down_back_ptr,
 				&m_mblock.recon_right_back_prev,
@@ -167,18 +167,18 @@ void lwmovie::lwmDeslicerJob::ComputeBackVector( lwmSInt32 *recon_right_back_ptr
 				m_mblock.motion_h_back_r, m_mblock.motion_v_back_r);
 }
 
-lwmovie::lwmVidStream::SDeslicerJobStackNode::SDeslicerJobStackNode(lwmSAllocator *alloc, lwmUInt32 mbWidth, lwmUInt32 mbHeight)
+lwmovie::m1v::CVidStream::SDeslicerJobStackNode::SDeslicerJobStackNode(lwmSAllocator *alloc, lwmUInt32 mbWidth, lwmUInt32 mbHeight)
 	: m_deslicerJob(mbWidth, mbHeight)
 	, m_blockCursor(NULL)
 	, m_alloc(alloc)
 {
 }
 
-lwmovie::lwmVidStream::SDeslicerJobStackNode::~SDeslicerJobStackNode()
+lwmovie::m1v::CVidStream::SDeslicerJobStackNode::~SDeslicerJobStackNode()
 {
 	if(m_blockCursor)
 	{
-		m_blockCursor->~lwmIM1VBlockCursor();
+		m_blockCursor->~IM1VBlockCursor();
 		m_alloc->Free(m_blockCursor);
 	}
 }

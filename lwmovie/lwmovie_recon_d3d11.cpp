@@ -76,10 +76,10 @@ namespace lwmovie
 }
 
 
-lwmovie::lwmCD3D11Reconstructor::lwmCD3D11Reconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context)
+lwmovie::d3d11::CM1VReconstructor::CM1VReconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context)
 	: m_alloc(alloc)
 	, m_movieState(movieState)
-	, m_frameProvider(static_cast<lwmCD3D11FrameProvider*>(frameProvider))
+	, m_frameProvider(static_cast<lwmovie::d3d11::CFrameProvider*>(frameProvider))
 	, m_device(device)
 	, m_context(context)
 	, m_dctInputBuffer(NULL)
@@ -108,7 +108,7 @@ lwmovie::lwmCD3D11Reconstructor::lwmCD3D11Reconstructor(lwmSAllocator *alloc, lw
 {
 }
 
-lwmovie::lwmCD3D11Reconstructor::~lwmCD3D11Reconstructor()
+lwmovie::d3d11::CM1VReconstructor::~CM1VReconstructor()
 {
 	if (m_context)
 		this->CloseIDCTMap();
@@ -144,63 +144,62 @@ lwmovie::lwmCD3D11Reconstructor::~lwmCD3D11Reconstructor()
 	}
 }
 
-void lwmovie::lwmCD3D11Reconstructor::Participate()
+void lwmovie::d3d11::CM1VReconstructor::Participate()
 {
 	// TODO
 }
 
-void lwmovie::lwmCD3D11Reconstructor::WaitForFinish()
+void lwmovie::d3d11::CM1VReconstructor::WaitForFinish()
 {
 	// TODO
 }
 
-void lwmovie::lwmCD3D11Reconstructor::SetWorkNotifier(lwmSWorkNotifier *workNotifier)
+void lwmovie::d3d11::CM1VReconstructor::SetWorkNotifier(lwmSWorkNotifier *workNotifier)
 {
 	// TODO
 }
 
-void lwmovie::lwmCD3D11Reconstructor::FlushProfileTags(lwmCProfileTagSet *tagSet)
+void lwmovie::d3d11::CM1VReconstructor::FlushProfileTags(lwmCProfileTagSet *tagSet)
 {
 	// TODO
 }
 
-lwmUInt32 lwmovie::lwmCD3D11Reconstructor::GetWorkFrameIndex() const
+lwmUInt32 lwmovie::d3d11::CM1VReconstructor::GetWorkFrameIndex() const
 {
 	return m_presentedFrame;
 }
 
-void lwmovie::lwmCD3D11Reconstructor::Destroy()
+void lwmovie::d3d11::CM1VReconstructor::Destroy()
 {
 	lwmSAllocator *alloc = m_alloc;
-	this->~lwmCD3D11Reconstructor();
+	this->~CM1VReconstructor();
 	alloc->Free(this);
 }
 
-lwmSVideoFrameProvider *lwmovie::lwmCD3D11Reconstructor::GetFrameProvider() const
+lwmSVideoFrameProvider *lwmovie::d3d11::CM1VReconstructor::GetFrameProvider() const
 {
 	return this->m_frameProvider;
 }
 
-lwmovie::lwmIM1VBlockCursor *lwmovie::lwmCD3D11Reconstructor::CreateBlockCursor()
+lwmovie::m1v::IM1VBlockCursor *lwmovie::d3d11::CM1VReconstructor::CreateBlockCursor()
 {
-	lwmCD3D11BlockCursor *blockCursor = m_alloc->NAlloc<lwmCD3D11BlockCursor>(1);
+	CM1VBlockCursor *blockCursor = m_alloc->NAlloc<CM1VBlockCursor>(1);
 	if (!blockCursor)
 		return NULL;
-	new (blockCursor)lwmCD3D11BlockCursor(this);
+	new (blockCursor) CM1VBlockCursor(this);
 	return blockCursor;
 }
 
-void lwmovie::lwmCD3D11Reconstructor::MarkRowFinished(lwmSInt32 firstMBAddress)
+void lwmovie::d3d11::CM1VReconstructor::MarkRowFinished(lwmSInt32 firstMBAddress)
 {
-	// TODO
 }
 
 
-void lwmovie::lwmCD3D11Reconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB)
+void lwmovie::d3d11::CM1VReconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB)
 {
 	this->CloseFrame();
 
-	if (current == lwmRECONSLOT_Dropped_IP || current == lwmRECONSLOT_Dropped_B)
+	if (current == m1v::lwmRECONSLOT_Dropped_IP || current == m1v::lwmRECONSLOT_Dropped_B)
 		return;
 
 	m_current = current - 1;
@@ -217,7 +216,7 @@ void lwmovie::lwmCD3D11Reconstructor::StartNewFrame(lwmUInt32 current, lwmUInt32
 	OpenIDCTMap();
 }
 
-void lwmovie::lwmCD3D11Reconstructor::OpenIDCTMap()
+void lwmovie::d3d11::CM1VReconstructor::OpenIDCTMap()
 {
 	m_mappedDCTInputs = NULL;
 	m_mappedMBlockInfos = NULL;
@@ -231,7 +230,7 @@ void lwmovie::lwmCD3D11Reconstructor::OpenIDCTMap()
 	this->m_mappedMBlockInfos = mappedResource.pData;
 }
 
-void lwmovie::lwmCD3D11Reconstructor::CloseFrame()
+void lwmovie::d3d11::CM1VReconstructor::CloseFrame()
 {
 	if (!m_workingOnFrame)
 		return;
@@ -366,7 +365,7 @@ void lwmovie::lwmCD3D11Reconstructor::CloseFrame()
 	}
 }
 
-void lwmovie::lwmCD3D11Reconstructor::CloseIDCTMap()
+void lwmovie::d3d11::CM1VReconstructor::CloseIDCTMap()
 {
 	if (m_mappedDCTInputs)
 		m_context->Unmap(m_dctInputBuffer, 0);
@@ -376,23 +375,13 @@ void lwmovie::lwmCD3D11Reconstructor::CloseIDCTMap()
 	m_mappedMBlockInfos = NULL;
 }
 
-void lwmovie::lwmCD3D11Reconstructor::PresentFrame(lwmUInt32 outFrame)
+void lwmovie::d3d11::CM1VReconstructor::PresentFrame(lwmUInt32 outFrame)
 {
 	CloseFrame();
 	m_presentedFrame = outFrame - 1;
 }
 
-void lwmovie::lwmCD3D11Reconstructor::ExecuteForFrame()
-{
-	m_context->PSSetConstantBuffers(0, 1, &m_psConstantBuffer);
-	//m_context->PSSetShaderResources(0, 1, &m_dctOutputSRV);
-}
-
-void lwmovie::lwmCD3D11Reconstructor::ExecuteIDCT()
-{
-}
-
-bool lwmovie::lwmCD3D11Reconstructor::Initialize(lwmUInt32 width, lwmUInt32 height)
+bool lwmovie::d3d11::CM1VReconstructor::Initialize(lwmUInt32 width, lwmUInt32 height)
 {
 	lwmUInt32 mbWidth = (width + 15) / 16;
 	lwmUInt32 mbHeight = (height + 15) / 16;
@@ -600,40 +589,40 @@ bool lwmovie::lwmCD3D11Reconstructor::Initialize(lwmUInt32 width, lwmUInt32 heig
 	return true;
 }
 
-lwmovie::d3d11::SDCTBufferBlock *lwmovie::lwmCD3D11Reconstructor::GetPackedDCTBlock(lwmUInt32 blockAddress)
+lwmovie::d3d11::SDCTBufferBlock *lwmovie::d3d11::CM1VReconstructor::GetPackedDCTBlock(lwmUInt32 blockAddress)
 {
 	return static_cast<lwmovie::d3d11::SDCTBufferBlock*>(this->m_mappedDCTInputs) + blockAddress;
 }
 
-lwmovie::d3d11::SMBlockReconInfo *lwmovie::lwmCD3D11Reconstructor::GetMBlockInfo(lwmUInt32 mblockAddress)
+lwmovie::d3d11::SMBlockReconInfo *lwmovie::d3d11::CM1VReconstructor::GetMBlockInfo(lwmUInt32 mblockAddress)
 {
 	return static_cast<lwmovie::d3d11::SMBlockReconInfo*>(this->m_mappedMBlockInfos) + mblockAddress;
 }
 
 //==============================================================================================================
-lwmovie::lwmCD3D11BlockCursor::lwmCD3D11BlockCursor(lwmCD3D11Reconstructor *reconstructor)
+lwmovie::d3d11::CM1VBlockCursor::CM1VBlockCursor(CM1VReconstructor *reconstructor)
 	: m_mbAddress(0)
 	, m_reconstructor(reconstructor)
 	, m_activeDCTBlock(NULL)
 {
 }
 
-lwmovie::lwmCD3D11BlockCursor::~lwmCD3D11BlockCursor()
+lwmovie::d3d11::CM1VBlockCursor::~CM1VBlockCursor()
 {
 }
 
-void lwmovie::lwmCD3D11BlockCursor::OpenMB(lwmSInt32 mbAddress)
+void lwmovie::d3d11::CM1VBlockCursor::OpenMB(lwmSInt32 mbAddress)
 {
 	m_mbAddress = mbAddress;
 	memset(&m_reconMBlockInfo, 0, sizeof(m_reconMBlockInfo));
 }
 
-void lwmovie::lwmCD3D11BlockCursor::CloseMB()
+void lwmovie::d3d11::CM1VBlockCursor::CloseMB()
 {
 	*m_reconstructor->GetMBlockInfo(m_mbAddress) = m_reconMBlockInfo;
 }
 
-void lwmovie::lwmCD3D11BlockCursor::SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+void lwmovie::d3d11::CM1VBlockCursor::SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
 	lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
 	lwmSInt32 recon_right_back, lwmSInt32 recon_down_back)
 {
@@ -650,7 +639,7 @@ void lwmovie::lwmCD3D11BlockCursor::SetMBlockInfo(bool skipped, bool mb_motion_f
 		this->m_reconMBlockInfo.flags |= 0x3f;
 }
 
-void lwmovie::lwmCD3D11BlockCursor::SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag)
+void lwmovie::d3d11::CM1VBlockCursor::SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag)
 {
 	if (zero_block_flag)
 		this->m_reconMBlockInfo.flags |= (1 << blockIndex);
@@ -658,28 +647,29 @@ void lwmovie::lwmCD3D11BlockCursor::SetBlockInfo(lwmSInt32 blockIndex, bool zero
 		this->m_reconMBlockInfo.flags &= ~(1 << blockIndex);
 }
 
-lwmovie::lwmDCTBLOCK *lwmovie::lwmCD3D11BlockCursor::StartReconBlock(lwmSInt32 subBlockIndex)
+lwmovie::idct::DCTBLOCK *lwmovie::d3d11::CM1VBlockCursor::StartReconBlock(lwmSInt32 subBlockIndex)
 {
-	m_activeDCTBlock = reinterpret_cast<lwmDCTBLOCK*>(m_reconstructor->GetPackedDCTBlock(m_mbAddress * 6 + subBlockIndex));
+	m_activeDCTBlock = reinterpret_cast<idct::DCTBLOCK*>(m_reconstructor->GetPackedDCTBlock(m_mbAddress * 6 + subBlockIndex));
 	return m_activeDCTBlock;
 }
 
-void lwmovie::lwmCD3D11BlockCursor::CommitZero()
+void lwmovie::d3d11::CM1VBlockCursor::CommitZero()
 {
-	memset(m_activeDCTBlock, 0, sizeof(lwmDCTBLOCK));
+	memset(m_activeDCTBlock, 0, sizeof(idct::DCTBLOCK));
 }
 
-void lwmovie::lwmCD3D11BlockCursor::CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff)
+void lwmovie::d3d11::CM1VBlockCursor::CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff)
 {
-	memset(m_activeDCTBlock, 0, sizeof(lwmDCTBLOCK));
+	memset(m_activeDCTBlock, 0, sizeof(idct::DCTBLOCK));
 	m_activeDCTBlock->data[lastCoeffPos] = lastCoeff;
 }
 
-void lwmovie::lwmCD3D11BlockCursor::CommitFull()
+void lwmovie::d3d11::CM1VBlockCursor::CommitFull()
 {
 }
 
-//====================================================================
+///////////////////////////////////////////////////////////////////////////////
+// C API
 LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(lwmMovieState *movieState, lwmSAllocator *alloc, lwmUInt32 reconstructorType, ID3D11Device *device, ID3D11DeviceContext *context, lwmSVideoFrameProvider *frameProvider)
 {
 	switch (reconstructorType)
@@ -691,10 +681,10 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(lwmMov
 			lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Width, &width);
 			lwmMovieState_GetStreamParameterU32(movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_Height, &height);
 
-			lwmovie::lwmCD3D11Reconstructor *recon = alloc->NAlloc<lwmovie::lwmCD3D11Reconstructor>(1);
+			lwmovie::d3d11::CM1VReconstructor *recon = alloc->NAlloc<lwmovie::d3d11::CM1VReconstructor>(1);
 			if (!recon)
 				return NULL;
-			new (recon) lwmovie::lwmCD3D11Reconstructor(alloc, movieState, frameProvider, device, context);
+			new (recon) lwmovie::d3d11::CM1VReconstructor(alloc, movieState, frameProvider, device, context);
 			// TODO: Low memory flag
 			if (!recon->Initialize(width, height))
 			{
@@ -706,15 +696,4 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(lwmMov
 		break;
 	};
 	return NULL;
-}
-
-LWMOVIE_API_LINK void lwmD3D11Reconstructor_ExecuteIDCT(lwmIVideoReconstructor *reconstructor)
-{
-	static_cast<lwmovie::lwmCD3D11Reconstructor*>(reconstructor)->ExecuteIDCT();
-}
-
-
-LWMOVIE_API_LINK void lwmD3D11Reconstructor_ExecuteForFrame(lwmIVideoReconstructor *reconstructor)
-{
-	static_cast<lwmovie::lwmCD3D11Reconstructor*>(reconstructor)->ExecuteForFrame();
 }

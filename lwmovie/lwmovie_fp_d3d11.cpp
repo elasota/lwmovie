@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2014 Eric Lasota
+* Copyright (c) 2015 Eric Lasota
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@
 #include "lwmovie_simd_defs.hpp"
 #include "lwmovie_fp_d3d11.hpp"
 
-lwmovie::lwmCD3D11FrameProvider::lwmCD3D11FrameProvider(lwmSAllocator *alloc, ID3D11Device *device, ID3D11DeviceContext *context, bool isUsingHardwareReconstructor)
+lwmovie::d3d11::CFrameProvider::CFrameProvider(lwmSAllocator *alloc, ID3D11Device *device, ID3D11DeviceContext *context, bool isUsingHardwareReconstructor)
 	: lwmIVideoFrameProvider()
 	, m_device(device)
 	, m_context(context)
@@ -38,7 +38,7 @@ lwmovie::lwmCD3D11FrameProvider::lwmCD3D11FrameProvider(lwmSAllocator *alloc, ID
 {
 }
 
-lwmovie::lwmCD3D11FrameProvider::~lwmCD3D11FrameProvider()
+lwmovie::d3d11::CFrameProvider::~CFrameProvider()
 {
 	if (m_channelTextureBundles != NULL)
 	{
@@ -62,7 +62,7 @@ lwmovie::lwmCD3D11FrameProvider::~lwmCD3D11FrameProvider()
 		m_alloc->Free(m_frameBytes);
 }
 
-ID3D11Texture2D *lwmovie::lwmCD3D11FrameProvider::CreatePlaneTexture(lwmUInt32 width, lwmUInt32 height, bool isWriteOnly)
+ID3D11Texture2D *lwmovie::d3d11::CFrameProvider::CreatePlaneTexture(lwmUInt32 width, lwmUInt32 height, bool isWriteOnly)
 {
 	D3D11_TEXTURE2D_DESC texture2Ddesc;
 	memset(&texture2Ddesc, 0, sizeof(D3D11_TEXTURE2D_DESC));
@@ -95,17 +95,17 @@ ID3D11Texture2D *lwmovie::lwmCD3D11FrameProvider::CreatePlaneTexture(lwmUInt32 w
 	return texture2D;
 }
 
-ID3D11ShaderResourceView *lwmovie::lwmCD3D11FrameProvider::GetWorkFramePlaneSRV(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex)
+ID3D11ShaderResourceView *lwmovie::d3d11::CFrameProvider::GetWorkFramePlaneSRV(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex)
 {
 	return m_channelTextureBundles[workFrameIndex].m_channelTextures[planeIndex].m_srv;
 }
 
-ID3D11RenderTargetView *lwmovie::lwmCD3D11FrameProvider::GetWorkFramePlaneRTV(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex)
+ID3D11RenderTargetView *lwmovie::d3d11::CFrameProvider::GetWorkFramePlaneRTV(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex)
 {
 	return m_channelTextureBundles[workFrameIndex].m_channelTextures[planeIndex].m_rtv;
 }
 
-int lwmovie::lwmCD3D11FrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat)
+int lwmovie::d3d11::CFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmUInt32 numWriteOnlyFrames, lwmUInt32 workFrameWidth, lwmUInt32 workFrameHeight, lwmUInt32 frameFormat)
 {
 	lwmLargeUInt channelStrides[MAX_CHANNELS];
 	lwmLargeUInt channelOffsets[MAX_CHANNELS + 1];
@@ -204,7 +204,7 @@ int lwmovie::lwmCD3D11FrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwm
 	return 1;
 }
 
-void lwmovie::lwmCD3D11FrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType)
+void lwmovie::d3d11::CFrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lwmEVideoLockType lockType)
 {
 	ChannelTextureBundle *ctb = m_channelTextureBundles + workFrameIndex;
 	for (lwmLargeUInt ch = 0; ch < m_numChannels; ch++)
@@ -231,7 +231,7 @@ void lwmovie::lwmCD3D11FrameProvider::LockWorkFrame(lwmUInt32 workFrameIndex, lw
 
 #include <intrin.h>
 
-void lwmovie::lwmCD3D11FrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
+void lwmovie::d3d11::CFrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
 {
 	ChannelTextureBundle *ctb = m_channelTextureBundles + workFrameIndex;
 	for (lwmLargeUInt ch = 0; ch < m_numChannels; ch++)
@@ -261,7 +261,7 @@ void lwmovie::lwmCD3D11FrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
 	}
 }
 
-void *lwmovie::lwmCD3D11FrameProvider::GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch)
+void *lwmovie::d3d11::CFrameProvider::GetWorkFramePlane(lwmUInt32 workFrameIndex, lwmUInt32 planeIndex, lwmUInt32 *outPitch)
 {
 	ChannelTextureBundle *ctb = m_channelTextureBundles + workFrameIndex;
 	ChannelTexture *ctex = ctb->m_channelTextures + planeIndex;
@@ -283,34 +283,36 @@ void *lwmovie::lwmCD3D11FrameProvider::GetWorkFramePlane(lwmUInt32 workFrameInde
 	}
 }
 
-lwmUInt32 lwmovie::lwmCD3D11FrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex) const
+lwmUInt32 lwmovie::d3d11::CFrameProvider::GetWorkFramePlaneWidth(lwmUInt32 planeIndex) const
 {
 	return this->m_channelWidths[planeIndex];
 }
 
-lwmUInt32 lwmovie::lwmCD3D11FrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex) const
+lwmUInt32 lwmovie::d3d11::CFrameProvider::GetWorkFramePlaneHeight(lwmUInt32 planeIndex) const
 {
 	return this->m_channelHeights[planeIndex];
 }
 
-void lwmovie::lwmCD3D11FrameProvider::Destroy()
+void lwmovie::d3d11::CFrameProvider::Destroy()
 {
-	lwmCD3D11FrameProvider *self = this;
+	CFrameProvider *self = this;
 	lwmSAllocator *alloc = self->m_alloc;
-	self->~lwmCD3D11FrameProvider();
+	self->~CFrameProvider();
 	alloc->Free(self);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// C API
 LWMOVIE_API_LINK lwmSVideoFrameProvider *lwmCreateD3D11FrameProvider(lwmSAllocator *alloc, ID3D11Device *device, ID3D11DeviceContext *context, int isUsingHardwareReconstructor)
 {
-	lwmovie::lwmCD3D11FrameProvider *fp = alloc->NAlloc<lwmovie::lwmCD3D11FrameProvider>(1);
+	lwmovie::d3d11::CFrameProvider *fp = alloc->NAlloc<lwmovie::d3d11::CFrameProvider>(1);
 	if (!fp)
 		return NULL;
-	new (fp)lwmovie::lwmCD3D11FrameProvider(alloc, device, context, (isUsingHardwareReconstructor != 0));
+	new (fp) lwmovie::d3d11::CFrameProvider(alloc, device, context, (isUsingHardwareReconstructor != 0));
 	return fp;
 }
 
 LWMOVIE_API_LINK ID3D11ShaderResourceView *lwmD3D11FrameProvider_GetWorkFramePlaneSRV(lwmSVideoFrameProvider *vfp, lwmUInt32 workFrameIndex, lwmUInt32 planeIndex)
 {
-	return static_cast<lwmovie::lwmCD3D11FrameProvider*>(vfp)->GetWorkFramePlaneSRV(workFrameIndex, planeIndex);
+	return static_cast<lwmovie::d3d11::CFrameProvider*>(vfp)->GetWorkFramePlaneSRV(workFrameIndex, planeIndex);
 }

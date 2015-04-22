@@ -9,7 +9,8 @@
 #include "lwmux_planio.hpp"
 
 using namespace lwmovie;
-using namespace lwmovie::constants;
+using namespace lwmovie::m1v;
+using namespace lwmovie::m1v::constants;
 
 const char *mpegCode(lwmUInt32 code)
 {

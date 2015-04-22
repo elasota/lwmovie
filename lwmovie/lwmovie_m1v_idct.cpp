@@ -19,8 +19,25 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 * THE SOFTWARE.
 */
-#include "lwmovie_audiocodec.hpp"
+#include "lwmovie_videotypes.hpp"
+#include "lwmovie_idct.hpp"
 
-lwmovie::CAudioCodec::~CAudioCodec()
+void lwmovie::m1v::lwmBlockInfo::IDCT(idct::DCTBLOCK *block) const
 {
+	if (needs_idct)
+	{
+		if (sparse_idct)
+		{
+			if (sparse_idct_index == 0)
+				lwmovie::idct::IDCT_SparseDC(block->data, sparse_idct_coef);
+			else
+				lwmovie::idct::IDCT_SparseAC(block->data, sparse_idct_index, sparse_idct_coef);
+		}
+		else
+			lwmovie::idct::IDCT(block->data);
+	}
+	else
+	{
+		block->FastZeroFill();
+	}
 }

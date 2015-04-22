@@ -55,105 +55,105 @@ namespace lwmovie
 
 namespace lwmovie
 {
-	class lwmCD3D11FrameProvider;
-
-	class lwmCD3D11Reconstructor : public lwmIM1VReconstructor
+	namespace d3d11
 	{
-	public:
-		lwmCD3D11Reconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context);
-		virtual ~lwmCD3D11Reconstructor();
-		virtual void Participate();
-		virtual void WaitForFinish();
-		virtual void SetWorkNotifier(lwmSWorkNotifier *workNotifier);
-		virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
-		virtual lwmUInt32 GetWorkFrameIndex() const;
-		virtual void Destroy();
-		virtual lwmSVideoFrameProvider *GetFrameProvider() const;
+		class CFrameProvider;
 
-		virtual lwmIM1VBlockCursor *CreateBlockCursor();
+		class CM1VReconstructor : public lwmovie::m1v::IM1VReconstructor
+		{
+		public:
+			CM1VReconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context);
+			virtual ~CM1VReconstructor();
+			virtual void Participate();
+			virtual void WaitForFinish();
+			virtual void SetWorkNotifier(lwmSWorkNotifier *workNotifier);
+			virtual void FlushProfileTags(lwmCProfileTagSet *tagSet);
+			virtual lwmUInt32 GetWorkFrameIndex() const;
+			virtual void Destroy();
+			virtual lwmSVideoFrameProvider *GetFrameProvider() const;
 
-		virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
+			virtual lwmovie::m1v::IM1VBlockCursor *CreateBlockCursor();
 
-		virtual void StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB);
-		virtual void PresentFrame(lwmUInt32 outFrame);
+			virtual void MarkRowFinished(lwmSInt32 firstMBAddress);
 
-		void ExecuteForFrame();
-		void ExecuteIDCT();
+			virtual void StartNewFrame(lwmUInt32 current, lwmUInt32 future, lwmUInt32 past, bool currentIsB);
+			virtual void PresentFrame(lwmUInt32 outFrame);
 
-		bool Initialize(lwmUInt32 width, lwmUInt32 height);
+			bool Initialize(lwmUInt32 width, lwmUInt32 height);
 
-		lwmovie::d3d11::SDCTBufferBlock *GetPackedDCTBlock(lwmUInt32 blockAddress);
-		lwmovie::d3d11::SMBlockReconInfo *GetMBlockInfo(lwmUInt32 mblockAddress);
+			lwmovie::d3d11::SDCTBufferBlock *GetPackedDCTBlock(lwmUInt32 blockAddress);
+			lwmovie::d3d11::SMBlockReconInfo *GetMBlockInfo(lwmUInt32 mblockAddress);
 
-	private:
-		void CloseFrame();
-		void OpenIDCTMap();
-		void CloseIDCTMap();
+		private:
+			void CloseFrame();
+			void OpenIDCTMap();
+			void CloseIDCTMap();
 
-		bool m_forwPred, m_backPred;
-		bool m_workingOnFrame;
-		lwmUInt32 m_current, m_future, m_past;
+			bool m_forwPred, m_backPred;
+			bool m_workingOnFrame;
+			lwmUInt32 m_current, m_future, m_past;
 
-		lwmUInt32 m_mbWidth, m_mbHeight;
+			lwmUInt32 m_mbWidth, m_mbHeight;
 
-		lwmSAllocator *m_alloc;
-		lwmMovieState *m_movieState;
-		ID3D11Device *m_device;
-		ID3D11DeviceContext *m_context;
+			lwmSAllocator *m_alloc;
+			lwmMovieState *m_movieState;
+			ID3D11Device *m_device;
+			ID3D11DeviceContext *m_context;
 
-		lwmUInt32 m_presentedFrame;
-		lwmCD3D11FrameProvider *m_frameProvider;
+			lwmUInt32 m_presentedFrame;
+			lwmovie::d3d11::CFrameProvider *m_frameProvider;
 
-		ID3D11Buffer *m_dctInputBuffer;
-		ID3D11Buffer *m_dctOutputBuffer;
-		ID3D11Buffer *m_mblockInfoBuffer;
-		ID3D11Buffer *m_psConstantBuffer;
-		ID3D11Buffer *m_reconVertexBuffer;
+			ID3D11Buffer *m_dctInputBuffer;
+			ID3D11Buffer *m_dctOutputBuffer;
+			ID3D11Buffer *m_mblockInfoBuffer;
+			ID3D11Buffer *m_psConstantBuffer;
+			ID3D11Buffer *m_reconVertexBuffer;
 
-		ID3D11ComputeShader *m_idctCS;
-		ID3D11VertexShader *m_reconVS;
-		ID3D11PixelShader *m_reconLumaPS;
-		ID3D11PixelShader *m_reconChromaPS;
+			ID3D11ComputeShader *m_idctCS;
+			ID3D11VertexShader *m_reconVS;
+			ID3D11PixelShader *m_reconLumaPS;
+			ID3D11PixelShader *m_reconChromaPS;
 
-		ID3D11InputLayout *m_reconIA;
+			ID3D11InputLayout *m_reconIA;
 
-		ID3D11SamplerState *m_planeLinearSampler;
+			ID3D11SamplerState *m_planeLinearSampler;
 
-		ID3D11RasterizerState *m_solidRasterState;
+			ID3D11RasterizerState *m_solidRasterState;
 
-		ID3D11ShaderResourceView *m_dctInputSRV;
-		ID3D11ShaderResourceView *m_mblockInfoSRV;
-		ID3D11ShaderResourceView *m_dctOutputSRV;
-		ID3D11UnorderedAccessView *m_dctOutputUAV;
+			ID3D11ShaderResourceView *m_dctInputSRV;
+			ID3D11ShaderResourceView *m_mblockInfoSRV;
+			ID3D11ShaderResourceView *m_dctOutputSRV;
+			ID3D11UnorderedAccessView *m_dctOutputUAV;
 
-		void *m_mappedDCTInputs;
-		void *m_mappedMBlockInfos;
-	};
+			void *m_mappedDCTInputs;
+			void *m_mappedMBlockInfos;
+		};
 
-	class lwmCD3D11BlockCursor : public lwmIM1VBlockCursor
-	{
-	public:
-		explicit lwmCD3D11BlockCursor(lwmCD3D11Reconstructor *reconstructor);
-		virtual ~lwmCD3D11BlockCursor();
-		virtual void OpenMB(lwmSInt32 mbAddress);
-		virtual void CloseMB();
-		virtual void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
-			lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
-			lwmSInt32 recon_right_back, lwmSInt32 recon_down_back);
+		class CM1VBlockCursor : public lwmovie::m1v::IM1VBlockCursor
+		{
+		public:
+			explicit CM1VBlockCursor(CM1VReconstructor *reconstructor);
+			virtual ~CM1VBlockCursor();
+			virtual void OpenMB(lwmSInt32 mbAddress);
+			virtual void CloseMB();
+			virtual void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,
+				lwmSInt32 recon_right_for, lwmSInt32 recon_down_for,
+				lwmSInt32 recon_right_back, lwmSInt32 recon_down_back);
 
-		virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag);
-		virtual lwmDCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex);
+			virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag);
+			virtual idct::DCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex);
 
-		virtual void CommitZero();
-		virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
-		virtual void CommitFull();
+			virtual void CommitZero();
+			virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
+			virtual void CommitFull();
 
-	private:
-		lwmUInt32 m_mbAddress;
-		lwmovie::d3d11::SMBlockReconInfo m_reconMBlockInfo;
-		lwmCD3D11Reconstructor *m_reconstructor;
-		lwmDCTBLOCK *m_activeDCTBlock;
-	};
+		private:
+			lwmUInt32 m_mbAddress;
+			lwmovie::d3d11::SMBlockReconInfo m_reconMBlockInfo;
+			CM1VReconstructor *m_reconstructor;
+			idct::DCTBLOCK *m_activeDCTBlock;
+		};
+	}
 }
 
 #endif

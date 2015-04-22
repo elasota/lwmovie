@@ -67,7 +67,7 @@
 #include "lwmovie_vlc.hpp"
 #include "lwmovie_bits.hpp"
 
-void lwmovie::lwmDeslicerJob::DecodeDCTCoeff(lwmCBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel)
+void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel)
 {
 	/*
 	 * Grab the next 32 bits and use it to improve performance of
@@ -91,20 +91,20 @@ void lwmovie::lwmDeslicerJob::DecodeDCTCoeff(lwmCBitstream *bitstream, const lwm
 	if (index > 3)
 	{
 		lwmUInt16 value = dct_coeff_tbl[index];
-		*outRun = (value & lwmovie::vlc::RUN_MASK) >> lwmovie::vlc::RUN_SHIFT;
-		if (*outRun == lwmovie::vlc::END_OF_BLOCK_U)
+		*outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
+		if (*outRun == lwmovie::m1v::vlc::END_OF_BLOCK_U)
 		{
-			*outLevel = lwmovie::vlc::END_OF_BLOCK_S;
+			*outLevel = lwmovie::m1v::vlc::END_OF_BLOCK_S;
 		}
 		else
 		{
 			/* num_bits = (value & NUM_MASK) + 1; */
 			/* flush_bits(num_bits); */
-			lwmUInt8 flushed = static_cast<lwmUInt8>((value & lwmovie::vlc::NUM_MASK) + 1);
+			lwmUInt8 flushed = static_cast<lwmUInt8>((value & lwmovie::m1v::vlc::NUM_MASK) + 1);
 			next32bits &= lwmovie::bits::bitMask(flushed);
-			if(*outRun != lwmovie::vlc::ESCAPE_U)
+			if (*outRun != lwmovie::m1v::vlc::ESCAPE_U)
 			{
-				*outLevel = (value & lwmovie::vlc::LEVEL_MASK) >> lwmovie::vlc::LEVEL_SHIFT;
+				*outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
 				/* get_bits1(value); */
 				/* if (value) *level = -*level; */
 				if (next32bits >> (31-flushed))
@@ -153,30 +153,30 @@ void lwmovie::lwmDeslicerJob::DecodeDCTCoeff(lwmCBitstream *bitstream, const lwm
 		{
 			/* show_bits10(index); */
 			index = next32bits >> 22;
-			value = lwmovie::vlc::dct_coeff_tbl_2[index & 3];
+			value = lwmovie::m1v::vlc::dct_coeff_tbl_2[index & 3];
 		}
 		else if (index == 3)
 		{
 			/* show_bits10(index); */
 			index = next32bits >> 22;
-			value = lwmovie::vlc::dct_coeff_tbl_3[index & 3];
+			value = lwmovie::m1v::vlc::dct_coeff_tbl_3[index & 3];
 		}
 		else if (index)
 		{
 			/* index == 1 */
 			/* show_bits12(index); */
 			index = next32bits >> 20;
-			value = lwmovie::vlc::dct_coeff_tbl_1[index & 15];
+			value = lwmovie::m1v::vlc::dct_coeff_tbl_1[index & 15];
 		}
 		else
 		{
 			/* index == 0 */
 			/* show_bits16(index); */
 			index = next32bits >> 16;
-			value = lwmovie::vlc::dct_coeff_tbl_0[index & 255];
+			value = lwmovie::m1v::vlc::dct_coeff_tbl_0[index & 255];
 		}
-		*outRun = (value & lwmovie::vlc::RUN_MASK) >> lwmovie::vlc::RUN_SHIFT;
-		*outLevel = (value & lwmovie::vlc::LEVEL_MASK) >> lwmovie::vlc::LEVEL_SHIFT;
+		*outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
+		*outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
 
 		/*
 		 * Fold these operations together to make it fast...
@@ -186,7 +186,7 @@ void lwmovie::lwmDeslicerJob::DecodeDCTCoeff(lwmCBitstream *bitstream, const lwm
 		/* get_bits1(value); */
 		/* if (value) *level = -*level; */
 
-		flushed = (value & lwmovie::vlc::NUM_MASK) + 2;
+		flushed = (value & lwmovie::m1v::vlc::NUM_MASK) + 2;
 		if ((next32bits >> (32-flushed)) & 0x1)
 			*outLevel = -*outLevel;
 
@@ -195,47 +195,47 @@ void lwmovie::lwmDeslicerJob::DecodeDCTCoeff(lwmCBitstream *bitstream, const lwm
 	}
 }
 
-void lwmovie::lwmDeslicerJob::DecodeDCTCoeffFirst(lwmCBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel)
+void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeffFirst(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel)
 {
-	DecodeDCTCoeff(bitstream, lwmovie::vlc::dct_coeff_first, outRun, outLevel);
+	DecodeDCTCoeff(bitstream, lwmovie::m1v::vlc::dct_coeff_first, outRun, outLevel);
 }
 
-void lwmovie::lwmDeslicerJob::DecodeDCTCoeffNext(lwmCBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel)
+void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeffNext(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel)
 {
-	DecodeDCTCoeff(bitstream, lwmovie::vlc::dct_coeff_next, outRun, outLevel);
+	DecodeDCTCoeff(bitstream, lwmovie::m1v::vlc::dct_coeff_next, outRun, outLevel);
 }
 
-lwmUInt8 lwmovie::lwmDeslicerJob::DecodeDCTDCSizeLum(lwmCBitstream *bitstream)
+lwmUInt8 lwmovie::m1v::CDeslicerJob::DecodeDCTDCSizeLum(CBitstream *bitstream)
 {
 	lwmUInt32 index = bitstream->show_bits5();
 	if (index < 31)
 	{
-		bitstream->flush_bits(lwmovie::vlc::dct_dc_size_luminance[index].num_bits);
-		return lwmovie::vlc::dct_dc_size_luminance[index].value;
+		bitstream->flush_bits(lwmovie::m1v::vlc::dct_dc_size_luminance[index].num_bits);
+		return lwmovie::m1v::vlc::dct_dc_size_luminance[index].value;
 	}
 	else
 	{
 		index = bitstream->show_bits9();
 		index -= 0x1f0;
-		bitstream->flush_bits(lwmovie::vlc::dct_dc_size_luminance1[index].num_bits);
-		return lwmovie::vlc::dct_dc_size_luminance1[index].value;
+		bitstream->flush_bits(lwmovie::m1v::vlc::dct_dc_size_luminance1[index].num_bits);
+		return lwmovie::m1v::vlc::dct_dc_size_luminance1[index].value;
 	}
 }
 
-lwmUInt8 lwmovie::lwmDeslicerJob::DecodeDCTDCSizeChrom(lwmCBitstream *bitstream)
+lwmUInt8 lwmovie::m1v::CDeslicerJob::DecodeDCTDCSizeChrom(CBitstream *bitstream)
 {
 	lwmUInt32 index = bitstream->show_bits5();
 
 	if (index < 31)
 	{
-		bitstream->flush_bits(lwmovie::vlc::dct_dc_size_chrominance[index].num_bits);
-		return lwmovie::vlc::dct_dc_size_chrominance[index].value;
+		bitstream->flush_bits(lwmovie::m1v::vlc::dct_dc_size_chrominance[index].num_bits);
+		return lwmovie::m1v::vlc::dct_dc_size_chrominance[index].value;
 	}
 	else
 	{
 		index = bitstream->show_bits10();
 		index -= 0x3e0;
-		bitstream->flush_bits(lwmovie::vlc::dct_dc_size_chrominance1[index].num_bits);
-		return lwmovie::vlc::dct_dc_size_chrominance1[index].value;
+		bitstream->flush_bits(lwmovie::m1v::vlc::dct_dc_size_chrominance1[index].num_bits);
+		return lwmovie::m1v::vlc::dct_dc_size_chrominance1[index].value;
 	}
 }
