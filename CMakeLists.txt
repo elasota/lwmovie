@@ -46,6 +46,7 @@ add_library(lwmovie MODULE
 	lwmovie/lwmovie_idct.cpp
 	lwmovie/lwmovie_init.cpp
 	lwmovie/lwmovie_motionvectors.cpp
+	lwmovie/lwmovie_m1v_idct.cpp
 	lwmovie/lwmovie_mp2_decoder.cpp
 	lwmovie/lwmovie_parseblock.cpp
 	lwmovie/lwmovie_profile.cpp
