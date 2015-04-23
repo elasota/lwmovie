@@ -723,7 +723,7 @@ repeatFeed:;
 	case lwmDEMUX_FatalError:
 		*outResult = lwmDIGEST_Error;
 		*outBytesDigested = 0;
-		break;
+		return;
 	};
 }
 

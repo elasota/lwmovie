@@ -356,6 +356,10 @@ lwmECakeResult lwmCake::Decode(lwmCakeDecodeOutput *decodeOutput)
 		
 		switch(digestResult)
 		{
+		case lwmDIGEST_Nothing:
+			if (numBytesDigested == 0 && m_bufferUsed == 0)
+				return lwmCAKE_RESULT_Finished;
+			break;
 		case lwmDIGEST_Initialize:
 			// BeginDecoding wasn't called
 			m_fatalError = true;
