@@ -246,11 +246,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 				pos = constants::ZIGZAG_DIRECT[i];
 
 				/* quantizes and oddifies each coefficient */
-				coeff = (level * static_cast<lwmFastSInt32>(iqmatrix[pos])) / 8;
-				if(level < 0)
-					coeff |= 1;
-				else
-					coeff = (coeff-1) | 1;
+				coeff = ((level * static_cast<lwmFastSInt32>(iqmatrix[pos]) + ((level < 0) ? 7 : -8)) >> 3) | 1;
 
 				coeffCount++;
 
@@ -290,23 +286,13 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 
 		lwmFastUInt8 pos = constants::ZIGZAG_DIRECT[i];
 
-		/* quantizes and oddifies each coefficient */
+		/* dequantize and oddify towards zero */
 		lwmFastSInt32 coeff;
-		static int largestqscale = 0;
-		if (qscale > largestqscale)
-			largestqscale = qscale;
 		if (level < 0)
-		{
-			coeff = (((level<<1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
-			coeff |= 1;
-		}
+			coeff = ((((level << 1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) + 15) >> 4) | 1; 
 		else
-		{
-			coeff = (((level<<1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
-			coeff = (coeff-1) | 1; /* equivalent to: if ((coeff&1)==0) coeff = coeff - 1; */
-		}
+			coeff = ((((level << 1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) - 16) >> 4) | 1;
 
-		// coeff is never zero
 		firstCoeffPos = pos;
 		firstCoeff = static_cast<lwmFastSInt16>(coeff);
 		coeffCount = 1;
@@ -326,16 +312,11 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 
 				pos = constants::ZIGZAG_DIRECT[i];
 
-				if(level < 0)
-				{
-					coeff = (((level<<1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
-					coeff |= 1;
-				}
+				/* dequantize and oddify towards zero */
+				if (level < 0)
+					coeff = ((((level<<1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) + 15) >> 4) | 1;
 				else
-				{
-					coeff = (((level<<1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
-					coeff = (coeff-1) | 1; /* equivalent to: if ((coeff&1)==0) coeff = coeff - 1; */
-				}
+					coeff = ((((level<<1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) - 16) >> 4) | 1; 
 
 				coeffCount++;
 				if(coeffCount == 2)
