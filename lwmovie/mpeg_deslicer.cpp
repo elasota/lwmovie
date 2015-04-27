@@ -154,6 +154,8 @@ bool lwmovie::m1v::CDeslicerJob::ParseSliceHeader(CBitstream *bitstream)
 	m_block.dct_dc_cr_past = 1024 << 3;
 	m_block.dct_dc_cb_past = 1024 << 3;
 
+	this->CommitQScale();
+
 	return true;
 }
 
@@ -283,6 +285,7 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 	{
 		lwmUInt32 data = bitstream->get_bits5();
 		m_slice.quant_scale = data;
+		this->CommitQScale();
 	}
 	/* If forward motion vectors exist... */
 	if (mb_motion_forw)
@@ -465,3 +468,18 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 
 	return lwmovie::m1v::constants::PARSE_OK;
 }
+
+void lwmovie::m1v::CDeslicerJob::CommitQScale()
+{
+	const lwmUInt8 *iqSource = m_sequence->m_intra_quant_matrix;
+	const lwmUInt8 *niqSource = m_sequence->m_non_intra_quant_matrix;
+	lwmUInt8 qscale = m_slice.quant_scale;
+
+	for (int i = 0; i < 64; i++)
+		this->m_iqmatrix[i] = iqSource[i] * m_slice.quant_scale;
+
+	if (m_picture->code_type != constants::MPEG_I_TYPE)
+		for (int i = 0; i < 64; i++)
+			this->m_niqmatrix[i] = niqSource[i] * m_slice.quant_scale;
+}
+

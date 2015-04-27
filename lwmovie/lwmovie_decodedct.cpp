@@ -67,8 +67,10 @@
 #include "lwmovie_vlc.hpp"
 #include "lwmovie_bits.hpp"
 
-void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel)
+void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *pOutRun, lwmSInt16 *pOutLevel)
 {
+	lwmUInt8 outRun;
+	lwmSInt16 outLevel;
 	/*
 	 * Grab the next 32 bits and use it to improve performance of
 	 * getting the bits to parse. Thus, calls are translated as:
@@ -91,24 +93,23 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 	if (index > 3)
 	{
 		lwmUInt16 value = dct_coeff_tbl[index];
-		*outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
-		if (*outRun == lwmovie::m1v::vlc::END_OF_BLOCK_U)
+		outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
+		if (outRun == lwmovie::m1v::vlc::END_OF_BLOCK_U)
 		{
-			*outLevel = lwmovie::m1v::vlc::END_OF_BLOCK_S;
+			outLevel = lwmovie::m1v::vlc::END_OF_BLOCK_S;
 		}
 		else
 		{
 			/* num_bits = (value & NUM_MASK) + 1; */
 			/* flush_bits(num_bits); */
 			lwmUInt8 flushed = static_cast<lwmUInt8>((value & lwmovie::m1v::vlc::NUM_MASK) + 1);
-			next32bits &= lwmovie::bits::bitMask(flushed);
-			if (*outRun != lwmovie::m1v::vlc::ESCAPE_U)
+			if (outRun != lwmovie::m1v::vlc::ESCAPE_U)
 			{
-				*outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
+				outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
 				/* get_bits1(value); */
 				/* if (value) *level = -*level; */
-				if (next32bits >> (31-flushed))
-					*outLevel = -*outLevel;
+				if (next32bits & (static_cast<lwmUInt32>(0x80000000) >> flushed))
+					outLevel = -outLevel;
 				flushed++;
 				/* next32bits &= bitMask[flushed];  last op before update */
 			}
@@ -116,30 +117,29 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 			{
 				/* *run == ESCAPE */
 				/* get_bits14(temp); */
-				lwmUInt16 temp = next32bits >> (18-flushed);
+				lwmUInt16 temp = next32bits >> (18 - flushed);
 				flushed += 14;
-				next32bits &= lwmovie::bits::bitMask(flushed);
-				*outRun = static_cast<lwmUInt8>(temp >> 8);
+				outRun = static_cast<lwmUInt8>((temp >> 8) & 0x3f);
 				temp &= 0xff;
 				if (temp == 0)
 				{
 					/* get_bits8(*level); */
-					*outLevel = static_cast<lwmUInt16>(next32bits >> (24-flushed));
+					outLevel = static_cast<lwmSInt16>(next32bits >> (24-flushed));
 					flushed += 8;
 					/* next32bits &= bitMask[flushed];  last op before update */
 				}
 				else if (temp != 128)
 				{
 					/* Grab sign bit */
-					*outLevel = static_cast<lwmSInt16>((static_cast<lwmSInt16>(temp << 8)) >> 8);
+					outLevel = static_cast<lwmSInt16>(static_cast<lwmSInt8>(temp & 0xff));
 				}
 				else
 				{
 					/* get_bits8(*level); */
-					*outLevel = next32bits >> (24-flushed);
+					outLevel = next32bits >> (24-flushed);
 					flushed += 8;
 					/* next32bits &= bitMask[flushed];  last op before update */
-					(*outLevel) -= 256;
+					outLevel -= 256;
 				}
 			}
 			/* Update bitstream... */
@@ -175,8 +175,8 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 			index = next32bits >> 16;
 			value = lwmovie::m1v::vlc::dct_coeff_tbl_0[index & 255];
 		}
-		*outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
-		*outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
+		outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
+		outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
 
 		/*
 		 * Fold these operations together to make it fast...
@@ -188,11 +188,13 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 
 		flushed = (value & lwmovie::m1v::vlc::NUM_MASK) + 2;
 		if ((next32bits >> (32-flushed)) & 0x1)
-			*outLevel = -*outLevel;
+			outLevel = -outLevel;
 
 		/* Update bitstream ... */
 		bitstream->flush_bits(flushed);
 	}
+	*pOutLevel = outLevel;
+	*pOutRun = outRun;
 }
 
 void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeffFirst(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel)

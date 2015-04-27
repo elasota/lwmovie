@@ -191,6 +191,9 @@
     <ClInclude Include="lwmovie_fp_d3d11.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lwmovie_bitloader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="lwmovie_recon_m1vsw_sse2.inl">

@@ -170,6 +170,7 @@
     <ClInclude Include="lwmovie_adpcm_decoder.hpp" />
     <ClInclude Include="lwmovie_audiobuffer.hpp" />
     <ClInclude Include="lwmovie_audiocodec.hpp" />
+    <ClInclude Include="lwmovie_bitloader.hpp" />
     <ClInclude Include="lwmovie_bits.hpp" />
     <ClInclude Include="lwmovie_bitstream.hpp" />
     <ClInclude Include="lwmovie_cake.h" />

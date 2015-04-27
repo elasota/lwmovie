@@ -37,7 +37,7 @@ namespace lwmovie
 			lwmUInt32 next_bits;
 			lwmFastUInt8 bit_offset;
 
-			const void *new_bits;
+			const void *end_bits;	/* Exclusive endpoint of bits */
 			lwmUInt32 new_undigested_bytes;
 			bool new_emitted_zero;
 
@@ -135,6 +135,63 @@ namespace lwmovie
 			bool check_next_bits(lwmUInt8 num, lwmUInt32 mask);
 		};
 	}
+}
+#endif //__LWMOVIE_BITSTREAM_HPP__
+
+#include "lwmovie_bitloader.hpp"
+#include "lwmovie_constants.hpp"
+
+#ifndef __LWMOVIE_BITSTREAM_INL_HPP__
+#define __LWMOVIE_BITSTREAM_INL_HPP__
+
+LWMOVIE_FORCEINLINE lwmUInt32 lwmovie::m1v::CBitstream::get_more_bits()
+{
+	const lwmUInt8 *bytes = static_cast<const lwmUInt8*>(end_bits) - new_undigested_bytes;
+	if (new_undigested_bytes >= 4)
+	{
+		lwmUInt32 outBits = lwmovie::arch::LoadBE32(bytes);
+		new_undigested_bytes -= 4;
+		return outBits;
+	}
+
+	if (new_undigested_bytes == 0)
+	{
+		if (!new_emitted_zero)
+		{
+			new_emitted_zero = true;
+			return 0;
+		}
+		return constants::MPEG_SEQ_END_CODE;
+	}
+
+	lwmUInt32 outBits = 0;
+	outBits = bytes[0] << 8;
+	if (new_undigested_bytes >= 2)
+		outBits |= bytes[1];
+	outBits <<= 8;
+	if (new_undigested_bytes >= 3)
+		outBits |= bytes[2];
+	outBits <<= 8;
+	new_undigested_bytes = 0;
+	return outBits;
+}
+
+LWMOVIE_FORCEINLINE void lwmovie::m1v::CBitstream::flush_bits(lwmFastUInt8 num)
+{
+	bit_offset += num;
+	if (bit_offset >= 32)
+	{
+		bit_offset -= 32;
+		cur_bits = next_bits << bit_offset;
+		next_bits = get_more_bits();
+	}
+	else
+		cur_bits <<= num;
+}
+
+LWMOVIE_FORCEINLINE lwmUInt32 lwmovie::m1v::CBitstream::show_bits32()
+{
+	return cur_bits | ((bit_offset == 0) ? 0 : (next_bits >> (32 - bit_offset)));
 }
 
 #endif

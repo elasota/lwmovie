@@ -229,6 +229,8 @@ namespace lwmovie
 			lwmSInt32 DecodeMotionVectors(CBitstream *bitstream);
 			lwmUInt8 DecodeCBP(CBitstream *bitstream);
 
+			void CommitQScale();
+
 #ifdef LWMOVIE_PROFILE
 			lwmCProfileTagSet	m_profileTags;
 #endif
@@ -239,6 +241,9 @@ namespace lwmovie
 			mpegBlock			m_block;
 			const mpegPict		*m_picture;
 			const mpegSequence	*m_sequence;
+
+			lwmUInt16			m_iqmatrix[64];		/* Intra matrix prescaled */
+			lwmUInt16			m_niqmatrix[64];	/* Non-intra matrix prescaled */
 		};
 
 		class CVidStream

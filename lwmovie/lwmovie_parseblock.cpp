@@ -227,7 +227,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 		if(m_picture->code_type != constants::MPEG_D_TYPE)
 		{
 			lwmFastUInt8 qscale = m_slice.quant_scale;
-			const lwmUInt8 *iqmatrix = m_sequence->m_intra_quant_matrix;
+			const lwmUInt16 *iqmatrix = this->m_iqmatrix;
 
 			lwmFastUInt8 i = 0;
 			while(true)
@@ -246,7 +246,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 				pos = constants::ZIGZAG_DIRECT[i];
 
 				/* quantizes and oddifies each coefficient */
-				coeff = (level * static_cast<lwmFastSInt32>(qscale) * static_cast<lwmFastSInt32>(iqmatrix[pos])) / 8;
+				coeff = (level * static_cast<lwmFastSInt32>(iqmatrix[pos])) / 8;
 				if(level < 0)
 					coeff |= 1;
 				else
@@ -279,7 +279,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 #endif
 
 		/* non-intra-coded macroblock */
-		const lwmUInt8 *niqmatrix = m_sequence->m_non_intra_quant_matrix;
+		const lwmUInt16 *niqmatrix = m_niqmatrix;
 		lwmFastUInt8 qscale = m_slice.quant_scale;
 		lwmUInt8 run;
 		lwmSInt16 level;
@@ -292,14 +292,17 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 
 		/* quantizes and oddifies each coefficient */
 		lwmFastSInt32 coeff;
-		if(level < 0)
+		static int largestqscale = 0;
+		if (qscale > largestqscale)
+			largestqscale = qscale;
+		if (level < 0)
 		{
-			coeff = (((level<<1) - 1) * static_cast<lwmFastSInt32>(qscale) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
+			coeff = (((level<<1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
 			coeff |= 1;
 		}
 		else
 		{
-			coeff = (((level<<1) + 1) * static_cast<lwmFastSInt32>(qscale) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
+			coeff = (((level<<1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
 			coeff = (coeff-1) | 1; /* equivalent to: if ((coeff&1)==0) coeff = coeff - 1; */
 		}
 
@@ -325,12 +328,12 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 
 				if(level < 0)
 				{
-					coeff = (((level<<1) - 1) * static_cast<lwmFastSInt32>(qscale) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
+					coeff = (((level<<1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
 					coeff |= 1;
 				}
 				else
 				{
-					coeff = (((level<<1) + 1) * static_cast<lwmFastSInt32>(qscale) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
+					coeff = (((level<<1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos])) / 16; 
 					coeff = (coeff-1) | 1; /* equivalent to: if ((coeff&1)==0) coeff = coeff - 1; */
 				}
 
