@@ -16,6 +16,10 @@ struct ReconConstants
 	float2 fDimensionsC;
 	uint2 mbDimensions;
 };
+struct DCTBlockV
+{
+	int4 packedCoeffs[8];
+};
 struct DCTBlock
 {
 	int packedCoeffs[32];
