@@ -39,10 +39,10 @@ namespace lwmovie
 				lwmSInt32 recon_right_back, lwmSInt32 recon_down_back) = 0;
 
 			virtual void SetBlockInfo(lwmSInt32 blockIndex, bool zero_block_flag) = 0;
-			virtual idct::DCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex) = 0;
+			virtual idct::DCTBLOCK *StartReconBlock(lwmSInt32 blockIndex) = 0;
 
 			virtual void CommitZero() = 0;
-			virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff) = 0;
+			virtual void CommitSparse(lwmUInt8 coeffPos, lwmSInt16 coeff) = 0;
 			virtual void CommitFull() = 0;
 
 			inline void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,

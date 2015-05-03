@@ -29,6 +29,8 @@
 #include "lwmovie_mp2_decoder.hpp"
 #include "lwmovie_celt_decoder.hpp"
 #include "lwmovie_adpcm_decoder.hpp"
+#include "lwmovie_roq.hpp"
+#include "lwmovie_recon_roqsw.hpp"
 #include "../mp2dec2/lwmovie_layer2_decodestate.hpp"
 
 namespace lwmovie
@@ -110,6 +112,7 @@ struct lwmMovieState
 	lwmSWorkNotifier *videoDigestWorkNotifier;
 	lwmIVideoReconstructor *videoReconstructor;
 	lwmovie::m1v::CVidStream *m1vDecoder;
+	lwmovie::roq::CVideoDecoder *roqDecoder;
 	lwmovie::CAudioCodec **audioDecoders;
 
 	lwmMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
@@ -127,6 +130,7 @@ lwmMovieState::lwmMovieState(lwmSAllocator *pAlloc, lwmUInt32 pUserFlags)
 	, videoDigestWorkNotifier(NULL)
 	, alloc(pAlloc)
 	, m1vDecoder(NULL)
+	, roqDecoder(NULL)
 	, audioDecoders(NULL)
 	, audioStreamInfos(NULL)
 	, isAudioSynchronized(false)
@@ -244,9 +248,16 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 		else
 		{
 			lwmEDigestResult result = lwmDIGEST_Worked;
-			if(movieState->m1vDecoder)
-				if(!movieState->m1vDecoder->DigestDataPacket(packetData, packetSize, outResult))
+			if (movieState->m1vDecoder)
+			{
+				if (!movieState->m1vDecoder->DigestDataPacket(packetData, packetSize, outResult))
 					result = lwmDIGEST_Error;
+			}
+			else if (movieState->roqDecoder)
+			{
+				if (!movieState->roqDecoder->DigestDataPacket(packetData, packetSize, outResult))
+					result = lwmDIGEST_Error;
+			}
 			*outResult = result;
 		}
 		break;
@@ -261,10 +272,15 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 					lwmPlanHandler<lwmVideoSynchronizationPoint>::Read(syncPoint, packetData))
 				{
 					bool frameAvailable = false;
-					if(movieState->m1vDecoder)
+					if (movieState->m1vDecoder)
 					{
 						movieState->m1vDecoder->WaitForDigestFinish();
 						frameAvailable = movieState->m1vDecoder->EmitFrame();
+					}
+					if (movieState->roqDecoder)
+					{
+						//movieState->roqDecoder->WaitForFinish();
+						frameAvailable = true;
 					}
 					movieState->videoReconstructor->WaitForFinish();
 					movieState->streamSyncPeriods[lwmSTREAMTYPE_Video] = syncPoint.videoPeriod;
@@ -440,6 +456,21 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			movieState->needVideoStreamParameters = true;
 		}
 		break;
+	case lwmVST_RoQ:
+		{
+			if (movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_3Channel_Interleaved)
+				goto cleanup;
+			if (movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_RGB)
+				goto cleanup;
+			if (movieState->videoInfo.numWriteOnlyWorkFrames != 0 || movieState->videoInfo.numReadWriteWorkFrames != 2)
+				goto cleanup;
+			movieState->roqDecoder = alloc->NAlloc<lwmovie::roq::CVideoDecoder>(1);
+			if (!movieState->roqDecoder)
+				goto cleanup;
+			new (movieState->roqDecoder) lwmovie::roq::CVideoDecoder(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight);
+			movieState->needVideoStreamParameters = false;
+		}
+		break;
 	default:
 		goto cleanup;
 	};
@@ -529,10 +560,16 @@ repeatFeed:;
 						goto repeatFeed;
 					}
 					else
+					{
 						movieState->demuxState = lwmDEMUX_InitDecoding;
+						goto repeatFeed;
+					}
 				}
 				else
+				{
 					movieState->demuxState = lwmDEMUX_FatalError;
+					goto repeatFeed;
+				}
 			}
 
 			*outResult = lwmDIGEST_Nothing;
@@ -809,6 +846,9 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 					case lwmVST_M1V_Variant:
 						*outValue = lwmRC_MPEG1Video;
 						return 1;
+					case lwmVST_RoQ:
+						*outValue = lwmRC_RoQ;
+						return 1;
 					default:
 						return 0;
 					};
@@ -918,6 +958,20 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwm
 			return recon;
 		}
 		break;
+	case lwmRC_RoQ:
+		{
+			lwmovie::roq::CSoftwareReconstructor *recon = alloc->NAlloc<lwmovie::roq::CSoftwareReconstructor>(1);
+			if (!recon)
+				return NULL;
+			new (recon) lwmovie::roq::CSoftwareReconstructor();
+			if (!recon->Initialize(alloc, frameProvider, movieState))
+			{
+				lwmIVideoReconstructor_Destroy(recon);
+				recon = NULL;
+			}
+			return recon;
+		}
+		break;
 	};
 	return NULL;
 }
@@ -930,8 +984,10 @@ LWMOVIE_API_LINK void lwmIVideoReconstructor_Destroy(lwmIVideoReconstructor *vid
 LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieState, lwmIVideoReconstructor *recon)
 {
 	movieState->videoReconstructor = recon;
-	if(movieState->m1vDecoder)
+	if (movieState->m1vDecoder)
 		movieState->m1vDecoder->SetReconstructor(recon);
+	if (movieState->roqDecoder)
+		movieState->roqDecoder->SetReconstructor(recon);
 }
 
 LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier)
@@ -950,6 +1006,11 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 	{
 		movieState->m1vDecoder->~CVidStream();
 		alloc->Free(movieState->m1vDecoder);
+	}
+	if (movieState->roqDecoder)
+	{
+		movieState->roqDecoder->~CVideoDecoder();
+		alloc->Free(movieState->roqDecoder);
 	}
 	if(movieState->audioDecoders)
 	{

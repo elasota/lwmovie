@@ -9,8 +9,10 @@
 
 int main(int argc, const char **argv)
 {
+#ifdef _MSC_VER
 	_setmode(_fileno(stdin), _O_BINARY);
 	_setmode(_fileno(stdout), _O_BINARY);
+#endif
 	FILE *inFile = stdin;
 	FILE *outFile = stdout;
 

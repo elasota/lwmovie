@@ -1,0 +1,10 @@
+RoQ is a video format with low decoding complexity at the expense of quality.  It is significantly lower quality than MPEG video, but requires much less CPU to decode, making it a bit more suitable for uses where CPU costs are a major constraint.
+
+It has a few important caveats:
+- Due to the design of the codec, it is substantially better at preserving detail at low resolutions.
+- It has a higher minimum memory cost than MPEG video (16x16 resolution granularity, 48 bits per pixel).
+
+The RoQ encoder is based on a combination of Switchblade 3 and the FFmpeg RoQ encoder.
+The RoQ decoder is based on Switchblade 2.
+
+Both are based on a paper from 2001 by Dr. Tim Ferguson describing the RoQ file format.

@@ -1,3 +1,24 @@
+/*
+* Copyright (c) 2015 Eric Lasota
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -224,6 +245,7 @@ int main(int argc, char **argv)
 	SDL_Renderer *renderer = NULL;
 	SDL_Texture *texture = NULL;
 	bool textureIsYUV = false;
+	bool videoIsYUV = false;
 	lwplay::CAudioQueue *audioDevice = NULL;
 	lwmCakeMovieInfo movieInfo;
 	lwplay::CWorkNotifierFactory *workNotifierFactory = new lwplay::CWorkNotifierFactory();
@@ -258,9 +280,10 @@ int main(int argc, char **argv)
 		if(movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar)
 		{
 			textureIsYUV = true;
+			videoIsYUV = true;
 			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_IYUV, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
 		}
-		else
+		else if (movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar)
 		{
 			// TODO: Cake
 			lwmIVideoReconstructor *recon = lwmCake_GetVideoReconstructor(cake);
@@ -274,6 +297,13 @@ int main(int argc, char **argv)
 
 			texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
 			textureIsYUV = false;
+			videoIsYUV = true;
+		}
+		else if (movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_RGB && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_3Channel_Interleaved)
+		{
+			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
+			textureIsYUV = false;
+			videoIsYUV = false;
 		}
 
 		if(movieInfo.numAudioStreams > 0)
@@ -311,39 +341,59 @@ int main(int argc, char **argv)
 			break;
 		case lwmCAKE_RESULT_NewVideoFrame:
 			{
-				const lwmUInt8 *yBuffer;
-				const lwmUInt8 *uBuffer;
-				const lwmUInt8 *vBuffer;
-				lwmUInt32 yStride, uStride, vStride;
+				if (videoIsYUV)
+				{
+					const lwmUInt8 *yBuffer;
+					const lwmUInt8 *uBuffer;
+					const lwmUInt8 *vBuffer;
+					lwmUInt32 yStride, uStride, vStride;
 
-				lwmSVideoFrameProvider *frameProvider = lwmCake_GetVideoFrameProvider(cake);
-				lwmUInt32 frameIndex = decodeOutput.workFrameIndex;
+					lwmSVideoFrameProvider *frameProvider = lwmCake_GetVideoFrameProvider(cake);
+					lwmUInt32 frameIndex = decodeOutput.workFrameIndex;
 
-				frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
+					frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
 
-				yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0, &yStride));
-				uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1, &uStride));
-				vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2, &vStride));
+					yBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0, &yStride));
+					uBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 1, &uStride));
+					vBuffer = static_cast<const lwmUInt8 *>(frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 2, &vStride));
 
-				SDL_Rect rect;
-				rect.x = rect.y = 0;
-				rect.w = static_cast<int>(movieInfo.videoWidth);
-				rect.h = static_cast<int>(movieInfo.videoHeight);
+					SDL_Rect rect;
+					rect.x = rect.y = 0;
+					rect.w = static_cast<int>(movieInfo.videoWidth);
+					rect.h = static_cast<int>(movieInfo.videoHeight);
 
-				if(textureIsYUV)
-					SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
+					if (textureIsYUV)
+						SDL_UpdateYUVTexture(texture, &rect, yBuffer, static_cast<int>(yStride), uBuffer, static_cast<int>(uStride), vBuffer, static_cast<int>(vStride));
+					else
+					{
+						void *pixels;
+						int pitch;
+						SDL_LockTexture(texture, &rect, &pixels, &pitch);
+						lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
+						SDL_UnlockTexture(texture);
+					}
+
+					frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
+				}
 				else
 				{
-					void *pixels;
-					int pitch;
-					SDL_LockTexture(texture, &rect, &pixels, &pitch);
-					lwmVideoRGBConverter_Convert(rgbConverter, pixels, static_cast<lwmLargeUInt>(pitch), 0);
-					SDL_UnlockTexture(texture);
+					lwmSVideoFrameProvider *frameProvider = lwmCake_GetVideoFrameProvider(cake);
+					lwmUInt32 frameIndex = decodeOutput.workFrameIndex;
+
+					lwmUInt32 pitch;
+					frameProvider->lockWorkFrameFunc(frameProvider, frameIndex, lwmVIDEOLOCK_Read);
+					const void *rgbBuffer = frameProvider->getWorkFramePlaneFunc(frameProvider, frameIndex, 0, &pitch);
+
+					SDL_Rect rect;
+					rect.x = rect.y = 0;
+					rect.w = static_cast<int>(movieInfo.videoWidth);
+					rect.h = static_cast<int>(movieInfo.videoHeight);
+
+					SDL_UpdateTexture(texture, &rect, rgbBuffer, static_cast<int>(pitch));
+					frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
 				}
 				SDL_RenderCopy(renderer, texture, NULL, NULL);
 				SDL_RenderPresent(renderer);
-
-				frameProvider->unlockWorkFrameFunc(frameProvider, frameIndex);
 			}
 			break;
 		case lwmCAKE_RESULT_Finished:

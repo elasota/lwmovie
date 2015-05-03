@@ -70,6 +70,13 @@
       <DependentUpon>MPEG1VideoOptionsControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Codec Settings\MPEG1VideoSettings.cs" />
+    <Compile Include="Codec Settings\ROQVideoOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Codec Settings\ROQVideoOptionsControl.Designer.cs">
+      <DependentUpon>ROQVideoOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Codec Settings\ROQVideoSettings.cs" />
     <Compile Include="CodecRepository.cs" />
     <Compile Include="EncodeSettingsProject.cs" />
     <Compile Include="ExecutionPlan.cs" />
@@ -93,6 +100,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Codec Settings\MPEG1VideoOptionsControl.resx">
       <DependentUpon>MPEG1VideoOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Codec Settings\ROQVideoOptionsControl.resx">
+      <DependentUpon>ROQVideoOptionsControl.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

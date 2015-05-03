@@ -146,22 +146,18 @@ lwmovie::d3d11::CM1VReconstructor::~CM1VReconstructor()
 
 void lwmovie::d3d11::CM1VReconstructor::Participate()
 {
-	// TODO
 }
 
 void lwmovie::d3d11::CM1VReconstructor::WaitForFinish()
 {
-	// TODO
 }
 
 void lwmovie::d3d11::CM1VReconstructor::SetWorkNotifier(lwmSWorkNotifier *workNotifier)
 {
-	// TODO
 }
 
 void lwmovie::d3d11::CM1VReconstructor::FlushProfileTags(lwmCProfileTagSet *tagSet)
 {
-	// TODO
 }
 
 lwmUInt32 lwmovie::d3d11::CM1VReconstructor::GetWorkFrameIndex() const

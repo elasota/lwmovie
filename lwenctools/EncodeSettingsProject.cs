@@ -187,11 +187,13 @@ namespace lwenctools
             string currentExeDir = currentExePath.Substring(0, currentExePath.LastIndexOf('\\'));
             string lwmuxPath = currentExeDir + "\\lwmux.exe";
             string lwrerangePath = currentExeDir + "\\lwrerange.exe";
+            string lwroqencPath = currentExeDir + "\\lwroqenc.exe";
             string ffmpegPath = currentExeDir + "\\ffmpeg\\bin\\ffmpeg.exe";
 
             settings["lwmuxPath"] = lwmuxPath;
             settings["lwrerangePath"] = lwrerangePath;
             settings["ffmpegPath"] = ffmpegPath;
+            settings["lwroqencPath"] = lwroqencPath;
         }
 
         public bool Validate(List<string> errors)

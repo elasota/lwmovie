@@ -474,7 +474,7 @@ bool lwmovie::m1v::CVidStream::DigestDataPacket(const void *bytes, lwmUInt32 pac
 			return false;
 
 		m_recon->StartNewFrame(m_current, m_future, m_past, m_picture.code_type == constants::MPEG_B_TYPE);
-		*outResult = lwmDIGEST_Nothing;
+		*outResult = lwmDIGEST_Worked;
 		return true;
 	}
 

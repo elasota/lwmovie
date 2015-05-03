@@ -1,0 +1,56 @@
+This document is intended to provide a rough guide to porting the lwmovie GPU reconstructor to other hardware processing APIs.
+In effect, this is a crash-course on the later phases of the MPEG-1 video decoding process.
+
+Reconstruction is done on a per-macroblock basis.  A macroblock is a 16x16 block in the Y plane and corresponding 8x8 block in the Cb and Cr planes that contains 6 8x8 residual coefficient blocks (4 for the Y channel, 1 for the Cb channel, 1 for the Cr channel), forward and backward motion vectors, and flags.
+
+The process for decoding a macroblock is as follows:
+- Perform IDCT on any DCT blocks to create residual blocks.
+- Perform prediction (motion compensation):
+    - If the macroblock has forward prediction, compute the prediction from the future-predictive frame using the forward motion vectors.
+    - If the macroblock has backward prediction, compute the prediction from the past-predictive using the backward motion vectors.
+    - If the macroblock has both forward and backward prediction, compute both and average them.
+    - If the macroblock has no prediction, then the prediction for all blocks is zero.
+- Add the residual and prediction values to create the output.
+
+Motion compensation (prediction) is done using down and right offsets that represent HALF-pixel offsets from the position being decoded.
+If the offset position is half-way between pixels, then the predicted value should be the average of the 2 closest pixels when only one axis is at a half-pixel position and the average of the 4 closest pixels when both axes are at half-pixel positions.
+The offset for the Cb and Cr planes is equal to the offset in the Y plane divided by 2, rounded TOWARDS ZERO.  Importantly, motion compensation in the chroma planes has half-pixel precision, not quarter-pixel precision.  This operation is generally very cheap to perform in shaders since linear interpolation filters will give the desired result, but you do need to ensure that the Cb and Cr motion vectors are rounded correctly.
+
+The nomenclature in the reconstructor interface can be confusing: The "future" and "past" frames are based on the time direction from those frames to the frame being decoded, not the direction from the frame being decoded to those frames.  That is, the "past" frame is not IN the past, it is past-PREDICTIVE, contributing information to decoded frames that are, relative to it, in the past.
+
+The same relationship applies to forward and backward prediction.  Forward prediction predicts from a previous frame to the current frame, backward prediction predicts from a future frame to the current frame.
+
+["future"] -- Forward --> [Frame being decoded] <-- Backward -- ["past"]
+Time frame will be displayed ----------------------------------------->
+
+
+
+Most of this process is done by creating an implementation of thw lmovie::m1v::IM1VReconstructor interface, which goes through the following life cycle:
+
+- A block cursor is created at the start of decoding.
+- StartNewFrame is called when a frame starts decoding.
+- Blocks are processed via the block cursor interface by deslicer threads.
+- MarkRowFinished is called by deslicer threads when it all data for a row is available.
+- WaitForFinish is called by the main thread when no more data is available for the reconstructor.
+- PresentFrame is possibly called, indicating which work frame should display.
+
+Block cursor processing happens as follows:
+- OpenMB is called with the address of a macroblock when processing begins.  Macroblocks are addressed left-to-right, top-to-bottom and wrap at the right edge.
+- SetMBlockInfo is called with the flags and motion vectors for a macroblock:
+    - skipped: If true, no residual, treat residual values are zero.  SetBlockInfo, StartReconBlock, and DCT commits will not be called.
+    - mb_motion_forw: If true, macroblock uses forward prediction
+    - mb_motion_back: If true, macroblock uses backward prediction
+    - recon_right_for/recon_back_for: Half-pixel right and down offsets to forward prediction location in the future-predictive frame.
+    - recon_right_back/recon_back_back: Half-pixel right and down offsets to backward prediction location in the past-predictive frame.
+- If the block isn't skipped, SetBlockInfo is called for each of the 6 blocks.  This may occur before or after DCT coefficient commit calls:
+    - blockIndex: Index of the 8x8 block within the macroblock.  0 is top-left Y, 1 is top-right Y, 2 is bottom-left Y, 3 is bottom-right Y, 4 is Cr, 5 is Cb.
+    - zero_block_flag: If true, no residual, treat residual values are zero.  StartReconBlock and DCT commits will not be called.
+- StartReconBlock is called for one of the residual blocks and should return a destination buffer where DCT coefficients can be stored.
+- Residual 8x8 DCT block coefficients are committed via one of the DCT coeff commit calls:
+    - CommitZero: All values are zero.
+    - CommitSparse: All values except for one are zero.
+        - coeffPos: Offset of the coefficient in the DCT block.
+        - coeff: Value of the coefficient.
+    - CommitFull: Values were written to the destination buffer returned by StartReconBlock.
+- CloseMB is called when processing of a macroblock is finished.
+

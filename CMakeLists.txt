@@ -52,6 +52,8 @@ add_library(lwmovie MODULE
 	lwmovie/lwmovie_profile.cpp
 	lwmovie/lwmovie_recon.cpp
 	lwmovie/lwmovie_recon_m1vsw.cpp
+	lwmovie/lwmovie_recon_roqsw.cpp
+	lwmovie/lwmovie_roq.cpp
 	lwmovie/lwmovie_vlc.cpp
 	lwmovie/lwmovie_vlctables.cpp
 	lwmovie/mpeg_deslicer.cpp
@@ -71,6 +73,20 @@ add_executable(lwmux
 	lwmux/lwmux_riff.cpp
 	lwmux/lwmux_util.cpp
 	lwmux/lwmux_wav.cpp
+)
+
+add_executable(lwroqenc
+	lwmux/lwmux_osfile_x.cpp
+	lwroqenc/lwroqenc.cpp
+	lwroqenc/SB4ELBG2.cpp
+	lwroqenc/SB4Encoder.cpp
+	lwroqenc/SB4Encoder_EncodeFrame.cpp
+	lwroqenc/SB4Encoder_MakeCodebooks.cpp
+	lwroqenc/SB4Random.cpp
+)
+
+add_executable(lwrerange
+	lwrerange/lwrerange.cpp
 )
 
 set_target_properties(lwmovie PROPERTIES CXX_VISIBILITY_PRESET hidden C_VISIBILITY_PRESET hidden VISIBILITY_INLINES_HIDDEN 1)
@@ -93,4 +109,4 @@ target_link_libraries(lwmux lwcelt)
 
 set_target_properties(mp2dec2 PROPERTIES COMPILE_FLAGS "-msse4.1")
 	
-install (TARGETS lwmovie lwmux DESTINATION bin)
+install (TARGETS lwmovie lwmux lwroqenc lwrerange DESTINATION bin)

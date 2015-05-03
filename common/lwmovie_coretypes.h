@@ -41,6 +41,7 @@ typedef uint8_t lwmUInt8;
 typedef size_t lwmLargeUInt;
 typedef ptrdiff_t lwmLargeSInt;
 typedef float lwmFloat32;
+typedef double lwmFloat64;
 
 typedef int_fast32_t lwmFastSInt32;
 typedef int_fast16_t lwmFastSInt16;

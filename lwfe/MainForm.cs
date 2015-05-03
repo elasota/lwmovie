@@ -107,12 +107,17 @@ namespace lwfe
 
             ComboBox cbx = (ComboBox)sender;
             Control codecOptionsControl = null;
-            if (cbx.SelectedIndex == 0)
-                codecOptionsControl = CodecRepository.VideoCodecs[cbx.SelectedIndex].CreateCodecControl();
+            codecOptionsControl = CodecRepository.VideoCodecs[cbx.SelectedIndex].CreateCodecControl();
 
             SetPanelContainedControl(pnlVideoCodecOptions, codecOptionsControl);
 
             _videoCodecSettingsControl = (ICodecSettingsControl)codecOptionsControl;
+
+            if (_project != null)
+            {
+                _project.VideoCodecID = CodecRepository.VideoCodecs[cbx.SelectedIndex].CodecID;
+                LoadVideoCodecSettings(_project);
+            }
         }
 
         private void pnlCodecOptions_Paint(object sender, PaintEventArgs e)

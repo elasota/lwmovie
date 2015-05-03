@@ -52,6 +52,7 @@ enum lwmEReconstructorType
 {
 	lwmRC_Unknown,
 	lwmRC_MPEG1Video,
+	lwmRC_RoQ,
 };
 
 enum lwmEFrameFormat

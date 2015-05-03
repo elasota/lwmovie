@@ -22,6 +22,14 @@ namespace lwenctools
         Control ICodec.CreateCodecControl() { return new MPEG1VideoOptionsControl(); }
     }
 
+    public class ROQVideoCodec : ICodec
+    {
+        string ICodec.CodecID { get { return "ROQ"; } }
+        string ICodec.Name { get { return "RoQ Video"; } }
+        IExecutionPlanSettings ICodec.CreateExecutionPlanSettings() { return new ROQVideoSettings(); }
+        Control ICodec.CreateCodecControl() { return new ROQVideoOptionsControl(); }
+    }
+
     public class CELTAudioCodec : ICodec
     {
         string ICodec.CodecID { get { return "CELT"; } }
@@ -51,6 +59,7 @@ namespace lwenctools
         public static ICodec[] VideoCodecs = new ICodec[]
         {
             new MPEG1VideoCodec(),
+            new ROQVideoCodec(),
         };
         public static ICodec[] AudioCodecs = new ICodec[]
         {

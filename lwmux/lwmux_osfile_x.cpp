@@ -10,16 +10,18 @@ class lwmOSFileImpl
 {
 private:
 	FILE *m_file;
+	bool m_isAttached;
 
 public:
 	lwmOSFileImpl()
+		: m_file(NULL)
+		, m_isAttached(false)
 	{
-		m_file = NULL;
 	}
 
 	~lwmOSFileImpl()
 	{
-		if(m_file)
+		if(m_file && !m_isAttached)
 		{
 			fclose(m_file);
 		}
@@ -92,6 +94,11 @@ public:
 		return fwrite(inBuffer, 1, static_cast<size_t>(byteCount), m_file);
 	}
 
+	void Attach(FILE *f)
+	{
+		m_file = f;
+		m_isAttached = true;
+	}
 };
 
 lwmOSFile::lwmOSFile()
@@ -136,6 +143,11 @@ lwmOSFile *lwmOSFile::Open(const char *path, EFileMode fileMode)
 	osFile->impl = impl;
 
 	return osFile;
+}
+
+void lwmOSFile::Attach(FILE *f)
+{
+	impl->Attach(f);
 }
 
 lwmUInt64 lwmOSFile::ReadBytes(void *outBuffer, lwmUInt64 byteCount)

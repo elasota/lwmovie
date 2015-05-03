@@ -102,6 +102,12 @@
     <ClCompile Include="lwmovie_m1v_idct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lwmovie_roq.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lwmovie_recon_roqsw.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lwmovie_bitstream.hpp">
@@ -111,9 +117,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_constants.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lwmovie_types.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_videotypes.hpp">
@@ -129,9 +132,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_packetplan.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lwmovie_demux.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_recon.hpp">
@@ -192,6 +192,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_bitloader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_roq.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_recon_roqsw.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
