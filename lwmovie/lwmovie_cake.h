@@ -27,16 +27,6 @@
 struct lwmCakeAudioDevice;
 
 // Simpler interface, a.k.a. "Cake"
-enum lwmECakeReconType
-{
-	lwmCAKE_RECONTYPE_Software,
-};
-
-enum lwmECakeFrameProviderType
-{
-	lwmCAKE_FPTYPE_SystemMemory,
-};
-
 enum lwmECakeResult
 {
 	lwmCAKE_RESULT_Waiting,
