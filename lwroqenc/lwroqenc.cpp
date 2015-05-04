@@ -66,8 +66,8 @@ static void MyWrite(void *h, const void *bytes, lwmLargeUInt nBytes, SB4WriteTyp
 			lwmWritePlanToFile(movieHeader, &osFileWrapper);
 
 			lwmVideoStreamInfo vsi;
-			vsi.channelLayout = lwmVIDEOCHANNELLAYOUT_RGB;
-			vsi.frameFormat = lwmFRAMEFORMAT_8Bit_3Channel_Interleaved;
+			vsi.channelLayout = lwmVIDEOCHANNELLAYOUT_RGBA;
+			vsi.frameFormat = lwmFRAMEFORMAT_8Bit_4Channel_Interleaved;
 			vsi.numReadWriteWorkFrames = 2;
 			vsi.numWriteOnlyWorkFrames = 0;
 			vsi.periodsPerSecondDenom = g_fpsDenom;

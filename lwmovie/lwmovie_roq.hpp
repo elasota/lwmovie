@@ -42,14 +42,16 @@ namespace lwmovie
 			void SetReconstructor(lwmIVideoReconstructor *videoRecon);
 
 		private:
+			static const lwmFastUInt8 NUM_CHANNELS = 4;
+
 			struct Codebook2
 			{
-				lwmUInt8 pixels[2 * 2 * 3];
+				lwmUInt8 pixels[2 * 2 * NUM_CHANNELS];
 			};
 
 			struct Codebook2Double
 			{
-				lwmUInt8 pixels[4 * 4 * 3];
+				lwmUInt8 pixels[4 * 4 * NUM_CHANNELS];
 			};
 
 			struct Codebook4
@@ -59,7 +61,7 @@ namespace lwmovie
 
 			struct Codebook4Complete
 			{
-				lwmUInt8 pixels[4 * 4 * 3];
+				lwmUInt8 pixels[4 * 4 * NUM_CHANNELS];
 			};
 
 			struct ParseState

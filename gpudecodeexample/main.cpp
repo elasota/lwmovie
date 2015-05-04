@@ -1,3 +1,24 @@
+/*
+* Copyright (c) 2015 Eric Lasota
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*/
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dxgi.h>
@@ -80,7 +101,6 @@ void CreateWindow(lwmUInt32 width, lwmUInt32 height)
 	const char *name = "lwmovie GPU Decode Example";
 	const char *className = "lwmovieplayer";
 	WNDCLASSEX windowClass;
-	DEVMODE deviceMode;
 	HINSTANCE hinstance;
 
 	hinstance = GetModuleHandle(NULL);
@@ -165,7 +185,8 @@ struct renderGlobals
 	ID3D11RenderTargetView *renderTargetView;
 
 	ID3D11VertexShader *vs;
-	ID3D11PixelShader *ps;
+	ID3D11PixelShader *ps_ycbcr;
+	ID3D11PixelShader *ps_rgb;
 
 	ID3D11RasterizerState *rasterState;
 	ID3D11Buffer *vertexBuffer;
@@ -228,10 +249,11 @@ void InitD3D(lwmUInt32 width, lwmUInt32 height, lwmCake *cake, lwmSAllocator *al
 
 	g_renderGlobals.device->CreateRasterizerState(&rasterDesc, &g_renderGlobals.rasterState);
 
-	ID3DBlob *vsBlob = CompileShaderString(displayVS, "mainVS", "testvs.hlsl", "vs_4_0");
+	ID3DBlob *vsBlob = CompileShaderString(displayVS, "mainVS", "vs.hlsl", "vs_4_0");
 	vsBlob->AddRef();
 	g_renderGlobals.vs = CreateVertexShader(g_renderGlobals.device, vsBlob);
-	g_renderGlobals.ps = CreatePixelShader(g_renderGlobals.device, CompileShaderString(displayPS, "mainPS", "testps.hlsl", "ps_4_0"));
+	g_renderGlobals.ps_ycbcr = CreatePixelShader(g_renderGlobals.device, CompileShaderString(displayPS_YCbCr, "mainPS", "ps.hlsl", "ps_4_0"));
+	g_renderGlobals.ps_rgb = CreatePixelShader(g_renderGlobals.device, CompileShaderString(displayPS_RGB, "mainPS", "ps.hlsl", "ps_4_0"));
 
 	D3D11_INPUT_ELEMENT_DESC layout[] =
 	{
@@ -312,7 +334,7 @@ void CreateRenderingConstants(lwmCake *cake)
 	}
 }
 
-void DisplayCakeFrame(lwmCake *cake, lwmUInt32 workFrameIndex, lwmUInt32 width, lwmUInt32 height)
+void DisplayCakeFrame(lwmCake *cake, lwmUInt32 workFrameIndex, lwmUInt32 width, lwmUInt32 height, bool isYCbCr)
 {
 	UINT vertexStride = sizeof(renderVertex);
 	UINT vertexOffset = 0;
@@ -324,29 +346,42 @@ void DisplayCakeFrame(lwmCake *cake, lwmUInt32 workFrameIndex, lwmUInt32 width, 
 	viewport.TopLeftY = 0;
 	viewport.MinDepth = 0.f;
 	viewport.MaxDepth = 1.f;
-	viewport.Width = width;
-	viewport.Height = height;
+	viewport.Width = static_cast<FLOAT>(width);
+	viewport.Height = static_cast<FLOAT>(height);
 
 	lwmSVideoFrameProvider *vfp = lwmCake_GetVideoFrameProvider(cake);
 
-	ID3D11ShaderResourceView *srvs[] =
-	{
-		lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 0),
-		lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 1),
-		lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 2),
-	};
-
 	g_renderGlobals.deviceContext->ClearState();
+
+	if (isYCbCr)
+	{
+		ID3D11ShaderResourceView *srvs[] =
+		{
+			lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 0),
+			lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 1),
+			lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 2),
+		};
+		g_renderGlobals.deviceContext->PSSetShaderResources(0, sizeof(srvs) / sizeof(srvs[0]), srvs);
+		g_renderGlobals.deviceContext->PSSetConstantBuffers(0, 1, &g_renderGlobals.ycbcrWeightsBuffer);
+		g_renderGlobals.deviceContext->PSSetShader(g_renderGlobals.ps_ycbcr, NULL, 0);
+	}
+	else
+	{
+		ID3D11ShaderResourceView *srvs[] =
+		{
+			lwmD3D11FrameProvider_GetWorkFramePlaneSRV(vfp, workFrameIndex, 0),
+		};
+		g_renderGlobals.deviceContext->PSSetShaderResources(0, sizeof(srvs) / sizeof(srvs[0]), srvs);
+		g_renderGlobals.deviceContext->PSSetShader(g_renderGlobals.ps_rgb, NULL, 0);
+	}
+
 	g_renderGlobals.deviceContext->IASetInputLayout(g_renderGlobals.inputLayout);
 	g_renderGlobals.deviceContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	g_renderGlobals.deviceContext->IASetVertexBuffers(0, 1, &g_renderGlobals.vertexBuffer, &vertexStride, &vertexOffset);
 	g_renderGlobals.deviceContext->PSSetSamplers(0, 1, &g_renderGlobals.textureSamplerState);
-	g_renderGlobals.deviceContext->PSSetShaderResources(0, sizeof(srvs) / sizeof(srvs[0]), srvs);
-	g_renderGlobals.deviceContext->PSSetConstantBuffers(0, 1, &g_renderGlobals.ycbcrWeightsBuffer);
 	g_renderGlobals.deviceContext->RSSetViewports(1, &viewport);
 	g_renderGlobals.deviceContext->RSSetState(g_renderGlobals.rasterState);
 	g_renderGlobals.deviceContext->VSSetShader(g_renderGlobals.vs, NULL, 0);
-	g_renderGlobals.deviceContext->PSSetShader(g_renderGlobals.ps, NULL, 0);
 	g_renderGlobals.deviceContext->OMSetRenderTargets(1, &g_renderGlobals.renderTargetView, NULL);
 	g_renderGlobals.deviceContext->Draw(6, 0);
 	g_renderGlobals.swapChain->Present(0, 0);
@@ -392,7 +427,11 @@ int main(int argc, const char **argv)
 
 	lwmCakeDecodeOptions decodeOptions;
 	memset(&decodeOptions, 0, sizeof(decodeOptions));
-	lwmCake_SetD3D11DecodeOptions(cake, &decodeOptions, g_renderGlobals.device, g_renderGlobals.deviceContext, 1);
+	if (!lwmCake_SetD3D11DecodeOptions(cake, &decodeOptions, g_renderGlobals.device, g_renderGlobals.deviceContext, 1))
+	{
+		fprintf(stderr, "Error occurred while setting D3D11 decode options");
+		return 0;
+	}
 
 	bool canPlay = (lwmCake_BeginDecoding(cake, &decodeOptions) != 0);
 
@@ -401,6 +440,8 @@ int main(int argc, const char **argv)
 		CreateRenderingConstants(cake);
 	}
 
+	lwmUInt32 numFrames = 0;
+	lwmUInt64 qpcDuration = 0;
 	while (canPlay)
 	{
 		MSG msg;
@@ -411,7 +452,12 @@ int main(int argc, const char **argv)
 		}
 
 		lwmCakeDecodeOutput decodeOutput;
+		LARGE_INTEGER qpcStart;
+		LARGE_INTEGER qpcEnd;
+		QueryPerformanceCounter(&qpcStart);
 		lwmECakeResult cakeResult = lwmCake_Decode(cake, &decodeOutput);
+		QueryPerformanceCounter(&qpcEnd);
+		qpcDuration += static_cast<lwmUInt64>(qpcEnd.QuadPart - qpcStart.QuadPart);
 
 		switch (cakeResult)
 		{
@@ -424,10 +470,18 @@ int main(int argc, const char **argv)
 				Sleep(static_cast<DWORD>(decodeOutput.displayDelay));
 			break;
 		case lwmCAKE_RESULT_NewVideoFrame:
-			DisplayCakeFrame(cake, decodeOutput.workFrameIndex, movieInfo.videoWidth, movieInfo.videoHeight);
+			numFrames++;
+			DisplayCakeFrame(cake, decodeOutput.workFrameIndex, movieInfo.videoWidth, movieInfo.videoHeight, movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar);
 			break;
 		}
 	}
+
+	LARGE_INTEGER frequency;
+	QueryPerformanceFrequency(&frequency);
+
+	double milliseconds = static_cast<double>(qpcDuration)* 1000.0 / static_cast<double>(frequency.QuadPart) / static_cast<double>(numFrames);
+	printf("MS per frame: %f", milliseconds);
+
 
 	lwmCake_Destroy(cake);
 

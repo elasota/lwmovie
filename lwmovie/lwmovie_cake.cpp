@@ -591,14 +591,18 @@ void lwmCake::GetYCbCrWeights(lwmCakeYCbCrWeights *outWeights)
 #ifdef LWMOVIE_D3D11
 bool lwmCake::SetD3D11DecodeOptions(lwmCakeDecodeOptions *decodeOptions, ID3D11Device *device, ID3D11DeviceContext *deviceContext, bool useHardwareReconstructor)
 {
+	lwmUInt32 reconType;
+	lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
+
+	if (reconType != lwmRC_MPEG1Video)
+		useHardwareReconstructor = 0;
+
 	lwmSVideoFrameProvider *vfp = lwmCreateD3D11FrameProvider(m_alloc, device, deviceContext, useHardwareReconstructor ? 1 : 0);
 	if (!vfp)
 		return false;
 
 	if (useHardwareReconstructor)
 	{
-		lwmUInt32 reconType;
-		lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
 		lwmIVideoReconstructor *recon = lwmCreateD3D11VideoReconstructor(m_movieState, m_alloc, reconType, device, deviceContext, vfp);
 		if (!recon)
 		{

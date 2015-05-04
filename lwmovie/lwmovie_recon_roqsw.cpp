@@ -40,7 +40,8 @@ bool lwmovie::roq::CSoftwareReconstructor::Initialize(lwmSAllocator *alloc, lwmS
 	if (numWFrames != 0 || numRWFrames != 2)
 		return false;
 
-	m_frameProvider->createWorkFramesFunc(m_frameProvider, 2, 0, m_width, m_height, lwmFRAMEFORMAT_8Bit_3Channel_Interleaved);
+	if (!m_frameProvider->createWorkFramesFunc(m_frameProvider, 2, 0, m_width, m_height, lwmFRAMEFORMAT_8Bit_4Channel_Interleaved))
+		return false;
 
 	return true;
 }

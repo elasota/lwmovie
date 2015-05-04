@@ -35,6 +35,7 @@ lwmovie::d3d11::CFrameProvider::CFrameProvider(lwmSAllocator *alloc, ID3D11Devic
 	, m_isUsingHardwareReconstructor(isUsingHardwareReconstructor)
 	, m_frameBytes(NULL)
 	, m_numDynFrames(0)
+	, m_channelTextureBundles(NULL)
 {
 }
 
@@ -62,7 +63,7 @@ lwmovie::d3d11::CFrameProvider::~CFrameProvider()
 		m_alloc->Free(m_frameBytes);
 }
 
-ID3D11Texture2D *lwmovie::d3d11::CFrameProvider::CreatePlaneTexture(lwmUInt32 width, lwmUInt32 height, bool isWriteOnly)
+ID3D11Texture2D *lwmovie::d3d11::CFrameProvider::CreatePlaneTexture(lwmUInt32 width, lwmUInt32 height, bool isWriteOnly, lwmUInt32 planeFormat)
 {
 	D3D11_TEXTURE2D_DESC texture2Ddesc;
 	memset(&texture2Ddesc, 0, sizeof(D3D11_TEXTURE2D_DESC));
@@ -70,7 +71,7 @@ ID3D11Texture2D *lwmovie::d3d11::CFrameProvider::CreatePlaneTexture(lwmUInt32 wi
 	texture2Ddesc.Height = height;
 	texture2Ddesc.MipLevels = 1;
 	texture2Ddesc.ArraySize = 1;
-	texture2Ddesc.Format = DXGI_FORMAT_R8_UNORM;
+	texture2Ddesc.Format = static_cast<DXGI_FORMAT>(planeFormat);
 	texture2Ddesc.SampleDesc.Count = 1;
 	texture2Ddesc.SampleDesc.Quality = 0;
 
@@ -114,10 +115,11 @@ int lwmovie::d3d11::CFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmU
 	lwmLargeUInt numChannels;
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC textureViewDesc;
-	textureViewDesc.Format = DXGI_FORMAT_R8_UNORM;
 	textureViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	textureViewDesc.Texture2D.MipLevels = 1;
 	textureViewDesc.Texture2D.MostDetailedMip = 0;
+
+	DXGI_FORMAT textureFormat;
 
 	switch (frameFormat)
 	{
@@ -128,11 +130,22 @@ int lwmovie::d3d11::CFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmU
 		channelHeights[0] = workFrameHeight;
 		channelWidths[1] = channelWidths[2] = workFrameWidth / 2;
 		channelHeights[1] = channelHeights[2] = workFrameHeight / 2;
+		textureFormat = DXGI_FORMAT_R8_UNORM;
 		numChannels = 3;
+		break;
+	case lwmFRAMEFORMAT_8Bit_4Channel_Interleaved:
+		channelStrides[0] = workFrameWidth * 4;
+		channelWidths[0] = workFrameWidth;
+		channelHeights[0] = workFrameHeight;
+		textureFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		numChannels = 1;
 		break;
 	default:
 		return 0;
 	};
+
+
+	textureViewDesc.Format = textureFormat;
 
 	channelOffsets[0] = 0;
 	for (lwmLargeUInt i = 0; i<numChannels; i++)
@@ -171,7 +184,7 @@ int lwmovie::d3d11::CFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmU
 		for (lwmLargeUInt j = 0; j < numChannels; j++)
 		{
 			ChannelTexture *ctex = ctb->m_channelTextures + j;
-			ID3D11Texture2D *texture = CreatePlaneTexture(m_channelWidths[j], m_channelHeights[j], j < numRWFrames);
+			ID3D11Texture2D *texture = CreatePlaneTexture(m_channelWidths[j], m_channelHeights[j], j < numRWFrames, textureFormat);
 			if (texture == NULL)
 				return 0;
 
@@ -241,14 +254,14 @@ void lwmovie::d3d11::CFrameProvider::UnlockWorkFrame(lwmUInt32 workFrameIndex)
 		{
 			// Copy the system memory portion into the hardware texture
 			// TODO: SSE stream copy this!
-			lwmUInt32 width = m_channelWidths[ch];
+			lwmUInt32 pitch = ctex->m_lockPitch;
 			lwmUInt32 height = m_channelHeights[ch];
 			lwmUInt8 *destBytes = static_cast<lwmUInt8*>(ctex->m_lockData);
 			const lwmUInt8 *srcBytes = ctb->m_frameBytes + this->m_channelOffsets[ch];
 			for (lwmLargeUInt row = 0; row < m_channelHeights[ch]; row++)
 			{
-				memcpy(destBytes, srcBytes, width);
-				destBytes += ctex->m_lockPitch;
+				memcpy(destBytes, srcBytes, pitch);
+				destBytes += pitch;
 				srcBytes += m_channelStrides[ch];
 			}
 			m_context->Unmap(ctex->m_texture, 0);

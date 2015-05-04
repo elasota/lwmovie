@@ -22,7 +22,7 @@ DISPLAY_SHADER_SHARED_DEFS
 "}\n"
 ;
 
-static const char *displayPS =
+static const char *displayPS_YCbCr =
 DISPLAY_SHADER_SHARED_DEFS
 "Texture2D myTextureY : register(t0);\n"
 "Texture2D myTextureCb : register(t1);\n"
@@ -31,7 +31,6 @@ DISPLAY_SHADER_SHARED_DEFS
 "SamplerState mySampler : register(s0);\n"
 "float4 mainPS( PS_INPUT psInput ) : SV_Target\n"
 "{\n"
-"    float3 ycbcr;\n"
 "    float y = myTextureY.Sample(mySampler, psInput.texCoord.xy).r;\n"
 "    float cb = myTextureCb.Sample(mySampler, psInput.texCoord.xy).r;\n"
 "    float cr = myTextureCr.Sample(mySampler, psInput.texCoord.xy).r;\n"
@@ -39,7 +38,16 @@ DISPLAY_SHADER_SHARED_DEFS
 "    rgb.r += cr * myConstants.ycbcrWeights2.x;\n"
 "    rgb.g += cr * myConstants.ycbcrWeights2.y + cb * myConstants.ycbcrWeights2.z;\n"
 "    rgb.b += cb * myConstants.ycbcrWeights2.w;\n"
-"    //return float4(y, cb, cr, 1.0);\n"
 "    return float4(rgb, 1.0);\n"
+"}\n"
+;
+
+static const char *displayPS_RGB =
+DISPLAY_SHADER_SHARED_DEFS
+"Texture2D myTexture : register(t0);\n"
+"SamplerState mySampler : register(s0);\n"
+"float4 mainPS( PS_INPUT psInput ) : SV_Target\n"
+"{\n"
+"    return myTexture.Sample(mySampler, psInput.texCoord.xy).rgba;\n"
 "}\n"
 ;

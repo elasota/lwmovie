@@ -66,11 +66,6 @@
       <ProjName>lwplay</ProjName>
     </ProjBinary>
   </Binaries>
-  <Reports>
-    <Report>
-      <Path>lwplay150503.vspx</Path>
-    </Report>
-  </Reports>
   <Launches>
     <ProjBinary>
       <Path>:PB:{9689753A-3C3F-49FA-8E9C-7373747054C3}|lwplay\lwplay.vcxproj</Path>

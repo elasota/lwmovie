@@ -180,20 +180,24 @@ bool lwmovie::roq::CVideoDecoder::ParseCodebooks(const void *packetData, lwmLarg
 			if (gc < 0) g = 0; else if (gc > 16320) g = 255; else g = static_cast<lwmUInt8>(gc >> 6);
 			if (bc < 0) b = 0; else if (bc > 16320) b = 255; else b = static_cast<lwmUInt8>(bc >> 6);
 
-			cb2entry->pixels[pxi * 3 + 0] = r;
-			cb2entry->pixels[pxi * 3 + 1] = g;
-			cb2entry->pixels[pxi * 3 + 2] = b;
+			cb2entry->pixels[pxi * NUM_CHANNELS + 0] = r;
+			cb2entry->pixels[pxi * NUM_CHANNELS + 1] = g;
+			cb2entry->pixels[pxi * NUM_CHANNELS + 2] = b;
+			for (unsigned int ch = 3; ch < NUM_CHANNELS; ch++)
+				cb2entry->pixels[pxi * NUM_CHANNELS + ch] = 255;
 		}
 
 		for (unsigned int row = 0; row < 4; row++)
 		{
 			for (unsigned int col = 0; col < 4; col++)
 			{
-				unsigned int sourceIndex = ((col / 2) * 2 + (row / 2)) * 3;
-				unsigned int destIndex = (col * 4 + row) * 3;
+				unsigned int sourceIndex = ((col / 2) * 2 + (row / 2)) * NUM_CHANNELS;
+				unsigned int destIndex = (col * 4 + row) * NUM_CHANNELS;
 				cb2doubleentry->pixels[destIndex + 0] = cb2entry->pixels[sourceIndex + 0];
 				cb2doubleentry->pixels[destIndex + 1] = cb2entry->pixels[sourceIndex + 1];
 				cb2doubleentry->pixels[destIndex + 2] = cb2entry->pixels[sourceIndex + 2];
+				for (unsigned int ch = 3; ch < NUM_CHANNELS; ch++)
+					cb2doubleentry->pixels[destIndex + ch] = 255;
 			}
 		}
 	}
@@ -210,10 +214,14 @@ bool lwmovie::roq::CVideoDecoder::ParseCodebooks(const void *packetData, lwmLarg
 			cb4entry->indexes[i] = indexes[i];
 		packetBytes += 4;
 
-		Blit<2 * 3, 2>(cb2[indexes[0]].pixels, cb4completeentry->pixels + 0, 2 * 3, 4 * 3);
-		Blit<2 * 3, 2>(cb2[indexes[1]].pixels, cb4completeentry->pixels + 2 * 3, 2 * 3, 4 * 3);
-		Blit<2 * 3, 2>(cb2[indexes[2]].pixels, cb4completeentry->pixels + 2 * (4 * 3), 2 * 3, 4 * 3);
-		Blit<2 * 3, 2>(cb2[indexes[3]].pixels, cb4completeentry->pixels + 2 * (4 * 3) + 2 * 3, 2 * 3, 4 * 3);
+		Blit<2 * NUM_CHANNELS, 2>(cb2[indexes[0]].pixels, cb4completeentry->pixels + 0,
+			2 * NUM_CHANNELS, 4 * NUM_CHANNELS);
+		Blit<2 * NUM_CHANNELS, 2>(cb2[indexes[1]].pixels, cb4completeentry->pixels + 2 * NUM_CHANNELS,
+			2 * NUM_CHANNELS, 4 * NUM_CHANNELS);
+		Blit<2 * NUM_CHANNELS, 2>(cb2[indexes[2]].pixels, cb4completeentry->pixels + 2 * (4 * NUM_CHANNELS),
+			2 * NUM_CHANNELS, 4 * NUM_CHANNELS);
+		Blit<2 * NUM_CHANNELS, 2>(cb2[indexes[3]].pixels, cb4completeentry->pixels + 2 * (4 * NUM_CHANNELS) + 2 * NUM_CHANNELS,
+			2 * NUM_CHANNELS, 4 * NUM_CHANNELS);
 	}
 
 	return true;
@@ -255,8 +263,8 @@ bool lwmovie::roq::CVideoDecoder::ParseVideoFrame(const void *packetData, lwmLar
 				int bp = 0;
 				goto finishFrame;
 			}
-			frontCel += 16 * 3;
-			backCel += 16 * 3;
+			frontCel += 16 * NUM_CHANNELS;
+			backCel += 16 * NUM_CHANNELS;
 		}
 		frontRow += frontFramePitch * 16;
 		backRow += backFramePitch * 16;
@@ -306,11 +314,11 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad16(ParseState &parseState, lwmUInt32 
 	// Process 8x8 quads
 	if (!ParseQuad8(parseState, x, y, frontFrame, backFrame))
 		return false;
-	if (!ParseQuad8(parseState, x + 8, y, frontFrame + 8 * 3, backFrame + 8 * 3))
+	if (!ParseQuad8(parseState, x + 8, y, frontFrame + 8 * NUM_CHANNELS, backFrame + 8 * NUM_CHANNELS))
 		return false;
 	if (!ParseQuad8(parseState, x, y + 8, frontFrame + outPitch8, backFrame + backPitch8))
 		return false;
-	if (!ParseQuad8(parseState, x + 8, y + 8, frontFrame + outPitch8 + 8 * 3, backFrame + backPitch8 + 8 * 3))
+	if (!ParseQuad8(parseState, x + 8, y + 8, frontFrame + outPitch8 + 8 * NUM_CHANNELS, backFrame + backPitch8 + 8 * NUM_CHANNELS))
 		return false;
 	return true;
 }
@@ -342,7 +350,7 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad8(ParseState &parseState, lwmUInt32 x
 				return false;
 
 			// Blit the entire block
-			Blit<8 * 3, 8>(backFrame + (dx * 3) + (dy * static_cast<lwmSInt32>(parseState.backPitch)), frontFrame, parseState.backPitch, parseState.outPitch);
+			Blit<8 * NUM_CHANNELS, 8>(backFrame + (dx * NUM_CHANNELS) + (dy * static_cast<lwmSInt32>(parseState.backPitch)), frontFrame, parseState.backPitch, parseState.outPitch);
 		}
 		break;
 	case BLOCKMARK_VECTOR:
@@ -355,10 +363,10 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad8(ParseState &parseState, lwmUInt32 x
 			lwmUInt32 frontPitch = parseState.outPitch;
 			lwmUInt32 frontPitch4 = frontPitch * 4;
 			lwmUInt32 backPitch4 = parseState.backPitch * 4;
-			Blit<4 * 3, 4>(m_cb2double[cb4->indexes[0]].pixels, frontFrame, 4 * 3, frontPitch);
-			Blit<4 * 3, 4>(m_cb2double[cb4->indexes[1]].pixels, frontFrame + 4 * 3, 4 * 3, frontPitch);
-			Blit<4 * 3, 4>(m_cb2double[cb4->indexes[2]].pixels, frontFrame + frontPitch4, 4 * 3, frontPitch);
-			Blit<4 * 3, 4>(m_cb2double[cb4->indexes[3]].pixels, frontFrame + frontPitch4 + 4 * 3, 4 * 3, frontPitch);
+			Blit<4 * NUM_CHANNELS, 4>(m_cb2double[cb4->indexes[0]].pixels, frontFrame, 4 * NUM_CHANNELS, frontPitch);
+			Blit<4 * NUM_CHANNELS, 4>(m_cb2double[cb4->indexes[1]].pixels, frontFrame + 4 * NUM_CHANNELS, 4 * NUM_CHANNELS, frontPitch);
+			Blit<4 * NUM_CHANNELS, 4>(m_cb2double[cb4->indexes[2]].pixels, frontFrame + frontPitch4, 4 * NUM_CHANNELS, frontPitch);
+			Blit<4 * NUM_CHANNELS, 4>(m_cb2double[cb4->indexes[3]].pixels, frontFrame + frontPitch4 + 4 * NUM_CHANNELS, 4 * NUM_CHANNELS, frontPitch);
 		}
 		break;
 	case BLOCKMARK_QUAD:
@@ -367,11 +375,11 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad8(ParseState &parseState, lwmUInt32 x
 			lwmUInt32 backPitch4 = parseState.backPitch * 4;
 			if (!ParseQuad4(parseState, x, y, frontFrame, backFrame))
 				return false;
-			if (!ParseQuad4(parseState, x + 4, y, frontFrame + 4 * 3, backFrame + 4 * 3))
+			if (!ParseQuad4(parseState, x + 4, y, frontFrame + 4 * NUM_CHANNELS, backFrame + 4 * NUM_CHANNELS))
 				return false;
 			if (!ParseQuad4(parseState, x, y + 4, frontFrame + frontPitch4, backFrame + backPitch4))
 				return false;
-			if (!ParseQuad4(parseState, x + 4, y + 4, frontFrame + 4 * 3 + frontPitch4, backFrame + 4 * 3 + backPitch4))
+			if (!ParseQuad4(parseState, x + 4, y + 4, frontFrame + 4 * NUM_CHANNELS + frontPitch4, backFrame + 4 * NUM_CHANNELS + backPitch4))
 				return false;
 		}
 		break;
@@ -410,7 +418,7 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad4(ParseState &parseState, lwmUInt32 x
 				return false;
 
 			// Blit the entire block
-			Blit<4 * 3, 4>(backFrame + (dx * 3) + (dy * static_cast<lwmSInt32>(parseState.backPitch)), frontFrame, parseState.backPitch, parseState.outPitch);
+			Blit<4 * NUM_CHANNELS, 4>(backFrame + (dx * NUM_CHANNELS) + (dy * static_cast<lwmSInt32>(parseState.backPitch)), frontFrame, parseState.backPitch, parseState.outPitch);
 		}
 		break;
 	case BLOCKMARK_VECTOR:
@@ -419,7 +427,7 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad4(ParseState &parseState, lwmUInt32 x
 			GETBYTE(blockid);
 
 			// Blit a 4x4 block
-			Blit<4 * 3, 4>(this->m_cb4complete[blockid].pixels, frontFrame, 4 * 3, parseState.outPitch);
+			Blit<4 * NUM_CHANNELS, 4>(this->m_cb4complete[blockid].pixels, frontFrame, 4 * NUM_CHANNELS, parseState.outPitch);
 		}
 		break;
 	case BLOCKMARK_QUAD:
@@ -434,9 +442,9 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad4(ParseState &parseState, lwmUInt32 x
 
 			lwmLargeUInt pitch2 = parseState.outPitch * 2;
 			ParseQuad2(parseState, frontFrame, blockids[0]);
-			ParseQuad2(parseState, frontFrame + 2 * 3, blockids[1]);
+			ParseQuad2(parseState, frontFrame + 2 * NUM_CHANNELS, blockids[1]);
 			ParseQuad2(parseState, frontFrame + pitch2, blockids[2]);
-			ParseQuad2(parseState, frontFrame + 2 * 3 + pitch2, blockids[3]);
+			ParseQuad2(parseState, frontFrame + 2 * NUM_CHANNELS + pitch2, blockids[3]);
 			return true;
 		}
 		break;
@@ -447,7 +455,7 @@ bool lwmovie::roq::CVideoDecoder::ParseQuad4(ParseState &parseState, lwmUInt32 x
 void lwmovie::roq::CVideoDecoder::ParseQuad2(ParseState &parseState, lwmUInt8 *frontFrame, lwmUInt8 blockid)
 {
 	// Blit in a 2x2 block
-	Blit<2 * 3, 2>(m_cb2[blockid].pixels, frontFrame, 2 * 3, parseState.outPitch);
+	Blit<2 * NUM_CHANNELS, 2>(m_cb2[blockid].pixels, frontFrame, 2 * NUM_CHANNELS, parseState.outPitch);
 }
 
 template<lwmLargeUInt TWidth, lwmLargeUInt THeight>

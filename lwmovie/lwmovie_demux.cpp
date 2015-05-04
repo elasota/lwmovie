@@ -458,9 +458,9 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 		break;
 	case lwmVST_RoQ:
 		{
-			if (movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_3Channel_Interleaved)
+			if (movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_4Channel_Interleaved)
 				goto cleanup;
-			if (movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_RGB)
+			if (movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_RGBA)
 				goto cleanup;
 			if (movieState->videoInfo.numWriteOnlyWorkFrames != 0 || movieState->videoInfo.numReadWriteWorkFrames != 2)
 				goto cleanup;

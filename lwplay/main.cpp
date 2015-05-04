@@ -299,9 +299,14 @@ int main(int argc, char **argv)
 			textureIsYUV = false;
 			videoIsYUV = true;
 		}
-		else if (movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_RGB && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_3Channel_Interleaved)
+		else if (movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_RGBA && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_4Channel_Interleaved)
 		{
-			texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB24, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
+			int sdlPixelFormat;
+			if (SDL_PIXELTYPE(SDL_PIXELFORMAT_RGBA8888) == SDL_PIXELTYPE_PACKED32 && SDL_BYTEORDER == SDL_LIL_ENDIAN)
+				sdlPixelFormat = SDL_PIXELFORMAT_ABGR8888;
+			else
+				sdlPixelFormat = SDL_PIXELFORMAT_RGBA8888;
+			texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
 			textureIsYUV = false;
 			videoIsYUV = false;
 		}

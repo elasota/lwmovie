@@ -68,7 +68,7 @@ namespace lwmovie
 				lwmUInt8 *m_frameBytes;		// Indexed into m_frameBytes
 			};
 
-			ID3D11Texture2D *CreatePlaneTexture(lwmUInt32 width, lwmUInt32 height, bool isWriteOnly);
+			ID3D11Texture2D *CreatePlaneTexture(lwmUInt32 width, lwmUInt32 height, bool isWriteOnly, lwmUInt32 dxgiFormat);
 
 			ID3D11Device *m_device;
 			ID3D11DeviceContext *m_context;

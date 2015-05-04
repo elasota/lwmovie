@@ -87,8 +87,8 @@ int lwmovie::CSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lw
 		channelHeights[1] = channelHeights[2] = workFrameHeight / 2;
 		numChannels = 3;
 		break;
-	case lwmFRAMEFORMAT_8Bit_3Channel_Interleaved:
-		channelStrides[0] = workFrameWidth * 3;
+	case lwmFRAMEFORMAT_8Bit_4Channel_Interleaved:
+		channelStrides[0] = workFrameWidth * 4;
 		channelWidths[0] = workFrameWidth;
 		channelHeights[0] = workFrameHeight;
 		numChannels = 1;

@@ -37,24 +37,6 @@ namespace lwmovie
 		};
 
 		template<>
-		struct CRGBChannelPacker<lwmVIDEOCHANNELLAYOUT_RGB>
-		{
-			static LWMOVIE_FORCEINLINE void Pack(lwmUInt8 r, lwmUInt8 g, lwmUInt8 b, lwmUInt8 *outInterleaved)
-			{
-				outInterleaved[0] = r; outInterleaved[1] = g; outInterleaved[2] = b;
-			}
-		};
-
-		template<>
-		struct CRGBChannelPacker<lwmVIDEOCHANNELLAYOUT_BGR>
-		{
-			static LWMOVIE_FORCEINLINE void Pack(lwmUInt8 r, lwmUInt8 g, lwmUInt8 b, lwmUInt8 *outInterleaved)
-			{
-				outInterleaved[0] = b; outInterleaved[1] = g; outInterleaved[2] = r;
-			}
-		};
-
-		template<>
 		struct CRGBChannelPacker<lwmVIDEOCHANNELLAYOUT_ARGB>
 		{
 			static LWMOVIE_FORCEINLINE void Pack(lwmUInt8 r, lwmUInt8 g, lwmUInt8 b, lwmUInt8 *outInterleaved)
@@ -274,55 +256,6 @@ namespace lwmovie
 		};
 		
 		template<>
-		struct SSE2RGBChannelPacker<lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGB>
-		{
-			static LWMOVIE_FORCEINLINE void Pack(const __m128i &rgba0, const __m128i &rgba1, const __m128i &rgba2, const __m128i &rgba3, lwmUInt8 *outInterleaved)
-			{
-				__m128i rgb0, rgb1, rgb2;
-				__m128i maskPattern = _mm_set_epi8(-1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-				rgb0 =                      _mm_and_si128(_mm_slli_si128(rgba1, 11), maskPattern);
-				rgb1 =                      _mm_and_si128(_mm_slli_si128(rgba2, 6), maskPattern);
-				maskPattern = _mm_srai_epi32(maskPattern, 16);
-				rgb0 = _mm_or_si128(rgb0, _mm_and_si128(_mm_slli_si128(rgba1, 12), maskPattern));
-				rgb2 =                      _mm_and_si128(_mm_slli_si128(rgba3, 1), maskPattern);
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb1 = _mm_or_si128(rgb1, _mm_and_si128(_mm_slli_si128(rgba2, 7), maskPattern));
-				rgb2 = _mm_or_si128(rgb2, _mm_and_si128(_mm_slli_si128(rgba3, 2), maskPattern));
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb0 = _mm_or_si128(rgb0, _mm_and_si128(_mm_srli_si128(rgba0, 3), maskPattern));
-				rgb1 = _mm_or_si128(rgb1, _mm_and_si128(_mm_slli_si128(rgba2, 8), maskPattern));
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb2 = _mm_or_si128(rgb2, _mm_and_si128(_mm_slli_si128(rgba3, 3), maskPattern));
-				rgb0 = _mm_or_si128(rgb0, _mm_and_si128(_mm_srli_si128(rgba0, 2), maskPattern));
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb1 = _mm_or_si128(rgb1, _mm_and_si128(_mm_srli_si128(rgba1, 7), maskPattern));
-				rgb2 = _mm_or_si128(rgb2, _mm_and_si128(_mm_slli_si128(rgba3, 4), maskPattern));
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb0 = _mm_or_si128(rgb0, _mm_and_si128(_mm_srli_si128(rgba0, 1), maskPattern));
-				rgb1 = _mm_or_si128(rgb1, _mm_and_si128(_mm_srli_si128(rgba1, 6), maskPattern));
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb0 = _mm_or_si128(rgb0, _mm_and_si128(               rgba0,     maskPattern));
-				rgb2 = _mm_or_si128(rgb2, _mm_and_si128(_mm_srli_si128(rgba2, 11), maskPattern));
-				maskPattern = _mm_srli_si128(maskPattern, 2);
-				rgb1 = _mm_or_si128(rgb1, _mm_and_si128(_mm_srli_si128(rgba1, 5), maskPattern));
-				rgb2 = _mm_or_si128(rgb2, _mm_and_si128(_mm_srli_si128(rgba2, 10), maskPattern));
-
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(outInterleaved   ), rgb0);
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(outInterleaved+16), rgb1);
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(outInterleaved+32), rgb2);
-			}
-		};
-		
-		template<>
-		struct SSE2RGBChannelPacker<lwmVIDEOCHANNELLAYOUT_BGRA, lwmVIDEOCHANNELLAYOUT_BGR>
-		{
-			static LWMOVIE_FORCEINLINE void Pack(const __m128i &rgba0, const __m128i &rgba1, const __m128i &rgba2, const __m128i &rgba3, lwmUInt8 *outInterleaved)
-			{
-				SSE2RGBChannelPacker<lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGB>::Pack(rgba0, rgba1, rgba2, rgba3, outInterleaved);
-			}
-		};
-		
-		template<>
 		struct SSE2RGBChannelPacker<lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGBA>
 		{
 			static LWMOVIE_FORCEINLINE void Pack(const __m128i &rgba0, const __m128i &rgba1, const __m128i &rgba2, const __m128i &rgba3, lwmUInt8 *outInterleaved)
@@ -370,8 +303,6 @@ namespace lwmovie
 		{
 		};
 
-		template<> struct SSE2IntermediateLayoutAlphaResolver<lwmVIDEOCHANNELLAYOUT_RGB> { static LWMOVIE_FORCEINLINE __m128i Generate() { return _mm_setzero_si128(); } };
-		template<> struct SSE2IntermediateLayoutAlphaResolver<lwmVIDEOCHANNELLAYOUT_BGR> { static LWMOVIE_FORCEINLINE __m128i Generate() { return _mm_setzero_si128(); } };
 		template<> struct SSE2IntermediateLayoutAlphaResolver<lwmVIDEOCHANNELLAYOUT_ARGB> { static LWMOVIE_FORCEINLINE __m128i Generate() { return _mm_set1_epi8(-1); } };
 		template<> struct SSE2IntermediateLayoutAlphaResolver<lwmVIDEOCHANNELLAYOUT_ABGR> { static LWMOVIE_FORCEINLINE __m128i Generate() { return _mm_set1_epi8(-1); } };
 		template<> struct SSE2IntermediateLayoutAlphaResolver<lwmVIDEOCHANNELLAYOUT_RGBA> { static LWMOVIE_FORCEINLINE __m128i Generate() { return _mm_set1_epi8(-1); } };
@@ -767,14 +698,10 @@ namespace lwmovie
 #ifdef LWMOVIE_SSE2
 		PixelConverterEntry pixelConverters[] =
 		{
-			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGB, 48>), lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_RGB },
-			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_BGRA, lwmVIDEOCHANNELLAYOUT_BGR, 48>), lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_BGR },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_ARGB, lwmVIDEOCHANNELLAYOUT_ARGB, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_ARGB },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_ABGR, lwmVIDEOCHANNELLAYOUT_ABGR, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_ABGR },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGBA, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_RGBA },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_BGRA, lwmVIDEOCHANNELLAYOUT_BGRA, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_BT601, lwmVIDEOCHANNELLAYOUT_BGRA },
-			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGB, 48>), lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_RGB },
-			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_BGRA, lwmVIDEOCHANNELLAYOUT_BGR, 48>), lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_BGR },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_ARGB, lwmVIDEOCHANNELLAYOUT_ARGB, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_ARGB },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_ABGR, lwmVIDEOCHANNELLAYOUT_ABGR, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_ABGR },
 			{ (SSE2TransformColors<lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_RGBA, lwmVIDEOCHANNELLAYOUT_RGBA, 64>), lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG, lwmVIDEOCHANNELLAYOUT_RGBA },
