@@ -41,6 +41,7 @@ copy /Y CommandLineOptions.txt lwmovie-release\doc\
 copy /Y Cake_Documentation.pdf lwmovie-release\doc\
 copy /Y architecture.pdf lwmovie-release\doc\
 copy /Y LICENSE.txt lwmovie-release\doc\
+copy /Y LICENSE-lwroqenc.txt lwmovie-release\doc\
 copy /Y README-libjpeg.txt lwmovie-release\doc\
 copy /Y Using_lwmovie.txt lwmovie-release\doc\
 copy /Y gpudecoding_d3d11.txt lwmovie-release\doc\
