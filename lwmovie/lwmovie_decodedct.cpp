@@ -67,7 +67,7 @@
 #include "lwmovie_vlc.hpp"
 #include "lwmovie_bits.hpp"
 
-void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *pOutRun, lwmSInt16 *pOutLevel)
+void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwmovie::m1v::vlc::lwmHRLC *dct_coeff_tbl, lwmUInt8 *pOutRun, lwmSInt16 *pOutLevel)
 {
 	lwmUInt8 outRun;
 	lwmSInt16 outLevel;
@@ -92,8 +92,8 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 
 	if (index > 3)
 	{
-		lwmUInt16 value = dct_coeff_tbl[index];
-		outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
+		const lwmovie::m1v::vlc::lwmHRLC &hrlc = dct_coeff_tbl[index];
+		outRun = hrlc.run;
 		if (outRun == lwmovie::m1v::vlc::END_OF_BLOCK_U)
 		{
 			outLevel = lwmovie::m1v::vlc::END_OF_BLOCK_S;
@@ -102,10 +102,10 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 		{
 			/* num_bits = (value & NUM_MASK) + 1; */
 			/* flush_bits(num_bits); */
-			lwmUInt8 flushed = static_cast<lwmUInt8>((value & lwmovie::m1v::vlc::NUM_MASK) + 1);
+			lwmUInt8 flushed = static_cast<lwmUInt8>(hrlc.num + 1);
 			if (outRun != lwmovie::m1v::vlc::ESCAPE_U)
 			{
-				outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
+				outLevel = hrlc.level;
 				/* get_bits1(value); */
 				/* if (value) *level = -*level; */
 				if (next32bits & (static_cast<lwmUInt32>(0x80000000) >> flushed))
@@ -148,35 +148,35 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 	}
 	else
 	{
-		lwmUInt16 value;
+		const lwmovie::m1v::vlc::lwmHRLC *hrlc;
 		if (index == 2)
 		{
 			/* show_bits10(index); */
 			index = next32bits >> 22;
-			value = lwmovie::m1v::vlc::dct_coeff_tbl_2[index & 3];
+			hrlc = &lwmovie::m1v::vlc::dct_coeff_tbl_2[index & 3];
 		}
 		else if (index == 3)
 		{
 			/* show_bits10(index); */
 			index = next32bits >> 22;
-			value = lwmovie::m1v::vlc::dct_coeff_tbl_3[index & 3];
+			hrlc = &lwmovie::m1v::vlc::dct_coeff_tbl_3[index & 3];
 		}
 		else if (index)
 		{
 			/* index == 1 */
 			/* show_bits12(index); */
 			index = next32bits >> 20;
-			value = lwmovie::m1v::vlc::dct_coeff_tbl_1[index & 15];
+			hrlc = &lwmovie::m1v::vlc::dct_coeff_tbl_1[index & 15];
 		}
 		else
 		{
 			/* index == 0 */
 			/* show_bits16(index); */
 			index = next32bits >> 16;
-			value = lwmovie::m1v::vlc::dct_coeff_tbl_0[index & 255];
+			hrlc = &lwmovie::m1v::vlc::dct_coeff_tbl_0[index & 255];
 		}
-		outRun = (value & lwmovie::m1v::vlc::RUN_MASK) >> lwmovie::m1v::vlc::RUN_SHIFT;
-		outLevel = (value & lwmovie::m1v::vlc::LEVEL_MASK) >> lwmovie::m1v::vlc::LEVEL_SHIFT;
+		outRun = hrlc->run;
+		outLevel = hrlc->level;
 
 		/*
 		 * Fold these operations together to make it fast...
@@ -186,7 +186,7 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 		/* get_bits1(value); */
 		/* if (value) *level = -*level; */
 
-		flushed = (value & lwmovie::m1v::vlc::NUM_MASK) + 2;
+		flushed = hrlc->num + 2;
 		if ((next32bits >> (32-flushed)) & 0x1)
 			outLevel = -outLevel;
 

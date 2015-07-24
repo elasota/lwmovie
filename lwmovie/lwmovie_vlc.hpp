@@ -24,6 +24,8 @@
 
 #include "../common/lwmovie_coretypes.h"
 
+#define LWMOVIE_PREPROCESS_MPEG_1_VLC(n) ((n << 1) - 1)
+
 namespace lwmovie
 {
 	namespace m1v
@@ -43,18 +45,12 @@ namespace lwmovie
 			//const int DCT_COEFF_NEXT = 1;
 
 			/* Special values for DCT Coefficients */
+			const lwmUInt8 DCT_ERROR_U = 63;
+			const lwmSInt8 DCT_ERROR_S = 63;
 			const lwmUInt8 END_OF_BLOCK_U = 62;
 			const lwmSInt8 END_OF_BLOCK_S = 62;
 			const lwmUInt8 ESCAPE_U = 61;
 			const lwmSInt8 ESCAPE_S = 61;
-
-			/* DCT coeff tables. */
-			const lwmUInt16 RUN_MASK = 0xfc00;
-			const lwmUInt16 LEVEL_MASK = 0x03f0;
-			const lwmUInt16 NUM_MASK = 0x000f;
-			const int RUN_SHIFT = 10;
-			const int LEVEL_SHIFT = 4;
-
 
 			struct lwmVlcValue8
 			{
@@ -66,6 +62,14 @@ namespace lwmovie
 			{
 				lwmSInt8 value;
 				lwmUInt8 num_bits;
+			};
+
+			// Homogenized run-level code
+			struct lwmHRLC
+			{
+				lwmUInt8 run;
+				lwmSInt8 level;
+				lwmUInt8 num;
 			};
 
 			enum lwmEMBTypeFlags
@@ -89,12 +93,12 @@ namespace lwmovie
 
 			extern lwmVlcValueS8 motion_vectors[2048];
 
-			extern lwmUInt16 dct_coeff_tbl_0[];
-			extern lwmUInt16 dct_coeff_tbl_1[];
-			extern lwmUInt16 dct_coeff_tbl_2[];
-			extern lwmUInt16 dct_coeff_tbl_3[];
-			extern lwmUInt16 dct_coeff_next[];
-			extern lwmUInt16 dct_coeff_first[];
+			extern lwmHRLC dct_coeff_tbl_0[];
+			extern lwmHRLC dct_coeff_tbl_1[];
+			extern lwmHRLC dct_coeff_tbl_2[];
+			extern lwmHRLC dct_coeff_tbl_3[];
+			extern lwmHRLC dct_coeff_next[];
+			extern lwmHRLC dct_coeff_first[];
 
 			void InitTables();
 		}

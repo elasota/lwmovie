@@ -38,6 +38,11 @@ namespace lwmovie
 {
 	namespace m1v
 	{
+		namespace vlc
+		{
+			struct lwmHRLC;
+		}
+
 		struct IM1VReconstructor;
 		struct IM1VBlockCursor;
 
@@ -240,7 +245,7 @@ namespace lwmovie
 			bool ParseReconBlock(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 			void DecodeDCTCoeffFirst(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 			void DecodeDCTCoeffNext(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
-			void DecodeDCTCoeff(CBitstream *bitstream, const lwmUInt16 *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel);
+			void DecodeDCTCoeff(CBitstream *bitstream, const lwmovie::m1v::vlc::lwmHRLC *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 			lwmUInt8 DecodeDCTDCSizeLum(CBitstream *bitstream);
 			lwmUInt8 DecodeDCTDCSizeChrom(CBitstream *bitstream);
 			lwmUInt8 DecodeMBAddrInc(CBitstream *bitstream);

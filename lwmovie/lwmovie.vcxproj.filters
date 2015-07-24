@@ -108,6 +108,9 @@
     <ClCompile Include="lwmovie_recon_roqsw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lwmovie_vlc_dct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lwmovie_bitstream.hpp">

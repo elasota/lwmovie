@@ -163,6 +163,7 @@
     <ClCompile Include="lwmovie_roq.cpp" />
     <ClCompile Include="lwmovie_vlc.cpp" />
     <ClCompile Include="lwmovie_vlctables.cpp" />
+    <ClCompile Include="lwmovie_vlc_dct.cpp" />
     <ClCompile Include="mpeg_deslicer.cpp" />
     <ClCompile Include="mpeg_vidstream.cpp" />
   </ItemGroup>
