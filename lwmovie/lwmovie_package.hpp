@@ -28,7 +28,7 @@
 
 enum lwmEVersion
 {
-	lwmVERSION	= 1,
+	lwmVERSION	= 2,
 };
 
 enum lwmEVideoStreamType
@@ -141,9 +141,8 @@ struct lwmPacketHeader
 
 	inline lwmEPacketType GetPacketType() const { return static_cast<lwmEPacketType>(packetTypeAndFlags & ~(EFlag_All)); }
 };
-LWM_DECLARE_PLAN_SENTINEL		(0, lwmPacketHeader, lwmUInt16, 0);
-LWM_DECLARE_PLAN_SENTINEL		(1, lwmPacketHeader, lwmUInt16, 0x01ff);
-LWM_DECLARE_PLAN_MEMBER			(2, lwmPacketHeader, lwmUInt8, packetTypeAndFlags);
+LWM_DECLARE_PLAN_SENTINEL		(0, lwmPacketHeader, lwmUInt32, 0x6c77504b);
+LWM_DECLARE_PLAN_MEMBER			(1, lwmPacketHeader, lwmUInt8, packetTypeAndFlags);
 LWM_DECLARE_PLAN(lwmPacketHeader);
 
 struct lwmPacketHeaderFull

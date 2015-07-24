@@ -34,7 +34,6 @@ template<class T> struct lwmPlanMemberHandler { };
 		enum\
 		{\
 			SIZE = sizeof(type),\
-			SIZE_NON_ZERO = sizeof(type) + 1\
 		};\
 		static bool Read(type &output, const void *buffer);\
 		static void Write(const type &input, void *buffer);\
@@ -104,7 +103,7 @@ class lwmComplexPlanMember<TPlanType, index>\
 private:\
 	enum\
 	{\
-		MEMBER_SIZE = lwmPlanHandler<TBackingType>::SIZE_NON_ZERO\
+		MEMBER_SIZE = lwmPlanHandler<TBackingType>::SIZE\
 	};\
 public:\
 	enum\
@@ -138,7 +137,7 @@ public:\
 	LWM_DECLARE_PLAN_MEMBER_NZENUM(index, TPlanType, TMemberType, member, SIZE, Read, Write)
 
 #define LWM_DECLARE_PLAN_MEMBER_NONZERO(index, TPlanType, TMemberType, member)	\
-	LWM_DECLARE_PLAN_MEMBER_NZENUM(index, TPlanType, TMemberType, member, SIZE_NON_ZERO, ReadNonZero, WriteNonZero)
+	LWM_DECLARE_PLAN_MEMBER_NZENUM(index, TPlanType, TMemberType, member, SIZE, ReadNonZero, WriteNonZero)
 
 template<class TPlanType, int TIndex, bool TClimbHigher>
 class lwmPlanMemberClimber
@@ -195,7 +194,7 @@ public:\
 	LWM_DECLARE_PLAN_SENTINEL_NZENUM(index, TPlanType, TSentinelType, expectedValue, SIZE, Read, Write)
 
 #define LWM_DECLARE_PLAN_SENTINEL_NONZERO(index, TPlanType, TSentinelType, expectedValue)	\
-	LWM_DECLARE_PLAN_SENTINEL_NZENUM(index, TPlanType, TSentinelType, expectedValue, SIZE_NON_ZERO, ReadNonZero, WriteNonZero)
+	LWM_DECLARE_PLAN_SENTINEL_NZENUM(index, TPlanType, TSentinelType, expectedValue, SIZE, ReadNonZero, WriteNonZero)
 
 #define LWM_DECLARE_PLAN(TPlanType)	\
 	template<>\
@@ -223,7 +222,7 @@ public:\
 
 // Implementations
 template<class T>
-inline bool lwmReadUIntTrivial(T &output, const void *buffer, bool allowZero)
+inline bool lwmReadUInt(T &output, const void *buffer, bool allowZero)
 {
 	T result;
 	result = 0;
@@ -236,132 +235,35 @@ inline bool lwmReadUIntTrivial(T &output, const void *buffer, bool allowZero)
 }
 
 template<class T>
-inline void lwmWriteUIntTrivial(const T &input, void *buffer)
+inline void lwmWriteUInt(const T &input, void *buffer)
 {
 	T v = input;
 	for(lwmLargeUInt i=0;i<sizeof(T);i++)
 		static_cast<lwmUInt8 *>(buffer)[i] = static_cast<lwmUInt8>((v >> ((sizeof(T) - 1 - i) * 8)) & 0xff);
 }
 
-template<class T>
-inline bool lwmReadUIntFragmented(T &output, const void *buffer, bool allowZero)
-{
-	const lwmUInt8 *splitter = static_cast<const lwmUInt8*>(buffer);
-	if((splitter[0] & 0xc0) != 0xc0 ||
-		(splitter[sizeof(T)/2] & 0x3c) != 0x3c ||
-		(splitter[sizeof(T)] & 0x3) != 0x3)
-		return false;
-	lwmUInt32 highFragment = static_cast<lwmUInt32>(splitter[0]) << (sizeof(T)*4 - 6);
-	for(int i=1;i<sizeof(T)/2;i++)
-		highFragment |= static_cast<lwmUInt32>(splitter[i]) << (sizeof(T)*4 - 6 - i*8);
-	highFragment |= static_cast<lwmUInt32>(splitter[sizeof(T)/2] & 0xc0) >> 6;
 
-	lwmUInt32 lowFragment = static_cast<lwmUInt32>(splitter[sizeof(T)/2] & 0x3) << (sizeof(T)*4 - 2);
-	for(int i=sizeof(T)/2+1;i<sizeof(T);i++)
-		lowFragment |= static_cast<lwmUInt32>(splitter[i]) << ((sizeof(T) - i)*8 - 2);
-	lowFragment |= static_cast<lwmUInt32>(splitter[sizeof(T)]) >> 2;
-
-	T outBuilder;
-	outBuilder = static_cast<T>(highFragment) << sizeof(T)*4;
-	outBuilder |= static_cast<T>(lowFragment);
-
-	if(!allowZero && outBuilder == 0)
-		return false;
-
-	output = outBuilder;
-
-	return true;
-}
-
-template<>
-inline bool lwmReadUIntFragmented<lwmUInt8>(lwmUInt8 &output, const void *buffer, bool allowZero)
-{
-	const lwmUInt8 *splitter = static_cast<const lwmUInt8*>(buffer);
-	if((splitter[0] & 0xc3) != 0xc3 ||
-		(splitter[1] & 0xc3) != 0xc3)
-		return false;
-	lwmUInt8 outBuilder = static_cast<lwmUInt8>(((splitter[1] >> 2) & 0xf) | ((splitter[0] << 2) & 0xf0));
-	if(!allowZero && outBuilder == 0)
-		return false;
-
-	output = outBuilder;
-
-	return true;
-}
-
-template<class T>
-void lwmWriteUIntFragmented(const T &input, void *buffer)
-{
-	lwmUInt8 splitTemp[sizeof(T)+1];
-	for(int i=0;i<sizeof(T)+1;i++)
-		splitTemp[i] = 0;
-	lwmUInt32 highFragment = static_cast<lwmUInt32>(input >> sizeof(T)*4);
-	lwmUInt32 mask = (((static_cast<lwmUInt32>(1) << (sizeof(T)*4 - 1)) - 1) * 2) + 1;
-	lwmUInt32 lowFragment = static_cast<lwmUInt32>(input) & mask;
-
-	for(int i=0;i<sizeof(T)/2;i++)
-		splitTemp[i] |= highFragment >> (sizeof(T)*4 - i*8 - 6);
-	splitTemp[sizeof(T)/2] |= (highFragment << 6);
-	for(int i=sizeof(T)/2;i<sizeof(T);i++)
-		splitTemp[i] |= lowFragment >> ((sizeof(T) - i)*8 - 2);
-	splitTemp[sizeof(T)] |= lowFragment << 2;
-	splitTemp[0] |= 0xc0;
-	splitTemp[sizeof(T)/2] |= 0x3c;
-	splitTemp[sizeof(T)] |= 0x3;
-
-	for(int i=0;i<sizeof(T)+1;i++)
-		static_cast<lwmUInt8*>(buffer)[i] = splitTemp[i];
-}
-
-template<>
-inline void lwmWriteUIntFragmented<lwmUInt8>(const lwmUInt8 &input, void *buffer)
-{
-	lwmUInt8 *out = static_cast<lwmUInt8*>(buffer);
-	out[0] = static_cast<lwmUInt8>(0xc3 | (input >> 2));
-	out[1] = static_cast<lwmUInt8>(0xc3 | (input << 2));
-}
-
-
-#define LWM_DECLARE_HANDLER_UINT_TRIVIAL(type)	\
+#define LWM_DECLARE_HANDLER_UINT(type)	\
 inline bool lwmPlanHandler<type>::Read(type &output, const void *buffer)\
 {\
-	return lwmReadUIntTrivial(output, buffer, true);\
+	return lwmReadUInt(output, buffer, true);\
 }\
 inline bool lwmPlanHandler<type>::ReadNonZero(type &output, const void *buffer)\
 {\
-	return lwmReadUIntFragmented(output, buffer, false);\
+	return lwmReadUInt(output, buffer, false);\
 }\
 inline void lwmPlanHandler<type>::Write(const type &input, void *buffer)\
 {\
-	lwmWriteUIntTrivial(input, buffer);\
+	lwmWriteUInt(input, buffer);\
 }\
 inline void lwmPlanHandler<type>::WriteNonZero(const type &input, void *buffer)\
 {\
-	lwmWriteUIntTrivial(input, buffer);\
+	lwmWriteUInt(input, buffer);\
 }\
 
-
-#define LWM_DECLARE_HANDLER_UINT_FRAGMENTED(type)	\
-inline bool lwmPlanHandler<type>::Read(type &output, const void *buffer)\
-{\
-	return lwmReadUIntTrivial(output, buffer, true);\
-}\
-inline bool lwmPlanHandler<type>::ReadNonZero(type &output, const void *buffer)\
-{\
-	return lwmReadUIntFragmented(output, buffer, false);\
-}\
-inline void lwmPlanHandler<type>::Write(const type &input, void *buffer)\
-{\
-	lwmWriteUIntTrivial(input, buffer);\
-}\
-inline void lwmPlanHandler<type>::WriteNonZero(const type &input, void *buffer)\
-{\
-	lwmWriteUIntFragmented(input, buffer);\
-}\
-
-LWM_DECLARE_HANDLER_UINT_FRAGMENTED(lwmUInt8)
-LWM_DECLARE_HANDLER_UINT_FRAGMENTED(lwmUInt16)
-LWM_DECLARE_HANDLER_UINT_FRAGMENTED(lwmUInt32)
-LWM_DECLARE_HANDLER_UINT_FRAGMENTED(lwmUInt64)
+LWM_DECLARE_HANDLER_UINT(lwmUInt8)
+LWM_DECLARE_HANDLER_UINT(lwmUInt16)
+LWM_DECLARE_HANDLER_UINT(lwmUInt32)
+LWM_DECLARE_HANDLER_UINT(lwmUInt64)
 
 #endif
