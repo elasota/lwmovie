@@ -21,6 +21,7 @@
 */
 #include <new>
 #include <stdlib.h>
+#include <string.h>
 #include "lwmovie_cake.h"
 
 class lwmCake
