@@ -274,6 +274,13 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
+		{
+			lwmCakeDecodeOptions decodeOptions;
+			memset(&decodeOptions, 0, sizeof(decodeOptions));
+			if (!lwmCake_BeginDecoding(cake, &decodeOptions))
+				return -1;
+		}
+
 		window = SDL_CreateWindow("lwplay", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight), 0);
 		renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -323,13 +330,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	{
-		lwmCakeDecodeOptions decodeOptions;
-		memset(&decodeOptions, 0, sizeof(decodeOptions));
-		if(!lwmCake_BeginDecoding(cake, &decodeOptions))
-			return -1;
-	}
-	
 	if(movieInfo.numAudioStreams > 0 && audioDevice)
 		lwmCake_SetStreamAudioDevice(cake, 0, audioDevice);
 
