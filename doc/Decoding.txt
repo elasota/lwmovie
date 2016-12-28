@@ -1,11 +1,7 @@
-== Encoding videos for lwmovie ==
-You should use the provided "lwfe" application to encode your videos.  If you'd prefer more advanced options, please see CommandLineOptions.txt.
+=== Decoding videos with Cake ===
+Using Cake is strongly recommended for common cases.  Cake provides simpler IO abstractions and simplifies management of time and synchronization.  See the "Cake_Documentation" file for details.
 
-Encoding with lwfe will convert videos to an intermediate file (.lwiv for video, .lwia for audio), which can then be combined into an output (.lwmv) file.
-
-
-If you need to run the lwmovie utilities from a command line, please see CommandLineOptions.txt.
-
+However, as Cake is built on top of lwmovie, you'll often to deal with lwmovie structures and calls regardless.
 
 === Decoding videos with lwmovie ===
 lwmovie depends on the host application to perform timing and IO.  To avoid IO stalls, it instead provides decoding hints that specify how much data needs to be read ahead to avoid falling behind.
@@ -25,6 +21,7 @@ lwmDIGEST_Nothing - Indicates that lwmovie has made no progress on any operation
 lwmDIGEST_Worked - Indicates that lwmovie has performed some internal work, even if it hasn't digested any data.
 lwmDIGEST_Error - Indicates that lwmovie encountered an error and is unable to continue processing.
 lwmDIGEST_VideoSync - Indicates that a new video frame is available.
+lwmDIGEST_VideoSync_Dropped - Indicates that a video frame synchronization point was reached, so timing information will be available, but no actual video frame is available.  This can happen when frame drop modes are enabled.
 
 === Accessing video stream information ===
 After lwmDIGEST_Initialize is received, you can access information about the video using lwmGetStreamParameterU32, including the dimensions, frame rate, and reconstructor type.
@@ -105,6 +102,16 @@ To assign a work notifier to an RGB converter, use lwmVideoRGBConverter_SetWorkN
 
 Currently, pooling the digester causes a minor increase in memory usage and pooling the reconstructor causes a heavy increase in memory usage.  Pooling the reconstructor is more beneficial if there are fewer slices than available CPUs, but has almost no improvement when using a high slice count, so you should avoid pooling the reconstructor unless you're playing back videos with low slice counts.
 
+=== Dropping frames === 
+If video decoding is falling behind due to excessive CPU load, it may be desirable to disable video decoding temporarily to catch up.  Video decoding can be disabled by enabling frame dropping, which skips decoding of frames.
+
+You can adjust lwmovie's frame drop behavior by using lwmSetStreamParameterU32 with the lwmSTREAMPARAM_U32_DropAggressiveness parameter.  It has 4 values, each will generally cause more frame drops than the one before it:
+lwmDROPAGGRESSIVENESS_None: Disables frame dropping.
+lwmDROPAGGRESSIVENESS_B: Drop B-frames.  Dropping a B-frame will never cause any other frames to be dropped, so disabling dropping from this mode will resume decoding immediately.
+lwmDROPAGGRESSIVENESS_BP: Drop B-frames and P-frames.  P-frames will cause all subsequent P and B frames to be dropped until an I frame is reached, so recovery from this mode is significantly slower.
+lwmDROPAGGRESSIVENESS_BPI: Drop B-frames, P-frames, and I-frames.  In all currently-supported codecs, this will drop all frames and recovery time is similar to BP mode.
+lwmDROPAGGRESSIVENESS_All: Guaranteed to drop all frame types, including frame types not yet introduced.
+
 === Audio ===
 lwmovie's audio decoding process uses a synchronization mechanism to ensure that playback can recover in the case of errors or stalls.  Audio samples returned by the decoder are intended to be queued consecutively, or played back immediately if no samples are queued.
 
@@ -140,7 +147,7 @@ NOTE:
 - lwmMovieState_SynchronizeAudioPlayback: Synchronizes playback of audio with the most recent video time.  This should only be called if audio samples retrieved using lwmMovieState_ReadAudioSamples can be played back immediately.
 - lwmMovieState_NotifyAudioPlaybackUnderrun: Unsynchronizes audio, allowing the audio decode system to resynchronize at a future point in time.
 - lwmMovieState_GetAudioStreamCount: Returns the number of audio streams.
-- lwmMovieState_SetAudioStreamEnabled: Enables playback of an audio stream if a non-zero number is passed to the "enable" parameter, or disables playback if zero is passed.  Enabling a stream will desynchronize audio.  Returns a non-zero number if the enable or disable operation succeeded, or 0 if a problem occurred (i.e. insufficient memory, .
+- lwmMovieState_SetAudioStreamEnabled: Enables playback of an audio stream if a non-zero number is passed to the "enable" parameter, or disables playback if zero is passed.  Enabling a stream will desynchronize audio.  Returns a non-zero number if the enable or disable operation succeeded, or 0 if a problem occurred (i.e. insufficient memory).
 
 === Cleaning up ===
 To destroy a movie state, call lwmMovieState_Destroy and pass the movie state.
