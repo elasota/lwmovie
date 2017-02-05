@@ -96,6 +96,10 @@ namespace lwenccmd
 
                 _waitHandle.Set();
             }
+
+            void ITaskRunnerMonitor.OnKillCleanup()
+            {
+            }
         };
 
         static void ShowUsage()

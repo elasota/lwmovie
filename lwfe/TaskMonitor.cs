@@ -131,5 +131,23 @@ namespace lwfe
         void ITaskRunnerMonitor.OnFinished()
         {
         }
+
+
+        void ITaskRunnerMonitor.OnKillCleanup()
+        {
+            Invoke((MethodInvoker)delegate
+            {
+                Close();
+            });
+        }
+
+        private void TaskMonitor_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (_taskRunner.IsRunning)
+            {
+                _taskRunner.Kill();
+                e.Cancel = true;
+            }
+        }
     }
 }

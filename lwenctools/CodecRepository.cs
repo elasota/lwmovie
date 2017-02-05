@@ -30,6 +30,14 @@ namespace lwenctools
         Control ICodec.CreateCodecControl() { return new ROQVideoOptionsControl(); }
     }
 
+    public class TheoraVideoCodec : ICodec
+    {
+        string ICodec.CodecID { get { return "Theora"; } }
+        string ICodec.Name { get { return "lwtheora"; } }
+        IExecutionPlanSettings ICodec.CreateExecutionPlanSettings() { return new TheoraVideoSettings(); }
+        Control ICodec.CreateCodecControl() { return new TheoraVideoOptionsControl(); }
+    }
+
     public class CELTAudioCodec : ICodec
     {
         string ICodec.CodecID { get { return "CELT"; } }
@@ -58,6 +66,7 @@ namespace lwenctools
     {
         public static ICodec[] VideoCodecs = new ICodec[]
         {
+            new TheoraVideoCodec(),
             new MPEG1VideoCodec(),
             new ROQVideoCodec(),
         };

@@ -89,6 +89,7 @@ namespace lwenctools
 
                     plan.AddStage(new ExecutionStage(lwroqencPath, stageArgs.ToArray()));
                 }
+                plan.CompletionCallback = pcd;
                 plans.Add(plan);
             }
         }

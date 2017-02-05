@@ -22,7 +22,7 @@
 #include "../common/lwmovie_attribs.h"
 #include "../common/lwmovie_coretypes.h"
 
-#if defined(_MSC_VER) && (defined(_M_X86) || defined(_M_X64))
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64))
 #include <intrin.h>
 
 namespace lwmovie

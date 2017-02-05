@@ -21,16 +21,18 @@
  */
 #include <new>
 #include "lwmovie.h"
-#include "lwmovie_fillable.hpp"
-#include "lwmovie_package.hpp"
-#include "lwmovie_videotypes.hpp"
-#include "lwmovie_recon_m1vsw.hpp"
-#include "lwmovie_audiobuffer.hpp"
-#include "lwmovie_mp2_decoder.hpp"
-#include "lwmovie_celt_decoder.hpp"
 #include "lwmovie_adpcm_decoder.hpp"
+#include "lwmovie_audiobuffer.hpp"
+#include "lwmovie_celt_decoder.hpp"
+#include "lwmovie_fillable.hpp"
+#include "lwmovie_mp2_decoder.hpp"
+#include "lwmovie_package.hpp"
+#include "lwmovie_recon_m1vsw.hpp"
 #include "lwmovie_roq.hpp"
 #include "lwmovie_recon_roqsw.hpp"
+#include "lwmovie_theoradec.hpp"
+#include "lwmovie_videotypes.hpp"
+
 #include "../mp2dec2/lwmovie_layer2_decodestate.hpp"
 
 namespace lwmovie
@@ -113,6 +115,9 @@ struct lwmMovieState
 	lwmIVideoReconstructor *videoReconstructor;
 	lwmovie::m1v::CVidStream *m1vDecoder;
 	lwmovie::roq::CVideoDecoder *roqDecoder;
+#ifndef LWMOVIE_NO_THEORA
+	lwmovie::theora::CTheoraDecoder *theoraDecoder;
+#endif
 	lwmovie::CAudioCodec **audioDecoders;
 
 	lwmMovieState(lwmSAllocator *alloc, lwmUInt32 userFlags);
@@ -131,6 +136,9 @@ lwmMovieState::lwmMovieState(lwmSAllocator *pAlloc, lwmUInt32 pUserFlags)
 	, alloc(pAlloc)
 	, m1vDecoder(NULL)
 	, roqDecoder(NULL)
+#ifndef LWMOVIE_NO_THEORA
+	, theoraDecoder(NULL)
+#endif
 	, audioDecoders(NULL)
 	, audioStreamInfos(NULL)
 	, isAudioSynchronized(false)
@@ -239,6 +247,15 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 				else
 					result = lwmDIGEST_Error;
 			}
+#ifndef LWMOVIE_NO_THEORA
+			else if(movieState->theoraDecoder)
+			{
+				if(movieState->theoraDecoder->DigestStreamParameters(packetData, packetSize))
+					movieState->needVideoStreamParameters = false;
+				else
+					result = lwmDIGEST_Error;
+			}
+#endif
 			*outResult = result;
 		}
 		break;
@@ -258,6 +275,13 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 				if (!movieState->roqDecoder->DigestDataPacket(packetData, packetSize, outResult))
 					result = lwmDIGEST_Error;
 			}
+#ifndef LWMOVIE_NO_THEORA
+			else if (movieState->theoraDecoder)
+			{
+				if (!movieState->theoraDecoder->DigestDataPacket(packetData, packetSize, outResult))
+					result = lwmDIGEST_Error;
+			}
+#endif
 			*outResult = result;
 		}
 		break;
@@ -277,11 +301,19 @@ static void DigestPacket(lwmMovieState *movieState, lwmUInt32 *outResult)
 						movieState->m1vDecoder->WaitForDigestFinish();
 						frameAvailable = movieState->m1vDecoder->EmitFrame();
 					}
-					if (movieState->roqDecoder)
+					else if (movieState->roqDecoder)
 					{
 						//movieState->roqDecoder->WaitForFinish();
 						frameAvailable = true;
 					}
+#ifndef LWMOVIE_NO_THEORA
+					else if (movieState->theoraDecoder)
+					{
+						movieState->theoraDecoder->WaitForDigestFinish();
+						frameAvailable = movieState->theoraDecoder->EmitFrame();
+					}
+#endif
+
 					movieState->videoReconstructor->WaitForFinish();
 					movieState->streamSyncPeriods[lwmSTREAMTYPE_Video] = syncPoint.videoPeriod;
 					if(frameAvailable)
@@ -471,6 +503,24 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			movieState->needVideoStreamParameters = false;
 		}
 		break;
+#ifndef LWMOVIE_NO_THEORA
+	case lwmVST_Theora_Variant:
+		{
+			if (movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_420P_Planar && movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_3Channel_Planar)
+				goto cleanup;
+			if (movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 &&
+				movieState->videoInfo.channelLayout != lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG)
+				goto cleanup;
+			if (movieState->videoInfo.numWriteOnlyWorkFrames != 1 || movieState->videoInfo.numReadWriteWorkFrames != 0)
+				goto cleanup;
+			movieState->theoraDecoder = alloc->NAlloc<lwmovie::theora::CTheoraDecoder>(1);
+			if (!movieState->theoraDecoder)
+				goto cleanup;
+			new (movieState->theoraDecoder) lwmovie::theora::CTheoraDecoder(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, movieState->videoInfo.frameFormat, movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
+			movieState->needVideoStreamParameters = true;
+		}
+		break;
+#endif
 	default:
 		goto cleanup;
 	};
@@ -849,6 +899,9 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 					case lwmVST_RoQ:
 						*outValue = lwmRC_RoQ;
 						return 1;
+					case lwmVST_Theora_Variant:
+						*outValue = lwmRC_Theora;
+						return 1;
 					default:
 						return 0;
 					};
@@ -913,6 +966,10 @@ LWMOVIE_API_LINK void lwmMovieState_SetStreamParameterU32(lwmMovieState *movieSt
 			case lwmSTREAMPARAM_U32_DropAggressiveness:
 				if(movieState->m1vDecoder)
 					movieState->m1vDecoder->SetDropAggressiveness(static_cast<lwmEDropAggressiveness>(value));
+#ifndef LWMOVIE_NO_THEORA
+				else if(movieState->theoraDecoder)
+					movieState->theoraDecoder->SetDropAggressiveness(static_cast<lwmEDropAggressiveness>(value));
+#endif
 				return;
 			default:
 				return;
@@ -972,6 +1029,22 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwm
 			return recon;
 		}
 		break;
+#ifndef LWMOVIE_NO_THEORA
+	case lwmRC_Theora:
+		{
+			lwmovie::theora::CSoftwareReconstructor *recon = alloc->NAlloc<lwmovie::theora::CSoftwareReconstructor>(1);
+			if (!recon)
+				return NULL;
+			new (recon) lwmovie::theora::CSoftwareReconstructor();
+			if (!recon->Initialize(alloc, frameProvider, movieState))
+			{
+				lwmIVideoReconstructor_Destroy(recon);
+				recon = NULL;
+			}
+			return recon;
+		}
+		break;
+#endif
 	};
 	return NULL;
 }
@@ -986,8 +1059,12 @@ LWMOVIE_API_LINK void lwmMovieState_SetVideoReconstructor(lwmMovieState *movieSt
 	movieState->videoReconstructor = recon;
 	if (movieState->m1vDecoder)
 		movieState->m1vDecoder->SetReconstructor(recon);
-	if (movieState->roqDecoder)
+	else if (movieState->roqDecoder)
 		movieState->roqDecoder->SetReconstructor(recon);
+#ifndef LWMOVIE_NO_THEORA
+	else if (movieState->theoraDecoder)
+		movieState->theoraDecoder->SetReconstructor(recon);
+#endif
 }
 
 LWMOVIE_API_LINK void lwmMovieState_SetVideoDigestWorkNotifier(lwmMovieState *movieState, lwmSWorkNotifier *videoDigestWorkNotifier)
@@ -1012,6 +1089,13 @@ LWMOVIE_API_LINK void lwmMovieState_Destroy(lwmMovieState *movieState)
 		movieState->roqDecoder->~CVideoDecoder();
 		alloc->Free(movieState->roqDecoder);
 	}
+#ifndef LWMOVIE_NO_THEORA
+	if(movieState->theoraDecoder)
+	{
+		movieState->theoraDecoder->~CTheoraDecoder();
+		alloc->Free(movieState->theoraDecoder);
+	}
+#endif
 	if(movieState->audioDecoders)
 	{
 		for(lwmLargeUInt i=0;i<movieState->audioCommonInfo.numAudioStreams;i++)
@@ -1048,6 +1132,10 @@ LWMOVIE_API_LINK void lwmMovieState_VideoDigestParticipate(lwmMovieState *movieS
 {
 	if(movieState->m1vDecoder)
 		movieState->m1vDecoder->Participate();
+#ifndef LWMOVIE_NO_THEORA
+	else if(movieState->theoraDecoder)
+		movieState->theoraDecoder->Participate();
+#endif
 }
 
 LWMOVIE_API_LINK int lwmMovieState_IsAudioPlaybackSynchronized(lwmMovieState *movieState)

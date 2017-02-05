@@ -28,8 +28,7 @@ struct lwmMovieState;
 
 struct lwmSAllocator
 {
-	void *(*allocFunc)(struct lwmSAllocator *alloc, lwmLargeUInt sz);
-	void (*freeFunc)(struct lwmSAllocator *alloc, void *ptr);
+	void *(*reallocFunc)(struct lwmSAllocator *alloc, void *ptr, lwmLargeUInt sz);
 
 #ifdef __cplusplus
 	template<class T>
@@ -38,12 +37,12 @@ struct lwmSAllocator
 		lwmLargeUInt liMax = ~static_cast<lwmLargeUInt>(0);
 		if(liMax / sizeof(T) < count)
 			return NULL;
-		return static_cast<T*>(allocFunc(this, sizeof(T) * count));
+		return static_cast<T*>(reallocFunc(this, NULL, sizeof(T) * count));
 	}
 
 	inline void Free(void *ptr)
 	{
-		freeFunc(this, ptr);
+		reallocFunc(this, ptr, 0);
 	}
 #endif
 };

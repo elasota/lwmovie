@@ -36,14 +36,9 @@ using namespace lwmovie::riff;
 static const unsigned int FRAME_SIZE = 1024;
 static const unsigned int ENCODE_DELAY = 128;
 
-static void *myAlloc(lwmSAllocator *alloc, lwmLargeUInt sz)
+static void *myRealloc(lwmSAllocator *alloc, void *ptr, lwmLargeUInt sz)
 {
-	return malloc(sz);
-}
-
-static void myFree(lwmSAllocator *alloc, void *ptr)
-{
-	free(ptr);
+	return realloc(ptr, sz);
 }
 
 void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSecond, bool vbr, const char *metaID)
@@ -52,8 +47,7 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 	CRIFFDataChunk *fmtAtom = rootAtom->FindDataChild(SFourCC('f', 'm', 't', ' '));
 
 	lwmSAllocator alloc;
-	alloc.allocFunc = myAlloc;
-	alloc.freeFunc = myFree;
+	alloc.reallocFunc = myRealloc;
 
 	SWAVFormat wavFormat;
 	wavFormat.Read(fmtAtom, inFile);

@@ -77,7 +77,7 @@
             this.txtSlices.Location = new System.Drawing.Point(120, 3);
             this.txtSlices.Name = "txtSlices";
             this.txtSlices.Size = new System.Drawing.Size(79, 20);
-            this.txtSlices.TabIndex = 1;
+            this.txtSlices.TabIndex = 0;
             this.txtSlices.Text = "8";
             // 
             // chkTwoPass
@@ -85,9 +85,9 @@
             this.chkTwoPass.AutoSize = true;
             this.chkTwoPass.Location = new System.Drawing.Point(120, 32);
             this.chkTwoPass.Name = "chkTwoPass";
-            this.chkTwoPass.Size = new System.Drawing.Size(59, 17);
-            this.chkTwoPass.TabIndex = 2;
-            this.chkTwoPass.Text = "Enable";
+            this.chkTwoPass.Size = new System.Drawing.Size(65, 17);
+            this.chkTwoPass.TabIndex = 1;
+            this.chkTwoPass.Text = "Enabled";
             this.chkTwoPass.UseVisualStyleBackColor = true;
             // 
             // label2
@@ -159,7 +159,7 @@
             this.cbxBStrategy.Location = new System.Drawing.Point(329, 30);
             this.cbxBStrategy.Name = "cbxBStrategy";
             this.cbxBStrategy.Size = new System.Drawing.Size(121, 21);
-            this.cbxBStrategy.TabIndex = 7;
+            this.cbxBStrategy.TabIndex = 5;
             // 
             // label5
             // 
@@ -179,7 +179,7 @@
             this.cbxMotionEstimation.Location = new System.Drawing.Point(329, 57);
             this.cbxMotionEstimation.Name = "cbxMotionEstimation";
             this.cbxMotionEstimation.Size = new System.Drawing.Size(121, 21);
-            this.cbxMotionEstimation.TabIndex = 9;
+            this.cbxMotionEstimation.TabIndex = 6;
             // 
             // chkAutoRD
             // 
@@ -187,7 +187,7 @@
             this.chkAutoRD.Location = new System.Drawing.Point(120, 61);
             this.chkAutoRD.Name = "chkAutoRD";
             this.chkAutoRD.Size = new System.Drawing.Size(65, 17);
-            this.chkAutoRD.TabIndex = 10;
+            this.chkAutoRD.TabIndex = 2;
             this.chkAutoRD.Text = "Enabled";
             this.chkAutoRD.UseVisualStyleBackColor = true;
             // 
@@ -248,7 +248,7 @@
             this.txtBitrateMax.Location = new System.Drawing.Point(133, 287);
             this.txtBitrateMax.Name = "txtBitrateMax";
             this.txtBitrateMax.Size = new System.Drawing.Size(51, 20);
-            this.txtBitrateMax.TabIndex = 26;
+            this.txtBitrateMax.TabIndex = 9;
             // 
             // lblBitrateMaxSuffix
             // 
@@ -268,7 +268,7 @@
             this.cbxBitrateMaxPresets.Location = new System.Drawing.Point(6, 286);
             this.cbxBitrateMaxPresets.Name = "cbxBitrateMaxPresets";
             this.cbxBitrateMaxPresets.Size = new System.Drawing.Size(121, 21);
-            this.cbxBitrateMaxPresets.TabIndex = 24;
+            this.cbxBitrateMaxPresets.TabIndex = 8;
             this.cbxBitrateMaxPresets.SelectedIndexChanged += new System.EventHandler(this.cbxBitrateMaxPresets_SelectedIndexChanged);
             // 
             // txtBitrateMin
@@ -361,7 +361,7 @@
             this.chkFullRange.Location = new System.Drawing.Point(120, 90);
             this.chkFullRange.Name = "chkFullRange";
             this.chkFullRange.Size = new System.Drawing.Size(65, 17);
-            this.chkFullRange.TabIndex = 33;
+            this.chkFullRange.TabIndex = 3;
             this.chkFullRange.Text = "Enabled";
             this.chkFullRange.UseVisualStyleBackColor = true;
             // 
@@ -393,7 +393,7 @@
             this.groupBox1.Location = new System.Drawing.Point(6, 116);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(454, 151);
-            this.groupBox1.TabIndex = 35;
+            this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
             // 
             // MPEG1VideoOptionsControl

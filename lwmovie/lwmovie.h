@@ -53,12 +53,14 @@ enum lwmEReconstructorType
 	lwmRC_Unknown,
 	lwmRC_MPEG1Video,
 	lwmRC_RoQ,
+	lwmRC_Theora,
 };
 
 enum lwmEFrameFormat
 {
 	lwmFRAMEFORMAT_Unknown,
 	lwmFRAMEFORMAT_8Bit_420P_Planar,
+	lwmFRAMEFORMAT_8Bit_3Channel_Planar,
 	lwmFRAMEFORMAT_8Bit_4Channel_Interleaved,
 
 	lwmFRAMEFORMAT_Count,

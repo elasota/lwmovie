@@ -38,7 +38,7 @@ namespace lwenctools
         public EncodeSettingsProject()
         {
             AudioCodecID = "CELT";
-            VideoCodecID = "M1V";
+            VideoCodecID = "Theora";
             AudioStreams = new List<AudioStreamSettings>();
             VideoCodecSettings = new Dictionary<string, IExecutionPlanSettings>();
             SelectedAudioStreamIndex = -1;
@@ -188,12 +188,14 @@ namespace lwenctools
             string lwmuxPath = currentExeDir + "\\lwmux.exe";
             string lwrerangePath = currentExeDir + "\\lwrerange.exe";
             string lwroqencPath = currentExeDir + "\\lwroqenc.exe";
+            string lwthencPath = currentExeDir + "\\lwthenc.exe";
             string ffmpegPath = currentExeDir + "\\ffmpeg\\bin\\ffmpeg.exe";
 
             settings["lwmuxPath"] = lwmuxPath;
             settings["lwrerangePath"] = lwrerangePath;
             settings["ffmpegPath"] = ffmpegPath;
             settings["lwroqencPath"] = lwroqencPath;
+            settings["lwthencPath"] = lwthencPath;
         }
 
         public bool Validate(List<string> errors)

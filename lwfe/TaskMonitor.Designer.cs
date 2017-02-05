@@ -69,7 +69,8 @@
             this.Controls.Add(this.pbTaskProgressBar);
             this.Controls.Add(this.tabLogFiles);
             this.Name = "TaskMonitor";
-            this.Text = "TaskList";
+            this.Text = "lwmovie Task Monitor";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.TaskMonitor_FormClosing);
             this.Load += new System.EventHandler(this.TaskMonitor_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

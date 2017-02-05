@@ -110,25 +110,18 @@ public:
 
 struct lwmIAllocator : public lwmSAllocator
 {
-	virtual void *Alloc(lwmLargeUInt sz) = 0;
-	virtual void Free(void *ptr) = 0;
+	virtual void *Realloc(void *ptr, lwmLargeUInt sz) = 0;
 
 private:
-	static void *StaticAlloc(struct lwmSAllocator *alloc, lwmLargeUInt sz)
+	static void *StaticRealloc(struct lwmSAllocator *alloc, void *ptr, lwmLargeUInt sz)
 	{
-		return static_cast<lwmIAllocator*>(alloc)->Alloc(sz);
-	}
-
-	static void StaticFree(struct lwmSAllocator *alloc, void *ptr)
-	{
-		static_cast<lwmIAllocator*>(alloc)->Free(ptr);
+		return static_cast<lwmIAllocator*>(alloc)->Realloc(ptr, sz);
 	}
 
 public:
 	lwmIAllocator()
 	{
-		this->allocFunc = StaticAlloc;
-		this->freeFunc = StaticFree;
+		this->reallocFunc = StaticRealloc;
 	}
 };
 

@@ -37,7 +37,14 @@ namespace lwenctools
                     break;
                 }
             }
-            _destProcess.StandardInput.Close();
+            try
+            {
+                _destProcess.StandardInput.Close();
+            }
+            catch (System.InvalidOperationException)
+            {
+                // Process may have been killed
+            }
         }
 
         public void RunThreaded()

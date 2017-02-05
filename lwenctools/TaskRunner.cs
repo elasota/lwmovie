@@ -11,11 +11,21 @@ namespace lwenctools
         private ITaskRunnerMonitor _monitor;
         private IEnumerable<ExecutionPlan> _executionPlans;
         private Queue<ExecutionPlan> _planQueue = new Queue<ExecutionPlan>();
+        private bool _isKilled;
+        private HashSet<System.Diagnostics.Process> _activeProcesses = new HashSet<System.Diagnostics.Process>();
+        private Thread _thread;
+        private AutoResetEvent _finishedEvent;
+        private bool _isRunning;
+
+        public bool IsRunning { get { return _isRunning; } }
 
         public TaskRunner(ITaskRunnerMonitor monitor, IEnumerable<ExecutionPlan> executionPlans)
         {
             _monitor = monitor;
             _executionPlans = executionPlans;
+            _isKilled = false;
+            _isRunning = true;
+            _finishedEvent = new AutoResetEvent(false);
         }
 
         private void ExecuteStages(ExecutionStage[] stages)
@@ -30,8 +40,17 @@ namespace lwenctools
 
                 IStageMonitor stageMonitor = planMonitor.AddStage(stage.ExePath, stage.Args, i);
 
-                ExecutionSet eSet = new ExecutionSet();
-                System.Diagnostics.Process p = ExecutionSet.LaunchProcess(stage.ExePath, stage.Args, i != 0, i != stages.Length - 1, true);
+                System.Diagnostics.Process p;
+                lock (this)
+                {
+                    if (_isKilled)
+                        break;
+                    else
+                    {
+                        p = ExecutionSet.LaunchProcess(stage.ExePath, stage.Args, i != 0, i != stages.Length - 1, true);
+                        _activeProcesses.Add(p);
+                    }
+                }
                 stageProcesses[i] = p;
                 p.ErrorDataReceived += stageMonitor.OnErrorLogMessage;
                 p.BeginErrorReadLine();
@@ -45,7 +64,20 @@ namespace lwenctools
 
             foreach (System.Diagnostics.Process p in stageProcesses)
             {
-                p.WaitForExit();
+                if (p != null)
+                {
+                    while (true)
+                    {
+                        bool exited = p.WaitForExit(1000);
+                        if (exited)
+                            break;
+                    }
+                    lock (this)
+                    {
+                        _activeProcesses.Remove(p);
+                        p.Dispose();
+                    }
+                }
             }
 
             planMonitor.OnFinished();
@@ -83,6 +115,16 @@ namespace lwenctools
                 System.IO.File.Delete(filePath);
 
             _monitor.OnFinished();
+
+            bool wasKilled;
+            lock (this)
+            {
+                _isRunning = false;
+                wasKilled = _isKilled;
+            }
+            
+            if (wasKilled)
+                _monitor.OnKillCleanup();
         }
 
         public void RunExecutionPlans()
@@ -96,8 +138,33 @@ namespace lwenctools
 
             _monitor.OnStarted(numPlans);
 
-            Thread t = new Thread(this.ThreadRunExecutionPlans);
-            t.Start(null);
+            _thread = new Thread(this.ThreadRunExecutionPlans);
+            _thread.Start(null);
+        }
+
+        public void Kill()
+        {
+            if (_thread == null)
+                return;
+
+            lock (this)
+            {
+                if (_isKilled)
+                    return;
+
+                _isKilled = true;
+                foreach (System.Diagnostics.Process p in _activeProcesses)
+                {
+                    try
+                    {
+                        p.Kill();
+                    }
+                    catch (System.InvalidOperationException)
+                    {
+                        // Handle process closing itself
+                    }
+                }
+            }
         }
     }
 }

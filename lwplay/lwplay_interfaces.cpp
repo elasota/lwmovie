@@ -21,18 +21,44 @@
 */
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <unordered_set>
 
 #include <stdlib.h>
 #include "lwplay_interfaces.hpp"
 
-void *lwplay::CAllocator::Alloc(lwmLargeUInt sz)
-{
-	return _aligned_malloc(sz, 16);
-}
+int numAllocations = 0;
+int numActiveAllocations = 0;
 
-void lwplay::CAllocator::Free(void *ptr)
+std::unordered_set<void*> activeAllocs;
+
+void *lwplay::CAllocator::Realloc(void *ptr, lwmLargeUInt sz)
 {
-	_aligned_free(ptr);
+	if (ptr == NULL && sz == 0)
+		return NULL;
+
+	void *outPtr = _aligned_realloc(ptr, sz, 16);
+
+	if (ptr == NULL)
+	{
+		if (sz != 0)
+			activeAllocs.insert(outPtr);
+	}
+	else
+	{
+		if (sz == 0)
+		{
+			std::unordered_set<void*>::iterator element = activeAllocs.find(ptr);
+			if (element == activeAllocs.end())
+				throw new std::exception();
+			activeAllocs.erase(element);
+		}
+		else
+		{
+			activeAllocs.erase(ptr);
+			activeAllocs.insert(outPtr);
+		}
+	}
+	return outPtr;
 }
 
 bool lwplay::CFileReader::IsEOF()

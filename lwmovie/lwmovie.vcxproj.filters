@@ -111,6 +111,9 @@
     <ClCompile Include="lwmovie_vlc_dct.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lwmovie_theoradec.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lwmovie_bitstream.hpp">
@@ -201,6 +204,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lwmovie_recon_roqsw.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lwmovie_theoradec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

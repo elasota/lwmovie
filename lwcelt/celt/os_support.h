@@ -48,7 +48,7 @@
 #ifndef OVERRIDE_OPUS_ALLOC
 static OPUS_INLINE void *opus_alloc (struct lwmSAllocator *alloc, size_t size)
 {
-   return alloc->allocFunc(alloc, size);
+   return alloc->reallocFunc(alloc, NULL, size);
 }
 #endif
 
@@ -65,7 +65,7 @@ static OPUS_INLINE void *opus_alloc_scratch (struct lwmSAllocator *alloc, size_t
 #ifndef OVERRIDE_OPUS_FREE
 static OPUS_INLINE void opus_free (struct lwmSAllocator *alloc, void *ptr)
 {
-   alloc->freeFunc(alloc, ptr);
+   alloc->reallocFunc(alloc, ptr, 0);
 }
 #endif
 

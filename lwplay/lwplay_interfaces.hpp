@@ -33,8 +33,7 @@ namespace lwplay
 	class CAllocator : public lwmIAllocator
 	{
 	public:
-		virtual void *Alloc(lwmLargeUInt sz);
-		virtual void Free(void *ptr);
+		virtual void *Realloc(void *ptr, lwmLargeUInt sz);
 	};
 
 	class CFileReader : public lwmICakeFileReader

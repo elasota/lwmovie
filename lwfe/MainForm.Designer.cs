@@ -39,6 +39,9 @@
             this.radVideoEncode = new System.Windows.Forms.RadioButton();
             this.radVideoUseIF = new System.Windows.Forms.RadioButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.gbxAudioStreamOptions = new System.Windows.Forms.GroupBox();
+            this.txtMetaID = new System.Windows.Forms.TextBox();
+            this.label9 = new System.Windows.Forms.Label();
             this.gbxAudioIO = new System.Windows.Forms.GroupBox();
             this.btnAudioUseVideoSource = new System.Windows.Forms.Button();
             this.label7 = new System.Windows.Forms.Label();
@@ -63,9 +66,6 @@
             this.saveSettingsAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
             this.quitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.gbxAudioStreamOptions = new System.Windows.Forms.GroupBox();
-            this.label9 = new System.Windows.Forms.Label();
-            this.txtMetaID = new System.Windows.Forms.TextBox();
             this.fsExistingVideoIntermediate = new lwfe.FileSelector();
             this.fsVideoEncodeOutput = new lwfe.FileSelector();
             this.fsVideoEncodeInput = new lwfe.FileSelector();
@@ -77,11 +77,11 @@
             this.tabPage1.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            this.gbxAudioStreamOptions.SuspendLayout();
             this.gbxAudioIO.SuspendLayout();
             this.gbxAudioCodecOptions.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.mnsMenu.SuspendLayout();
-            this.gbxAudioStreamOptions.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -127,7 +127,7 @@
             this.groupBox1.Location = new System.Drawing.Point(6, 157);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(513, 259);
-            this.groupBox1.TabIndex = 9;
+            this.groupBox1.TabIndex = 4;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Codec Options";
             // 
@@ -139,7 +139,7 @@
             this.pnlVideoCodecOptions.Location = new System.Drawing.Point(6, 19);
             this.pnlVideoCodecOptions.Name = "pnlVideoCodecOptions";
             this.pnlVideoCodecOptions.Size = new System.Drawing.Size(501, 234);
-            this.pnlVideoCodecOptions.TabIndex = 4;
+            this.pnlVideoCodecOptions.TabIndex = 0;
             this.pnlVideoCodecOptions.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlCodecOptions_Paint);
             // 
             // label6
@@ -148,7 +148,7 @@
             this.label6.Location = new System.Drawing.Point(31, 107);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(42, 13);
-            this.label6.TabIndex = 8;
+            this.label6.TabIndex = 7;
             this.label6.Text = "Output:";
             // 
             // label5
@@ -157,7 +157,7 @@
             this.label5.Location = new System.Drawing.Point(38, 81);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(34, 13);
-            this.label5.TabIndex = 7;
+            this.label5.TabIndex = 6;
             this.label5.Text = "Input:";
             // 
             // cbxVideoCodec
@@ -166,7 +166,7 @@
             this.cbxVideoCodec.FormattingEnabled = true;
             this.cbxVideoCodec.Location = new System.Drawing.Point(78, 130);
             this.cbxVideoCodec.Name = "cbxVideoCodec";
-            this.cbxVideoCodec.Size = new System.Drawing.Size(101, 21);
+            this.cbxVideoCodec.Size = new System.Drawing.Size(163, 21);
             this.cbxVideoCodec.TabIndex = 3;
             this.cbxVideoCodec.SelectedIndexChanged += new System.EventHandler(this.cbxVideoCodec_SelectedIndexChanged);
             // 
@@ -176,7 +176,7 @@
             this.label3.Location = new System.Drawing.Point(31, 133);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(41, 13);
-            this.label3.TabIndex = 2;
+            this.label3.TabIndex = 8;
             this.label3.Text = "Codec:";
             // 
             // radVideoEncode
@@ -185,7 +185,7 @@
             this.radVideoEncode.Location = new System.Drawing.Point(6, 55);
             this.radVideoEncode.Name = "radVideoEncode";
             this.radVideoEncode.Size = new System.Drawing.Size(100, 17);
-            this.radVideoEncode.TabIndex = 1;
+            this.radVideoEncode.TabIndex = 5;
             this.radVideoEncode.TabStop = true;
             this.radVideoEncode.Text = "Encode a video";
             this.radVideoEncode.UseVisualStyleBackColor = true;
@@ -196,7 +196,7 @@
             this.radVideoUseIF.Location = new System.Drawing.Point(6, 6);
             this.radVideoUseIF.Name = "radVideoUseIF";
             this.radVideoUseIF.Size = new System.Drawing.Size(173, 17);
-            this.radVideoUseIF.TabIndex = 0;
+            this.radVideoUseIF.TabIndex = 4;
             this.radVideoUseIF.TabStop = true;
             this.radVideoUseIF.Text = "Use an existing intermediate file";
             this.radVideoUseIF.UseVisualStyleBackColor = true;
@@ -220,6 +220,35 @@
             this.tabPage2.Text = "Audio";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // gbxAudioStreamOptions
+            // 
+            this.gbxAudioStreamOptions.Controls.Add(this.txtMetaID);
+            this.gbxAudioStreamOptions.Controls.Add(this.label9);
+            this.gbxAudioStreamOptions.Location = new System.Drawing.Point(6, 244);
+            this.gbxAudioStreamOptions.Name = "gbxAudioStreamOptions";
+            this.gbxAudioStreamOptions.Size = new System.Drawing.Size(513, 52);
+            this.gbxAudioStreamOptions.TabIndex = 5;
+            this.gbxAudioStreamOptions.TabStop = false;
+            this.gbxAudioStreamOptions.Text = "Stream Options";
+            this.gbxAudioStreamOptions.Visible = false;
+            // 
+            // txtMetaID
+            // 
+            this.txtMetaID.Location = new System.Drawing.Point(60, 19);
+            this.txtMetaID.MaxLength = 8;
+            this.txtMetaID.Name = "txtMetaID";
+            this.txtMetaID.Size = new System.Drawing.Size(119, 20);
+            this.txtMetaID.TabIndex = 0;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(6, 22);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(48, 13);
+            this.label9.TabIndex = 0;
+            this.label9.Text = "Meta ID:";
+            // 
             // gbxAudioIO
             // 
             this.gbxAudioIO.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -235,7 +264,7 @@
             this.gbxAudioIO.Location = new System.Drawing.Point(6, 60);
             this.gbxAudioIO.Name = "gbxAudioIO";
             this.gbxAudioIO.Size = new System.Drawing.Size(513, 178);
-            this.gbxAudioIO.TabIndex = 7;
+            this.gbxAudioIO.TabIndex = 4;
             this.gbxAudioIO.TabStop = false;
             this.gbxAudioIO.Text = "Input/Output";
             this.gbxAudioIO.Visible = false;
@@ -245,7 +274,7 @@
             this.btnAudioUseVideoSource.Location = new System.Drawing.Point(78, 91);
             this.btnAudioUseVideoSource.Name = "btnAudioUseVideoSource";
             this.btnAudioUseVideoSource.Size = new System.Drawing.Size(161, 23);
-            this.btnAudioUseVideoSource.TabIndex = 25;
+            this.btnAudioUseVideoSource.TabIndex = 1;
             this.btnAudioUseVideoSource.Text = "Use Video Source As Input";
             this.btnAudioUseVideoSource.UseVisualStyleBackColor = true;
             this.btnAudioUseVideoSource.Click += new System.EventHandler(this.btnAudioUseVideoSource_Click);
@@ -321,7 +350,7 @@
             this.cbxAudioCodec.Location = new System.Drawing.Point(55, 6);
             this.cbxAudioCodec.Name = "cbxAudioCodec";
             this.cbxAudioCodec.Size = new System.Drawing.Size(190, 21);
-            this.cbxAudioCodec.TabIndex = 5;
+            this.cbxAudioCodec.TabIndex = 0;
             this.cbxAudioCodec.SelectedIndexChanged += new System.EventHandler(this.cbxAudioCodec_SelectedIndexChanged);
             // 
             // label2
@@ -462,35 +491,6 @@
             this.quitToolStripMenuItem.Text = "Quit";
             this.quitToolStripMenuItem.Click += new System.EventHandler(this.quitToolStripMenuItem_Click);
             // 
-            // gbxAudioStreamOptions
-            // 
-            this.gbxAudioStreamOptions.Controls.Add(this.txtMetaID);
-            this.gbxAudioStreamOptions.Controls.Add(this.label9);
-            this.gbxAudioStreamOptions.Location = new System.Drawing.Point(6, 244);
-            this.gbxAudioStreamOptions.Name = "gbxAudioStreamOptions";
-            this.gbxAudioStreamOptions.Size = new System.Drawing.Size(513, 52);
-            this.gbxAudioStreamOptions.TabIndex = 8;
-            this.gbxAudioStreamOptions.TabStop = false;
-            this.gbxAudioStreamOptions.Text = "Stream Options";
-            this.gbxAudioStreamOptions.Visible = false;
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(6, 22);
-            this.label9.Name = "label9";
-            this.label9.Size = new System.Drawing.Size(48, 13);
-            this.label9.TabIndex = 0;
-            this.label9.Text = "Meta ID:";
-            // 
-            // txtMetaID
-            // 
-            this.txtMetaID.Location = new System.Drawing.Point(60, 19);
-            this.txtMetaID.MaxLength = 8;
-            this.txtMetaID.Name = "txtMetaID";
-            this.txtMetaID.Size = new System.Drawing.Size(119, 20);
-            this.txtMetaID.TabIndex = 1;
-            // 
             // fsExistingVideoIntermediate
             // 
             this.fsExistingVideoIntermediate.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -503,7 +503,7 @@
             this.fsExistingVideoIntermediate.Location = new System.Drawing.Point(78, 29);
             this.fsExistingVideoIntermediate.Name = "fsExistingVideoIntermediate";
             this.fsExistingVideoIntermediate.Size = new System.Drawing.Size(445, 20);
-            this.fsExistingVideoIntermediate.TabIndex = 10;
+            this.fsExistingVideoIntermediate.TabIndex = 0;
             // 
             // fsVideoEncodeOutput
             // 
@@ -517,7 +517,7 @@
             this.fsVideoEncodeOutput.Location = new System.Drawing.Point(78, 104);
             this.fsVideoEncodeOutput.Name = "fsVideoEncodeOutput";
             this.fsVideoEncodeOutput.Size = new System.Drawing.Size(445, 20);
-            this.fsVideoEncodeOutput.TabIndex = 6;
+            this.fsVideoEncodeOutput.TabIndex = 2;
             // 
             // fsVideoEncodeInput
             // 
@@ -531,7 +531,7 @@
             this.fsVideoEncodeInput.Location = new System.Drawing.Point(78, 78);
             this.fsVideoEncodeInput.Name = "fsVideoEncodeInput";
             this.fsVideoEncodeInput.Size = new System.Drawing.Size(445, 20);
-            this.fsVideoEncodeInput.TabIndex = 5;
+            this.fsVideoEncodeInput.TabIndex = 1;
             this.fsVideoEncodeInput.FileChanged += new System.EventHandler(this.fsVideoEncodeInput_FileChanged);
             // 
             // fsExistingAudioIntermediate
@@ -546,7 +546,7 @@
             this.fsExistingAudioIntermediate.Location = new System.Drawing.Point(78, 42);
             this.fsExistingAudioIntermediate.Name = "fsExistingAudioIntermediate";
             this.fsExistingAudioIntermediate.Size = new System.Drawing.Size(429, 20);
-            this.fsExistingAudioIntermediate.TabIndex = 24;
+            this.fsExistingAudioIntermediate.TabIndex = 0;
             // 
             // fsAudioEncodeOutput
             // 
@@ -560,7 +560,7 @@
             this.fsAudioEncodeOutput.Location = new System.Drawing.Point(78, 146);
             this.fsAudioEncodeOutput.Name = "fsAudioEncodeOutput";
             this.fsAudioEncodeOutput.Size = new System.Drawing.Size(429, 20);
-            this.fsAudioEncodeOutput.TabIndex = 21;
+            this.fsAudioEncodeOutput.TabIndex = 3;
             // 
             // fsAudioEncodeInput
             // 
@@ -574,7 +574,7 @@
             this.fsAudioEncodeInput.Location = new System.Drawing.Point(78, 120);
             this.fsAudioEncodeInput.Name = "fsAudioEncodeInput";
             this.fsAudioEncodeInput.Size = new System.Drawing.Size(429, 20);
-            this.fsAudioEncodeInput.TabIndex = 20;
+            this.fsAudioEncodeInput.TabIndex = 2;
             this.fsAudioEncodeInput.FileChanged += new System.EventHandler(this.fsAudioEncodeInput_FileChanged);
             // 
             // fsOutputFile
@@ -608,6 +608,8 @@
             this.groupBox1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
+            this.gbxAudioStreamOptions.ResumeLayout(false);
+            this.gbxAudioStreamOptions.PerformLayout();
             this.gbxAudioIO.ResumeLayout(false);
             this.gbxAudioIO.PerformLayout();
             this.gbxAudioCodecOptions.ResumeLayout(false);
@@ -615,8 +617,6 @@
             this.tabPage3.PerformLayout();
             this.mnsMenu.ResumeLayout(false);
             this.mnsMenu.PerformLayout();
-            this.gbxAudioStreamOptions.ResumeLayout(false);
-            this.gbxAudioStreamOptions.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 

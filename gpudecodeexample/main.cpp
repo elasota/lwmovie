@@ -44,14 +44,9 @@ HWND g_hwindow;
 class Allocator : public lwmIAllocator
 {
 public:
-	virtual void *Alloc(lwmLargeUInt sz)
+	virtual void *Realloc(void *ptr, lwmLargeUInt sz)
 	{
-		return _aligned_malloc(sz, 16);
-	}
-
-	virtual void Free(void *ptr)
-	{
-		_aligned_free(ptr);
+		return _aligned_realloc(ptr, sz, 16);
 	}
 };
 

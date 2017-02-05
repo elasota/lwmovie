@@ -758,7 +758,7 @@ struct lwmRGBConverterBlock
 	lwmLargeUInt m_convLinePitch;	// Pitch of a work buffer line, including padding for 4-to-3 conversion if necessary
 	void *m_convBuffer;
 
-	void Process(bool highQuality)
+	void Process420(bool highQuality)
 	{
 		lwmovie::pixelconv::TransformColorsFunc_t convertFunc = this->m_conversionFunc;
 		lwmUInt8 *convLines[8];
@@ -869,6 +869,41 @@ struct lwmRGBConverterBlock
 				convertFunc(yPlane, nextLines[0], nextLines[1], outInterleaved, outWidth);
 		}
 	}
+
+	void Process444()
+	{
+		lwmovie::pixelconv::TransformColorsFunc_t convertFunc = this->m_conversionFunc;
+		lwmUInt8 *outInterleaved = m_outInterleaved;
+		lwmUInt32 outWidth = m_outWidth;
+		lwmUInt32 outHeight = m_outHeight;
+		lwmLargeUInt outPitch = m_outPitch;
+
+
+		const lwmUInt8 *yPlane = m_yPlane;
+		const lwmUInt8 *uPlane = m_uPlane;
+		const lwmUInt8 *vPlane = m_vPlane;
+
+		lwmLargeUInt yPitch = m_yPitch;
+		lwmLargeUInt uPitch = m_uPitch;
+		lwmLargeUInt vPitch = m_vPitch;
+
+		for(lwmUInt32 row=0;row<outHeight;row++)
+		{
+			convertFunc(yPlane, uPlane, vPlane, outInterleaved, outWidth);
+			outInterleaved += outPitch;
+			yPlane += yPitch;
+			uPlane += uPitch;
+			vPlane += vPitch;
+		}
+	}
+
+	void Process(bool is444, bool highQuality)
+	{
+		if (is444)
+			Process444();
+		else
+			Process420(highQuality);
+	}
 };
 
 struct lwmVideoRGBConverter
@@ -878,6 +913,7 @@ struct lwmVideoRGBConverter
 	lwmIVideoReconstructor *videoRecon;
 	lwmRGBConverterBlock *blocks;
 	lwmSWorkNotifier *workNotifier;
+	lwmEFrameFormat frameFormat;
 
 	lwmSAllocator *alloc;
 	void *convBuffer;
@@ -890,7 +926,7 @@ LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(
 {
 	lwmovie::pixelconv::TransformColorsFunc_t convertFunc = NULL;
 
-	if(inFrameFormat != lwmFRAMEFORMAT_8Bit_420P_Planar)
+	if(inFrameFormat != lwmFRAMEFORMAT_8Bit_420P_Planar && inFrameFormat != lwmFRAMEFORMAT_8Bit_3Channel_Planar)
 		return NULL;
 
 	const lwmovie::pixelconv::PixelConverterEntry *pce = lwmovie::pixelconv::pixelConverters;
@@ -976,6 +1012,7 @@ LWMOVIE_API_LINK struct lwmVideoRGBConverter *lwmVideoRGBConverter_CreateSliced(
 	conv->videoRecon = recon;
 	conv->alloc = alloc;
 	conv->workNotifier = NULL;
+	conv->frameFormat = inFrameFormat;
 
 	return conv;
 }
@@ -1021,7 +1058,7 @@ LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *
 		block->m_vPitch = vPitch;
 	}
 
-	bool highQuality = ((conversionFlags & lwmPIXELCONVERTFLAG_NoCache) != 0);
+	bool highQuality = ((conversionFlags & lwmPIXELCONVERTFLAG_Interpolate) != 0);
 
 	if(converter->workNotifier)
 	{
@@ -1036,7 +1073,7 @@ LWMOVIE_API_LINK void lwmVideoRGBConverter_Convert(struct lwmVideoRGBConverter *
 	else
 	{
 		for(lwmLargeUInt i=0;i<numParallelJobs;i++)
-			converter->blocks[i].Process(highQuality);
+			converter->blocks[i].Process(converter->frameFormat == lwmFRAMEFORMAT_8Bit_3Channel_Planar, highQuality);
 	}
 
 	frameProvider->unlockWorkFrameFunc(frameProvider, workFrameIndex);
@@ -1054,5 +1091,5 @@ LWMOVIE_API_LINK void lwmVideoRGBConverter_ConvertParticipate(struct lwmVideoRGB
 {
 	lwmAtomicInt nextRowIndex = lwmAtomicIncrement(&converter->currentRowIndex);
 
-	converter->blocks[nextRowIndex - 1].Process(converter->highQuality);
+	converter->blocks[nextRowIndex - 1].Process(converter->frameFormat == lwmFRAMEFORMAT_8Bit_3Channel_Planar, converter->highQuality);
 }

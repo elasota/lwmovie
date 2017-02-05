@@ -21,5 +21,6 @@ namespace lwenctools
         void OnStarted(int numPlans);
         IPlanMonitor CreatePlanMonitor(int numStages);
         void OnFinished();
+        void OnKillCleanup();
     }
 }

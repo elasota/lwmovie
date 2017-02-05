@@ -77,6 +77,13 @@
       <DependentUpon>ROQVideoOptionsControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Codec Settings\ROQVideoSettings.cs" />
+    <Compile Include="Codec Settings\TheoraVideoOptionsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Codec Settings\TheoraVideoOptionsControl.Designer.cs">
+      <DependentUpon>TheoraVideoOptionsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Codec Settings\TheoraVideoSettings.cs" />
     <Compile Include="CodecRepository.cs" />
     <Compile Include="EncodeSettingsProject.cs" />
     <Compile Include="ExecutionPlan.cs" />
@@ -103,6 +110,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Codec Settings\ROQVideoOptionsControl.resx">
       <DependentUpon>ROQVideoOptionsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Codec Settings\TheoraVideoOptionsControl.resx">
+      <DependentUpon>TheoraVideoOptionsControl.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

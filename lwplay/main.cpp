@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "SDL2-2.0.3/include/SDL.h"
+#include "SDL2-2.0.5/include/SDL.h"
 #include "threadpool.hpp"
 #include "../lwmovie/lwmovie.h"
 #include "../lwmovie/lwmovie_cake.h"
@@ -246,6 +246,7 @@ int main(int argc, char **argv)
 	SDL_Texture *texture = NULL;
 	bool textureIsYUV = false;
 	bool videoIsYUV = false;
+	bool videoIsYUV444 = false;
 	lwplay::CAudioQueue *audioDevice = NULL;
 	lwmCakeMovieInfo movieInfo;
 	lwplay::CWorkNotifierFactory *workNotifierFactory = new lwplay::CWorkNotifierFactory();
@@ -292,7 +293,6 @@ int main(int argc, char **argv)
 		}
 		else if (movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG && movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_420P_Planar)
 		{
-			// TODO: Cake
 			lwmIVideoReconstructor *recon = lwmCake_GetVideoReconstructor(cake);
 			rgbConverter = lwmVideoRGBConverter_Create(&myAllocator, recon, movieInfo.videoFrameFormat, movieInfo.videoChannelLayout, movieInfo.videoWidth, movieInfo.videoHeight, lwmVIDEOCHANNELLAYOUT_RGBA);
 
@@ -316,6 +316,22 @@ int main(int argc, char **argv)
 			texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
 			textureIsYUV = false;
 			videoIsYUV = false;
+		}
+		else if ((movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_BT601 || movieInfo.videoChannelLayout == lwmVIDEOCHANNELLAYOUT_YCbCr_JPEG)
+			&& movieInfo.videoFrameFormat == lwmFRAMEFORMAT_8Bit_3Channel_Planar)
+		{
+			lwmIVideoReconstructor *recon = lwmCake_GetVideoReconstructor(cake);
+			rgbConverter = lwmVideoRGBConverter_Create(&myAllocator, recon, movieInfo.videoFrameFormat, movieInfo.videoChannelLayout, movieInfo.videoWidth, movieInfo.videoHeight, lwmVIDEOCHANNELLAYOUT_RGBA);
+
+			int sdlPixelFormat;
+			if (SDL_PIXELTYPE(SDL_PIXELFORMAT_RGBA8888) == SDL_PIXELTYPE_PACKED32 && SDL_BYTEORDER == SDL_LIL_ENDIAN)
+				sdlPixelFormat = SDL_PIXELFORMAT_ABGR8888;
+			else
+				sdlPixelFormat = SDL_PIXELFORMAT_RGBA8888;
+			texture = SDL_CreateTexture(renderer, sdlPixelFormat, SDL_TEXTUREACCESS_STREAMING, static_cast<int>(movieInfo.videoWidth), static_cast<int>(movieInfo.videoHeight));
+			textureIsYUV = false;
+			videoIsYUV = true;
+			videoIsYUV444 = true;
 		}
 
 		if(movieInfo.numAudioStreams > 0)

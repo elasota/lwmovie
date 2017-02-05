@@ -30,6 +30,7 @@
 #include <stdarg.h>
 
 #include "../lwmux/lwmux_planio.hpp"
+#include "../lwmux/lwmux_osfile.hpp"
 #include "../lwmovie/lwmovie_package.hpp"
 
 #include "SB4Encoder.hpp"

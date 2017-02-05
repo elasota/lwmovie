@@ -50,7 +50,7 @@
       <LaunchMethod>Executable</LaunchMethod>
       <ExecutablePath>Release\lwplay.exe</ExecutablePath>
       <StartupDirectory>lwplay\</StartupDirectory>
-      <Arguments>d:\vids\soccer.lwmv</Arguments>
+      <Arguments>d:\vids\Micayala_DivX1080p_ASP.lwmv</Arguments>
       <NetAppHost>IIS</NetAppHost>
       <NetBrowser>InternetExplorer</NetBrowser>
       <ExcludeSmallFuncs>true</ExcludeSmallFuncs>
@@ -66,6 +66,11 @@
       <ProjName>lwplay</ProjName>
     </ProjBinary>
   </Binaries>
+  <Reports>
+    <Report>
+      <Path>lwplay170129.vspx</Path>
+    </Report>
+  </Reports>
   <Launches>
     <ProjBinary>
       <Path>:PB:{9689753A-3C3F-49FA-8E9C-7373747054C3}|lwplay\lwplay.vcxproj</Path>

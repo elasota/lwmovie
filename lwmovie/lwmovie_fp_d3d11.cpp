@@ -165,7 +165,9 @@ int lwmovie::d3d11::CFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lwmU
 
 	m_frameSize = channelOffsets[numChannels];
 
-	// TODO: Overflow check
+	if (m_frameSize == 0 || UINT32_MAX / m_frameSize < numRWFrames)
+		return 0;
+
 	m_frameBytes = m_alloc->NAlloc<lwmUInt8>(m_frameSize * numRWFrames);
 	if (!m_frameBytes)
 		return 0;

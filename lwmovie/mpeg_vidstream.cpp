@@ -386,7 +386,10 @@ void lwmovie::m1v::CVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 
 	if(!blockCursor)
 		return;		// TODO: Fix this...
 
-	// TODO: Overflow check
+	// Check for integer overflow
+	if (UINT32_MAX - sizeof(SDeslicerJobStackNode) < packetSize)
+		return;
+
 	bool pooled = true;
 	lwmUInt32 stackNodeSize = sizeof(SDeslicerJobStackNode) + packetSize - 1;
 	// TODO: SIMD align

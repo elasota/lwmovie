@@ -35,9 +35,10 @@ enum lwmEVideoStreamType
 {
 	lwmVST_Invalid		= 0,
 
-	lwmVST_None			= 1,
-	lwmVST_M1V_Variant	= 2,		// Variant M1V
-	lwmVST_RoQ			= 3,		// RoQ VQ
+	lwmVST_None				= 1,
+	lwmVST_M1V_Variant		= 2,		// Variant M1V
+	lwmVST_RoQ				= 3,		// RoQ VQ
+	lwmVST_Theora_Variant	= 4,		// Variant Theora
 
 	lwmVST_Count,
 };

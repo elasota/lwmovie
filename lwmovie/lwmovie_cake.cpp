@@ -365,6 +365,9 @@ lwmECakeResult lwmCake::Decode(lwmCakeDecodeOutput *decodeOutput)
 			// BeginDecoding wasn't called
 			m_fatalError = true;
 			return lwmCAKE_RESULT_Error;
+		case lwmDIGEST_Error:
+			m_fatalError = true;
+			return lwmCAKE_RESULT_Error;
 		case lwmDIGEST_VideoSync_Dropped:
 		case lwmDIGEST_VideoSync:
 			{

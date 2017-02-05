@@ -87,6 +87,15 @@ int lwmovie::CSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lw
 		channelHeights[1] = channelHeights[2] = workFrameHeight / 2;
 		numChannels = 3;
 		break;
+	case lwmFRAMEFORMAT_8Bit_3Channel_Planar:
+		for (int i = 0; i < 3; i++)
+		{
+			channelStrides[i] = workFrameWidth;
+			channelWidths[i] = workFrameWidth;
+			channelHeights[i] = workFrameHeight;
+		}
+		numChannels = 3;
+		break;
 	case lwmFRAMEFORMAT_8Bit_4Channel_Interleaved:
 		channelStrides[0] = workFrameWidth * 4;
 		channelWidths[0] = workFrameWidth;
@@ -100,8 +109,18 @@ int lwmovie::CSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lw
 	channelOffsets[0] = 0;
 	for(lwmLargeUInt i=0;i<numChannels;i++)
 	{
+		if (UINT32_MAX - (lwmovie::SIMD_ALIGN - 1) < channelStrides[i])
+			return 0;
+
 		channelStrides[i] += (lwmovie::SIMD_ALIGN - 1);
 		channelStrides[i] -= channelStrides[i] % lwmovie::SIMD_ALIGN;
+
+		if (UINT32_MAX / channelHeights[i] < channelStrides[i])
+			return 0;
+
+		if (UINT32_MAX - channelStrides[i] * channelHeights[i] < channelOffsets[i])
+			return 0;
+
 		channelOffsets[i + 1] = channelOffsets[i] + channelStrides[i] * channelHeights[i];
 	}
 	
@@ -115,7 +134,15 @@ int lwmovie::CSystemMemFrameProvider::CreateWorkFrames(lwmUInt32 numRWFrames, lw
 
 	m_frameSize = channelOffsets[numChannels];
 
-	// TODO: Overflow check
+	if (UINT32_MAX - numRWFrames < numWriteOnlyFrames)
+		return 0;
+
+	if (m_frameSize == 0)
+		return 0;
+
+	if (UINT32_MAX / m_frameSize < (numRWFrames * numWriteOnlyFrames))
+		return 0;
+
 	m_frameBytes = m_alloc->NAlloc<lwmUInt8>(m_frameSize * (numRWFrames + numWriteOnlyFrames));
 	if(!m_frameBytes)
 		return 0;
