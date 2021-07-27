@@ -22,6 +22,7 @@
 # include "theora/codec.h"
 # include "theora/theora.h"
 # include "ocintrin.h"
+# include "lwmovie_attribs.h"
 
 # if !defined(__GNUC_PREREQ)
 #  if defined(__GNUC__)&&defined(__GNUC_MINOR__)
