@@ -92,7 +92,12 @@ void ConvertWAV_CELT(lwmOSFile *inFile, lwmOSFile *outFile, lwmUInt32 bitsPerSec
 
 	int errorCode;
 	CELTMode *mode = opus_custom_mode_create(&alloc, wavFormat.sampleRate, FRAME_SIZE, &errorCode);
-	if(mode)
+	if (!mode)
+	{
+		fprintf(stderr, "CELT encoder failed to initialize, problem with audio parameters");
+		return;
+	}
+
 	{
 		CELTEncoder *encoder = opus_custom_encoder_create(&alloc, mode, wavFormat.numChannels, &errorCode);
 		if(encoder)
