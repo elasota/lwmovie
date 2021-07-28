@@ -185,7 +185,7 @@ int Mux(lwmLargeUInt extraAudioReadAhead, lwmOSFile **audioFiles, lwmLargeUInt n
 			lwmReadPlanFromFile<lwmAudioCommonInfo>(streamFileStates[i].audioCommonInfo, streamFileStates[i].osFile);
 			if(streamFileStates[i].audioCommonInfo.numAudioStreams != 1)
 			{
-				fprintf(stderr, "Number of audio streams in audio source not 1");
+				fprintf(stderr, "ERROR: Number of audio streams in audio source not 1");
 				return -1;
 			}
 			
@@ -195,19 +195,19 @@ int Mux(lwmLargeUInt extraAudioReadAhead, lwmOSFile **audioFiles, lwmLargeUInt n
 
 	if(streamFileStates[videoStreamIndex].pkgHeader.videoStreamType == lwmVST_None)
 	{
-		fprintf(stderr, "Video stream has no video");
+		fprintf(stderr, "ERROR: Video stream has no video");
 		return -1;
 	}
 	if(streamFileStates[firstAudioStream].pkgHeader.audioStreamType == lwmAST_None)
 	{
-		fprintf(stderr, "Audio stream has no audio");
+		fprintf(stderr, "ERROR: Audio stream has no audio");
 		return -1;
 	}
 	for(lwmLargeUInt i=1;i<numAudioFiles;i++)
 	{
 		if(streamFileStates[i].pkgHeader.audioStreamType != streamFileStates[firstAudioStream+i].pkgHeader.audioStreamType)
 		{
-			fprintf(stderr, "Audio streams have different stream types");
+			fprintf(stderr, "ERROR: Audio streams have different stream types");
 			return -1;
 		}
 	}
@@ -343,9 +343,12 @@ int Mux(lwmLargeUInt extraAudioReadAhead, lwmOSFile **audioFiles, lwmLargeUInt n
 
 						//printf("Audio period: %i\n", audioPeriod);
 						ss->currentAudioEndPeriod = CopyAudioPackets(ss, &ss->currentAudioBlock, ss->currentAudioEndPeriod, targetAudioEndPeriod, ss->osFile, outFile, static_cast<lwmUInt8>(i), (i == numAudioFiles - 1));
-						lwmUInt32 frameReadAhead = ss->currentAudioEndPeriod - syncAudioPeriod;
-						if(frameReadAhead > audioReadAhead)
-							audioReadAhead = frameReadAhead;
+						if (ss->currentAudioEndPeriod > syncAudioPeriod)
+						{
+							lwmUInt32 frameReadAhead = ss->currentAudioEndPeriod - syncAudioPeriod;
+							if (frameReadAhead > audioReadAhead)
+								audioReadAhead = frameReadAhead;
+						}
 					}
 				}
 
