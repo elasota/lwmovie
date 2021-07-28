@@ -29,3 +29,5 @@ lwmovie-cov.tar.gz
 *.vspx
 *.opendb
 .vs
+!x64/Release/SDL.dll
+!external-sources/*

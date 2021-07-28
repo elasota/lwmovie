@@ -88,15 +88,17 @@ int main(int argc, const char **argv)
 		}
 		else if(tag[0] == 'X')
 		{
-			
-			if(tag != "XYSCSS=420P12" &&
-				tag != "XYSCSS=420P10" &&
-				tag != "XYSCSS=420P9")
+			if (tag[1] == 'Y' && tag[2] == 'S' && tag[3] == 'C' && tag[4] == 'S' && tag[5] == 'S' && tag[6] == '=')
 			{
-				fprintf(stderr, "ERROR: Color space %s not supported by lwrerange.  Use yuv420p9, yuv420p10, or yuv420p12.", tag.c_str());
-				return -1;
+				if (tag != "XYSCSS=420P12" &&
+					tag != "XYSCSS=420P10" &&
+					tag != "XYSCSS=420P9")
+				{
+					fprintf(stderr, "ERROR: Color space %s not supported by lwrerange.  Use yuv420p9, yuv420p10, or yuv420p12.", tag.c_str());
+					return -1;
+				}
+				tag = "XYSCSS=420JPEG";
 			}
-			tag = "XYSCSS=420JPEG";
 		}
 		else if(tag[0] == 'W')
 			width = static_cast<unsigned int>(atoi(tag.c_str() + 1));

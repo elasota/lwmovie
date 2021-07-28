@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "SDL2-2.0.5/include/SDL.h"
+#include "SDL2-2.0.14/include/SDL.h"
 #include "threadpool.hpp"
 #include "../lwmovie/lwmovie.h"
 #include "../lwmovie/lwmovie_cake.h"
