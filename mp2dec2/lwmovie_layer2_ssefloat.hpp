@@ -51,7 +51,7 @@ inline lwmSimdInt16<lwmSimdRealFloat>::lwmSimdInt16(const lwmSimdRealFloat &a, c
 
 inline lwmSInt16 lwmSimdInt16<lwmSimdRealFloat>::GetSimdSub(int index) const
 {
-#ifdef __MSC_VER
+#ifdef _MSC_VER
 	return m_data.m128i_i16[index];
 #endif
 #ifdef __GNUC__
