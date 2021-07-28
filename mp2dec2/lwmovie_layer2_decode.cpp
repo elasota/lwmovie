@@ -118,7 +118,9 @@ bool lwmovie::layerii::CDecodeState::DecodeFrameCH(const void *bytes, lwmSInt16 
 {
 	lwmCMemBitstream bitstream(bytes);
 
-	lwmFastUInt8 tableSet = MP2_TABLESET[m_mpegVersion][numChannels-1][m_bitrateIndex];
+	lwmFastUInt8 tableSet = 2;
+	if (m_mpegVersion == EMPEGVersion_MPEG1)
+		tableSet = MP2_TABLESET_MPEG1[numChannels - 1][m_bitrateIndex];
 
 	lwmFastUInt8 sbLimit;
 	

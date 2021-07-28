@@ -44,7 +44,7 @@ namespace lwmovie
 		static const int OUT_SCALE_MIN			= (-(1 << OUT_SCALE_SHIFT));
 		static const int NUM_BITRATE_INDEXES	= 15;
 		static const int NUM_SAMPLERATE_INDEXES	= 3;
-		static const int NUM_TABLESETS			= 2;
+		static const int NUM_TABLESETS			= 3;
 		static const int NUM_QINDEX_TABLES		= 6;
 		static const int NUM_QINDEX				= 17;
 
@@ -70,7 +70,7 @@ namespace lwmovie
 		};
 
 		extern const lwmUInt16	MP2_BITRATE_KBPS[EMPEGVersion_Count][NUM_BITRATE_INDEXES];
-		extern const lwmUInt8	MP2_TABLESET[EMPEGVersion_Count][MAX_CHANNELS][NUM_BITRATE_INDEXES];
+		extern const lwmUInt8	MP2_TABLESET_MPEG1[MAX_CHANNELS][NUM_BITRATE_INDEXES];
 		extern const lwmUInt16	MP2_SAMPLERATE[EMPEGVersion_Count][NUM_SAMPLERATE_INDEXES];
 		extern const lwmUInt8	MP2_SBLIMITS_MPEG1[MAX_CHANNELS][NUM_SAMPLERATE_INDEXES][NUM_BITRATE_INDEXES];
 		extern const lwmUInt8	MP2_BITALLOC_SIZE[NUM_TABLESETS][NUM_SUBBANDS];
@@ -82,7 +82,7 @@ namespace lwmovie
 		extern MP2QuantInfo MP2_QUANT_INFO[NUM_QINDEX];
 
 		extern LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB lwmSInt32 MP2_DEWINDOW_BASE[FILTER_SIZE][NUM_SUBBANDS];
-		extern const lwmFixedReal29 (*MP2_DEWINDOW)[NUM_SUBBANDS];
+		extern LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB lwmFixedReal29 MP2_DEWINDOW[FILTER_SIZE][NUM_SUBBANDS];
 
 		
 		void InitializeTables();

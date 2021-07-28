@@ -35,16 +35,10 @@ namespace lwmovie
 			{ 0, 8,  16, 24, 32, 40, 48, 56,  64,  80,  96,  112, 128, 144, 160 },
 		};
 
-		const lwmUInt8 MP2_TABLESET[EMPEGVersion_Count][MAX_CHANNELS][NUM_BITRATE_INDEXES] =
+		const lwmUInt8 MP2_TABLESET_MPEG1[MAX_CHANNELS][NUM_BITRATE_INDEXES] =
 		{
-			{
-				{ 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-				{ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
-			},
-			{
-				{ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
-				{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0 },
-			},
+			{ 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+			{ 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0 },
 		};
 
 		const lwmUInt16	MP2_SAMPLERATE[EMPEGVersion_Count][NUM_SAMPLERATE_INDEXES] =
@@ -72,12 +66,15 @@ namespace lwmovie
 		{
 			{ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
 			{ 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
+			{ 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 },
 		};
 
 		const lwmUInt8 MP2_QINDEX_TABLE_SELECT[NUM_TABLESETS][NUM_SUBBANDS] =
 		{
 			{ 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
-			{ 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 },
+			{ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
+			{ 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 },
+
 		};
 
 		const lwmUInt8 MP2_QINDEX[NUM_QINDEX_TABLES][1 << MAX_BITALLOC] =
@@ -87,8 +84,8 @@ namespace lwmovie
 			{ 0xff, 0, 1, 2, 3, 4, 5, 16 },
 			{ 0xff, 0, 1, 16 },
 
-			{ 0xff, 0, 1, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 15 },
-			{ 0xff, 0, 1, 3, 4, 5, 6, 7 },
+			{ 0xff, 0, 1, 3, 4, 5, 6, 7, 8, 9,  10, 11, 12, 13, 14, 16 },
+			{ 0xff, 0, 1, 2, 3, 4, 5, 6, 7, 8,  9,  10, 11, 12, 13, 14 },
 		};
 
 		const lwmUInt8 MP2_QUANT_GROUP[NUM_QINDEX_TABLES][NUM_QINDEX] =
@@ -116,8 +113,8 @@ namespace lwmovie
 			{ 15, 0 },
 			{ 16, 0 },
 		};
-		
-		const lwmFixedReal29 (*MP2_DEWINDOW)[NUM_SUBBANDS];
+
+		LWMOVIE_FIXEDREAL_SIMD_ALIGN_ATTRIB lwmFixedReal29 MP2_DEWINDOW[FILTER_SIZE][NUM_SUBBANDS];
 
 #include "lwmovie_layer2_dewindowtable.hpp"
 
@@ -137,9 +134,7 @@ namespace lwmovie
 					MP2_QUANT_INFO[i].rcp = lwmFixedReal29(1.0 / static_cast<double>((1 << MP2_QUANT_INFO[i].codeLength) - 1));
 			}
 
-			// Convert the base table in-place
-			lwmFixedReal29 (*output)[NUM_SUBBANDS] = reinterpret_cast<lwmFixedReal29 (*)[NUM_SUBBANDS]>(MP2_DEWINDOW_BASE);
-			MP2_DEWINDOW = output;
+			lwmFixedReal29 (*output)[NUM_SUBBANDS] = MP2_DEWINDOW;
 			for(int i=0;i<FILTER_SIZE;i++)
 			{
 				for(int j=0;j<NUM_SUBBANDS;j++)
