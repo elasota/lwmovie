@@ -1,10 +1,7 @@
-lwfe/bin/Debug
-lwfe/bin/Release
 lwfe/obj
 cov-int
 deploy
-Debug
-Release
+build.force
 CMakeCache.txt
 cmake_install.cmake
 CMakeFiles
@@ -28,6 +25,12 @@ lwmovie-cov.tar.gz
 *.xz
 *.vspx
 *.opendb
+*.iobj
+*.ipdb
+*.pdb
+*.lib
+*.exp
 .vs
-!x64/Release/SDL.dll
+Debug
 !external-sources/*
+
