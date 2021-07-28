@@ -516,6 +516,7 @@ int main(int argc, const char **argv)
 	for (std::vector<std::string>::iterator it = headerTags.begin(), itEnd = headerTags.end(); it != itEnd; ++it)
 	{
 		std::string &tag = *it;
+		fprintf(stderr, "Tag: %s\n", tag.c_str());
 		if (tag[0] == 'C')
 		{
 			if (tag == "C420p9" || tag == "C444p9")
@@ -595,23 +596,25 @@ int main(int argc, const char **argv)
 		}
 		else if (tag[0] == 'X')
 		{
-
-			if (tag == "XYSCSS=420P12" ||
-				tag == "XYSCSS=420P10" ||
-				tag == "XYSCSS=420P9")
+			if (tag[1] == 'Y' && tag[2] == 'S' && tag[3] == 'C' && tag[4] == 'S' && tag[5] == 'S' && tag[6] == '=')
 			{
-				tag = "XYSCSS=420JPEG";
-			}
-			else if (tag == "XYSCSS=444P12" ||
-				tag == "XYSCSS=444P10" ||
-				tag == "XYSCSS=444P9")
-			{
-				tag = "XYSCSS=444";
-			}
-			else
-			{
-				fprintf(stderr, "ERROR: Color space %s not supported by lwroqenc.  Use yuv420p9, yuv420p10, or yuv420p12.", tag.c_str());
-				return -1;
+				if (tag == "XYSCSS=420P12" ||
+					tag == "XYSCSS=420P10" ||
+					tag == "XYSCSS=420P9")
+				{
+					tag = "XYSCSS=420JPEG";
+				}
+				else if (tag == "XYSCSS=444P12" ||
+					tag == "XYSCSS=444P10" ||
+					tag == "XYSCSS=444P9")
+				{
+					tag = "XYSCSS=444";
+				}
+				else
+				{
+					fprintf(stderr, "ERROR: Color space %s not supported by lwthenc.  Use yuv420p9, yuv420p10, or yuv420p12.", tag.c_str());
+					return -1;
+				}
 			}
 		}
 		else if (tag[0] == 'W')
@@ -715,6 +718,12 @@ int main(int argc, const char **argv)
 	info.aspect_denominator = 1;
 
 	th_enc_ctx *ctx = th_encode_alloc(&info);
+
+	if (!ctx)
+	{
+		fprintf(stderr, "ERROR: An error occurred while setting up the encoder");
+		return -1;
+	}
 
 	// Configure encoder
 
