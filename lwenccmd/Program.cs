@@ -26,6 +26,15 @@ namespace lwenccmd
                 }
             }
 
+            void IStageMonitor.OnFailed(int errorCode)
+            {
+                lock (_consoleMutex)
+                {
+                    Console.Write(_linePrefix);
+                    Console.WriteLine("Stage failed: " + errorCode.ToString());
+                }
+            }
+
             public StageMonitor(string linePrefix, object consoleMutex)
             {
                 _linePrefix = linePrefix;
@@ -56,7 +65,7 @@ namespace lwenccmd
                     Console.WriteLine("Plan finished");
                 }
             }
-
+            
             public PlanMonitor(object consoleMutex)
             {
                 _consoleMutex = consoleMutex;

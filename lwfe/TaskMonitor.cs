@@ -38,10 +38,17 @@ namespace lwfe
         private class StageMonitor : IStageMonitor
         {
             private TaskLogView _logView;
+            private bool _hasFailed;
+            private int _errorCode;
+
+            public int ErrorCode { get { return _errorCode; } }
+            public bool HasFailed { get { return _hasFailed; } }
 
             public StageMonitor(TaskLogView logView)
             {
                 _logView = logView;
+                _hasFailed = false;
+                _errorCode = 0;
             }
 
             public void OnErrorLogMessage(object sender, System.Diagnostics.DataReceivedEventArgs e)
@@ -55,11 +62,18 @@ namespace lwfe
                     });
                 }
             }
+
+            public void OnFailed(int errorCode)
+            {
+                _errorCode = errorCode;
+                _hasFailed = true;
+            }
         }
 
         private class PlanMonitor : IPlanMonitor
         {
             private List<TabPage> _tabPages = new List<TabPage>();
+            private List<StageMonitor> _stageMonitors = new List<StageMonitor>();
             private TaskMonitor _taskMonitor;
             private int _numStages;
 
@@ -108,15 +122,27 @@ namespace lwfe
                     logView.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom;
                 });
 
-                return new StageMonitor(logView);
+                StageMonitor stageMonitor = new StageMonitor(logView);
+
+                _stageMonitors.Add(stageMonitor);
+                return stageMonitor;
             }
 
             void IPlanMonitor.OnFinished()
             {
                 _taskMonitor.Invoke((MethodInvoker)delegate
                 {
-                    foreach (TabPage page in _tabPages)
-                        page.Text = page.Text.Replace("(Running)", "(Done)");
+                    for (int i = 0; i < _tabPages.Count; i++)
+                    {
+                        TabPage page = _tabPages[i];
+                        string finishText = "(Done)";
+
+                        StageMonitor stageMonitor = _stageMonitors[i];
+                        if (stageMonitor.HasFailed)
+                            finishText = "(Error: " + stageMonitor.ErrorCode.ToString() + ")";
+
+                        page.Text = page.Text.Replace("(Running)", finishText);
+                    }
 
                     _taskMonitor.pbTaskProgressBar.Value++;
                 });
@@ -131,7 +157,6 @@ namespace lwfe
         void ITaskRunnerMonitor.OnFinished()
         {
         }
-
 
         void ITaskRunnerMonitor.OnKillCleanup()
         {

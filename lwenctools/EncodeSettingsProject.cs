@@ -37,8 +37,8 @@ namespace lwenctools
 
         public EncodeSettingsProject()
         {
-            AudioCodecID = "CELT";
-            VideoCodecID = "Theora";
+            AudioCodecID = "MP2";
+            VideoCodecID = "M1V";
             AudioStreams = new List<AudioStreamSettings>();
             VideoCodecSettings = new Dictionary<string, IExecutionPlanSettings>();
             SelectedAudioStreamIndex = -1;

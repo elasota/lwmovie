@@ -8,6 +8,7 @@ namespace lwenctools
     public interface IStageMonitor
     {
         void OnErrorLogMessage(object sender, System.Diagnostics.DataReceivedEventArgs e);
+        void OnFailed(int errorCode);
     }
 
     public interface IPlanMonitor

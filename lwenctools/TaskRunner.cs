@@ -31,6 +31,7 @@ namespace lwenctools
         private void ExecuteStages(ExecutionStage[] stages)
         {
             System.Diagnostics.Process[] stageProcesses = new System.Diagnostics.Process[stages.Length];
+            IStageMonitor[] stageMonitors = new IStageMonitor[stages.Length];
 
             IPlanMonitor planMonitor = _monitor.CreatePlanMonitor(stages.Length);
 
@@ -39,6 +40,7 @@ namespace lwenctools
                 ExecutionStage stage = stages[i];
 
                 IStageMonitor stageMonitor = planMonitor.AddStage(stage.ExePath, stage.Args, i);
+                stageMonitors[i] = stageMonitor;
 
                 System.Diagnostics.Process p;
                 lock (this)
@@ -62,8 +64,10 @@ namespace lwenctools
                 }
             }
 
-            foreach (System.Diagnostics.Process p in stageProcesses)
+            for (int i = 0; i < stageProcesses.Length; i++)
             {
+                System.Diagnostics.Process p = stageProcesses[i];
+
                 if (p != null)
                 {
                     while (true)
@@ -72,6 +76,10 @@ namespace lwenctools
                         if (exited)
                             break;
                     }
+
+                    if (p.ExitCode != 0)
+                        stageMonitors[i].OnFailed(p.ExitCode);
+
                     lock (this)
                     {
                         _activeProcesses.Remove(p);
