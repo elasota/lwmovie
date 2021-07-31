@@ -35,6 +35,7 @@ copy /Y x64\Release\lwmux.exe lwmovie-release\bin\lwmux.exe
 copy /Y x64\Release\lwfe.exe "lwmovie-release\bin\lwmovie Encoder.exe"
 copy /Y x64\Release\lwenccmd.exe "lwmovie-release\bin\lwenccmd.exe"
 copy /Y x64\Release\lwroqenc.exe "lwmovie-release\bin\lwroqenc.exe"
+copy /Y x64\Release\lwthenc.exe "lwmovie-release\bin\lwthenc.exe"
 copy /Y x64\Release\SDL2.dll lwmovie-release\bin\SDL2.dll
 
 copy /Y doc\CommandLineOptions.txt lwmovie-release\doc\
@@ -47,7 +48,7 @@ copy /Y doc\Encoding.txt lwmovie-release\doc\
 copy /Y doc\Decoding.txt lwmovie-release\doc\
 copy /Y doc\gpudecoding_d3d11.txt lwmovie-release\doc\
 
-xcopy /Y /E Release\ffmpeg lwmovie-release\bin\ffmpeg
+xcopy /Y /E x64\Release\ffmpeg lwmovie-release\bin\ffmpeg
 xcopy /Y /E external-sources lwmovie-release\external-sources
 
 del deploy.7z
