@@ -39,13 +39,14 @@
 #endif
 
 
-lwmovie::m1v::CSoftwareReconstructor::CSoftwareReconstructor()
+lwmovie::m1v::CSoftwareReconstructor::CSoftwareReconstructor(bool isMPEG2)
 :	m_mblocks(NULL)
 ,	m_blocks(NULL)
 ,	m_dctBlocks(NULL)
 ,	m_workRowUsers(NULL)
 ,	m_rowCommitCounts(NULL)
 ,	m_useRowJobs(false)
+,	m_isMPEG2(isMPEG2)
 {
 }
 

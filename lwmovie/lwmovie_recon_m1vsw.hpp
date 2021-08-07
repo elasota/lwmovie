@@ -93,7 +93,7 @@ namespace lwmovie
 		class CSoftwareReconstructor : public IM1VReconstructor
 		{
 		public:
-			CSoftwareReconstructor();
+			explicit CSoftwareReconstructor(bool isMPEG2);
 			~CSoftwareReconstructor();
 
 			bool Initialize(lwmSAllocator *alloc, lwmSVideoFrameProvider *frameProvider, lwmMovieState *movieState, bool useRowJobs);
@@ -148,7 +148,6 @@ namespace lwmovie
 				void Close(lwmSVideoFrameProvider *frameProvider);
 			};
 
-			static void PutDCTBlock(const idct::DCTBLOCK *dctBlock, lwmUInt8 *channel, lwmUInt32 stride);
 			void ReconstructRow(lwmUInt32 row, const lwmReconMBlock *mblocks, const lwmBlockInfo *blocks, idct::DCTBLOCK *dctBlocks,
 				lwmUInt8 *cy, lwmUInt8 *cu, lwmUInt8 *cv,
 				lwmUInt8 *fy, lwmUInt8 *fu, lwmUInt8 *fv,
@@ -164,6 +163,7 @@ namespace lwmovie
 			static void STWNNotifyAvailableFunc(lwmSWorkNotifier *workNotifier);
 
 			bool m_useRowJobs;
+			bool m_isMPEG2;
 
 			lwmReconMBlock *m_mblocks;
 			lwmBlockInfo *m_blocks;

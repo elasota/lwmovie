@@ -275,7 +275,7 @@ namespace lwmovie
 		class CVidStream
 		{
 		public:
-			CVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer);
+			CVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer, bool isMPEG2);
 			~CVidStream();
 
 			bool DigestStreamParameters(const void *bytes, lwmUInt32 packetSize);
@@ -357,6 +357,7 @@ namespace lwmovie
 
 			lwmEDropAggressiveness m_dropAggressiveness;
 			bool m_useThreadedDeslicer;
+			bool m_isMPEG2;
 
 		private:
 			void DispatchDeslicerJob(const void *bytes, lwmUInt32 packetSize, IM1VReconstructor *recon);

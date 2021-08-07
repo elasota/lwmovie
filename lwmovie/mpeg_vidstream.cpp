@@ -300,11 +300,12 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParsePicture(C
 	return constants::PARSE_OK;
 }
 
-lwmovie::m1v::CVidStream::CVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer)
+lwmovie::m1v::CVidStream::CVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer, bool isMPEG2)
 	: m_stDeslicerJob((width + 15) / 16, (height + 15) / 16)
 	, m_deslicerMemPool(alloc, useThreadedDeslicer ? 150000 : 0)
 	, m_dropAggressiveness(lwmDROPAGGRESSIVENESS_None)
 	, m_allowBFrames(allowBFrames)
+	, m_isMPEG2(isMPEG2)
 {
 	m_alloc = alloc;
 

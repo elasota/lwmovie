@@ -62,7 +62,7 @@ namespace lwmovie
 		class CM1VReconstructor : public lwmovie::m1v::IM1VReconstructor
 		{
 		public:
-			CM1VReconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context);
+			CM1VReconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context, bool isMPEG2);
 			virtual ~CM1VReconstructor();
 			virtual void Participate();
 			virtual void WaitForFinish();
@@ -91,6 +91,7 @@ namespace lwmovie
 
 			bool m_forwPred, m_backPred;
 			bool m_workingOnFrame;
+			bool m_isMPEG2;
 			lwmUInt32 m_current, m_future, m_past;
 
 			lwmUInt32 m_mbWidth, m_mbHeight;

@@ -353,10 +353,7 @@ void ConvertMPEGVideo(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRa
 				vsiLink = scanLink;
 			}
 			else if (scanLink->code == MPEG_EXT_START_CODE)
-			{
 				ParseSeqExtension(vsi, mpegFile, scanLink, profile);
-				vsiLink = scanLink;
-			}
 		}
 	}
 

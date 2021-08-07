@@ -471,6 +471,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 		// TODO: Test
 		break;
 	case lwmVST_M1V_Variant:
+	case lwmVST_M2V_Variant:
 		{
 			if(movieState->videoInfo.frameFormat != lwmFRAMEFORMAT_8Bit_420P_Planar)
 				goto cleanup;
@@ -484,7 +485,7 @@ static bool InitDecoding(lwmSAllocator *alloc, lwmMovieState *movieState)
 			movieState->m1vDecoder = alloc->NAlloc<lwmovie::m1v::CVidStream>(1);
 			if(!movieState->m1vDecoder)
 				goto cleanup;
-			new (movieState->m1vDecoder) lwmovie::m1v::CVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, (movieState->videoInfo.numWriteOnlyWorkFrames > 0), movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer));
+			new (movieState->m1vDecoder) lwmovie::m1v::CVidStream(alloc, movieState->videoInfo.videoWidth, movieState->videoInfo.videoHeight, (movieState->videoInfo.numWriteOnlyWorkFrames > 0), movieState, movieState->videoDigestWorkNotifier, ((movieState->userFlags) & lwmUSERFLAG_ThreadedDeslicer), movieState->movieInfo.videoStreamType == lwmVST_M2V_Variant);
 			movieState->needVideoStreamParameters = true;
 		}
 		break;
@@ -896,6 +897,9 @@ LWMOVIE_API_LINK int lwmMovieState_GetStreamParameterU32(const lwmMovieState *mo
 					case lwmVST_M1V_Variant:
 						*outValue = lwmRC_MPEG1Video;
 						return 1;
+					case lwmVST_M2V_Variant:
+						*outValue = lwmRC_MPEG2Video;
+						return 1;
 					case lwmVST_RoQ:
 						*outValue = lwmRC_RoQ;
 						return 1;
@@ -1000,12 +1004,13 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateSoftwareVideoReconstructor(lwm
 	switch(reconstructorType)
 	{
 	case lwmRC_MPEG1Video:
+	case lwmRC_MPEG2Video:
 		{
 			bool useRowThreading = ((flags & lwmUSERFLAG_ThreadedReconstructor) != 0);
 			lwmovie::m1v::CSoftwareReconstructor *recon = alloc->NAlloc<lwmovie::m1v::CSoftwareReconstructor>(1);
 			if(!recon)
 				return NULL;
-			new (recon) lwmovie::m1v::CSoftwareReconstructor();
+			new (recon) lwmovie::m1v::CSoftwareReconstructor(reconstructorType == lwmRC_MPEG2Video);
 			// TODO: Low memory flag
 			if(!recon->Initialize(alloc, frameProvider, movieState, useRowThreading))
 			{

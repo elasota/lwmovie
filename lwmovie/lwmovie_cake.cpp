@@ -191,7 +191,8 @@ bool lwmCake::BeginDecoding(const lwmCakeDecodeOptions *decodeOptions)
 	if(recon == NULL)
 	{
 		lwmUInt32 reconType;
-		lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
+		if (!lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType))
+			return false;
 
 		recon = lwmCreateSoftwareVideoReconstructor(m_movieState, m_alloc, reconType, m_userFlags, m_frameProvider);
 		if(recon == NULL)
@@ -598,7 +599,7 @@ bool lwmCake::SetD3D11DecodeOptions(lwmCakeDecodeOptions *decodeOptions, ID3D11D
 	lwmUInt32 reconType;
 	lwmMovieState_GetStreamParameterU32(m_movieState, lwmSTREAMTYPE_Video, 0, lwmSTREAMPARAM_U32_ReconType, &reconType);
 
-	if (reconType != lwmRC_MPEG1Video)
+	if (reconType != lwmRC_MPEG1Video && reconType != lwmRC_MPEG2Video)
 		useHardwareReconstructor = 0;
 
 	lwmSVideoFrameProvider *vfp = lwmCreateD3D11FrameProvider(m_alloc, device, deviceContext, useHardwareReconstructor ? 1 : 0);

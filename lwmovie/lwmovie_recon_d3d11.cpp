@@ -76,7 +76,7 @@ namespace lwmovie
 }
 
 
-lwmovie::d3d11::CM1VReconstructor::CM1VReconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context)
+lwmovie::d3d11::CM1VReconstructor::CM1VReconstructor(lwmSAllocator *alloc, lwmMovieState *movieState, lwmSVideoFrameProvider *frameProvider, ID3D11Device *device, ID3D11DeviceContext *context, bool isMPEG2)
 	: m_alloc(alloc)
 	, m_movieState(movieState)
 	, m_frameProvider(static_cast<lwmovie::d3d11::CFrameProvider*>(frameProvider))
@@ -100,6 +100,7 @@ lwmovie::d3d11::CM1VReconstructor::CM1VReconstructor(lwmSAllocator *alloc, lwmMo
 	, m_forwPred(false)
 	, m_backPred(false)
 	, m_workingOnFrame(false)
+	, m_isMPEG2(isMPEG2)
 	, m_current(0)
 	, m_future(0)
 	, m_past(0)
@@ -671,6 +672,7 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(lwmMov
 	switch (reconstructorType)
 	{
 	case lwmRC_MPEG1Video:
+	case lwmRC_MPEG2Video:
 		{
 			lwmUInt32 width, height;
 
@@ -680,7 +682,7 @@ LWMOVIE_API_LINK lwmIVideoReconstructor *lwmCreateD3D11VideoReconstructor(lwmMov
 			lwmovie::d3d11::CM1VReconstructor *recon = alloc->NAlloc<lwmovie::d3d11::CM1VReconstructor>(1);
 			if (!recon)
 				return NULL;
-			new (recon) lwmovie::d3d11::CM1VReconstructor(alloc, movieState, frameProvider, device, context);
+			new (recon) lwmovie::d3d11::CM1VReconstructor(alloc, movieState, frameProvider, device, context, reconstructorType == lwmRC_MPEG2Video);
 			// TODO: Low memory flag
 			if (!recon->Initialize(width, height))
 			{
