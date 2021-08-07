@@ -21,9 +21,6 @@
     <ClCompile Include="lwmux_osfile_win32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lwmux_convertm1v.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="lwmux_convertmp2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -49,6 +46,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lwmux_util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lwmux_convertmpegvideo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

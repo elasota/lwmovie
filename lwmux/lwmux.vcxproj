@@ -116,7 +116,7 @@
     <ClCompile Include="lwmux_adpcmenc.cpp" />
     <ClCompile Include="lwmux.cpp" />
     <ClCompile Include="lwmux_celtenc.cpp" />
-    <ClCompile Include="lwmux_convertm1v.cpp" />
+    <ClCompile Include="lwmux_convertmpegvideo.cpp" />
     <ClCompile Include="lwmux_convertmp2.cpp" />
     <ClCompile Include="lwmux_escape.cpp" />
     <ClCompile Include="lwmux_mux.cpp" />

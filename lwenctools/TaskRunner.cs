@@ -40,7 +40,6 @@ namespace lwenctools
                 ExecutionStage stage = stages[i];
 
                 IStageMonitor stageMonitor = planMonitor.AddStage(stage.ExePath, stage.Args, i);
-                stageMonitors[i] = stageMonitor;
 
                 System.Diagnostics.Process p;
                 lock (this)
@@ -54,6 +53,7 @@ namespace lwenctools
                     }
                 }
                 stageProcesses[i] = p;
+                stageMonitors[i] = stageMonitor;
                 p.ErrorDataReceived += stageMonitor.OnErrorLogMessage;
                 p.BeginErrorReadLine();
 
@@ -64,9 +64,9 @@ namespace lwenctools
                 }
             }
 
-            for (int i = 0; i < stageProcesses.Length; i++)
+            for (int stageNum = 0; stageNum < stages.Length; stageNum++)
             {
-                System.Diagnostics.Process p = stageProcesses[i];
+                System.Diagnostics.Process p = stageProcesses[stageNum];
 
                 if (p != null)
                 {
@@ -76,12 +76,10 @@ namespace lwenctools
                         if (exited)
                             break;
                     }
-
-                    if (p.ExitCode != 0)
-                        stageMonitors[i].OnFailed(p.ExitCode);
-
                     lock (this)
                     {
+                        if (p.ExitCode != 0)
+                            stageMonitors[stageNum].OnFailed(p.ExitCode);
                         _activeProcesses.Remove(p);
                         p.Dispose();
                     }

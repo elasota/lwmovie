@@ -22,6 +22,14 @@ namespace lwenctools
         Control ICodec.CreateCodecControl() { return new MPEG1VideoOptionsControl(); }
     }
 
+    public class MPEG2VideoCodec : ICodec
+    {
+        string ICodec.CodecID { get { return "M2V"; } }
+        string ICodec.Name { get { return "MPEG-2 Video"; } }
+        IExecutionPlanSettings ICodec.CreateExecutionPlanSettings() { return new MPEG2VideoSettings(); }
+        Control ICodec.CreateCodecControl() { return new MPEG2VideoOptionsControl(); }
+    }
+
     public class ROQVideoCodec : ICodec
     {
         string ICodec.CodecID { get { return "ROQ"; } }
@@ -68,6 +76,7 @@ namespace lwenctools
         {
             new TheoraVideoCodec(),
             new MPEG1VideoCodec(),
+            new MPEG2VideoCodec(),
             new ROQVideoCodec(),
         };
         public static ICodec[] AudioCodecs = new ICodec[]

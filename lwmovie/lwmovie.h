@@ -62,6 +62,8 @@ enum lwmEFrameFormat
 	lwmFRAMEFORMAT_8Bit_420P_Planar,
 	lwmFRAMEFORMAT_8Bit_3Channel_Planar,
 	lwmFRAMEFORMAT_8Bit_4Channel_Interleaved,
+	lwmFRAMEFORMAT_8Bit_422P_Planar,
+	lwmFRAMEFORMAT_8Bit_444P_Planar,
 
 	lwmFRAMEFORMAT_Count,
 };
