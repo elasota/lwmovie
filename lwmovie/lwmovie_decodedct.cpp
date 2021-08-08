@@ -117,29 +117,38 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 			{
 				/* *run == ESCAPE */
 				/* get_bits14(temp); */
-				lwmUInt16 temp = next32bits >> (18 - flushed);
-				flushed += 14;
+				lwmUInt16 temp = next32bits >> 12;
 				outRun = static_cast<lwmUInt8>((temp >> 8) & 0x3f);
-				temp &= 0xff;
-				if (temp == 0)
+
+				if (m_sequence->m_isMPEG2)
 				{
-					/* get_bits8(*level); */
-					outLevel = static_cast<lwmSInt16>(next32bits >> (24-flushed));
-					flushed += 8;
-					/* next32bits &= bitMask[flushed];  last op before update */
-				}
-				else if (temp != 128)
-				{
-					/* Grab sign bit */
-					outLevel = static_cast<lwmSInt16>(static_cast<lwmSInt8>(temp & 0xff));
+					outLevel = static_cast<lwmSInt16>(((next32bits >> 8) & 0xfff) ^ 0x800);
+					outLevel -= 2048;
+					flushed = 24;
 				}
 				else
 				{
-					/* get_bits8(*level); */
-					outLevel = next32bits >> (24-flushed);
-					flushed += 8;
-					/* next32bits &= bitMask[flushed];  last op before update */
-					outLevel -= 256;
+					temp &= 0xff;
+					if (temp == 0)
+					{
+						/* get_bits8(*level); */
+						outLevel = static_cast<lwmSInt16>((next32bits >> 4) & 0xff);
+						flushed = 28;
+					}
+					else if (temp == 128)
+					{
+						/* get_bits8(*level); */
+						outLevel = static_cast<lwmSInt16>((next32bits >> 4) & 0xff);
+						outLevel -= 256;
+						flushed = 28;
+					}
+					else
+					{
+						/* Grab sign bit */
+						outLevel = static_cast<lwmSInt16>(temp ^ 0x80);
+						outLevel -= 128;
+						flushed = 20;
+					}
 				}
 			}
 			/* Update bitstream... */

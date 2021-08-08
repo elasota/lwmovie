@@ -137,9 +137,21 @@ lwmUInt32 lwmovie::m1v::CBitstream::get_bits29() { return get_bitsX(29, 0xffffff
 lwmUInt32 lwmovie::m1v::CBitstream::get_bits30() { return get_bitsX(30, 0xfffffffc, 2); }
 lwmUInt32 lwmovie::m1v::CBitstream::get_bits31() { return get_bitsX(31, 0xfffffffe, 1); }
 
+lwmUInt32 lwmovie::m1v::CBitstream::get_bits32()
+{
+	lwmUInt32 result;
+	if (bit_offset != 0)
+		cur_bits |= (next_bits >> (32 - bit_offset));
+	result = cur_bits;
+	cur_bits = next_bits << bit_offset;
+	next_bits = get_more_bits();
+
+	return result;
+}
+
 lwmUInt32 lwmovie::m1v::CBitstream::get_bitsn(lwmFastUInt8 num)
 {
-	return get_bitsX((num), (0xffffffff << (32 - (num))), (32 - (num)));
+	return get_bitsX((num), (0xffffffffu << (32 - (num))) & 0xffffffffu, (32 - (num)));
 }
 
 lwmUInt32 lwmovie::m1v::CBitstream::show_bitsn(lwmFastUInt8 num)

@@ -76,6 +76,8 @@ namespace lwmovie
 			const lwmUInt32 MPEG_SEQUENCE_ERROR_CODE = 0x000001b4;
 			const lwmUInt32 LWMOVIE_PICTURE_END_CODE = 0x000001fd;
 
+			const lwmUInt32 MPEG_EXT_TYPE_PICTURE_CODING_EXTENSION = 0x8;
+
 			const lwmUInt32 DISPLAY_LOCK = 0x01;
 			const lwmUInt32 PAST_LOCK = 0x02;
 			const lwmUInt32 FUTURE_LOCK = 0x04;

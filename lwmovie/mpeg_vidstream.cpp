@@ -300,12 +300,56 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParsePicture(C
 	return constants::PARSE_OK;
 }
 
+lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParseExtension(CBitstream *bitstream)
+{
+	bitstream->flush_bits(8);
+
+	const lwmUInt32 pceFirstDWORD = bitstream->show_bits32();
+
+	const lwmUInt32 extType = (pceFirstDWORD >> 28) & 0xf;
+
+	if (extType == constants::MPEG_EXT_TYPE_PICTURE_CODING_EXTENSION)
+	{
+		if (!m_canAcceptPCE)
+			return constants::PARSE_SKIP_PICTURE;
+
+		lwmUInt8 fCode[2][2];
+		for (int y = 0; y < 2; y++)
+		{
+			for (int x = 0; x < 2; x++)
+				fCode[y][x] = static_cast<lwmUInt8>((pceFirstDWORD >> (24 - x * 8 - y * 4)) & 0xf);
+		}
+
+		const lwmUInt8 intraDCPrecision = static_cast<lwmUInt8>((pceFirstDWORD >> 10) & 0x3);
+		const lwmUInt8 pictureStructure = static_cast<lwmUInt8>((pceFirstDWORD >> 8) & 0x3);
+
+		const bool topFieldFirst = ((pceFirstDWORD >> 7) & 1) != 0;
+		const bool framePredFrameDCT = ((pceFirstDWORD >> 6) & 1) != 0;
+		const bool concealmentMotionVectors = ((pceFirstDWORD >> 5) & 1) != 0;
+		const bool qScaleType = ((pceFirstDWORD >> 4) & 1) != 0;
+		const bool intraVLCFormat = ((pceFirstDWORD >> 3) & 1) != 0;
+		const bool alternateScan = ((pceFirstDWORD >> 2) & 1) != 0;
+		const bool repeatFirstField = ((pceFirstDWORD >> 1) & 1) != 0;
+		const bool chroma420Type = ((pceFirstDWORD >> 0) & 1) != 0;
+
+		// We ignore the next 3 bytes since this should always be progressive scan and we don't care about composite info.
+		int n = 0;
+
+		m_canAcceptPCE = false;
+
+		return constants::PARSE_OK;
+	}
+	else
+		return constants::PARSE_SKIP_PICTURE;
+}
+
 lwmovie::m1v::CVidStream::CVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmUInt32 height, bool allowBFrames, lwmMovieState *movieState, lwmSWorkNotifier *workNotifier, bool useThreadedDeslicer, bool isMPEG2)
 	: m_stDeslicerJob((width + 15) / 16, (height + 15) / 16)
 	, m_deslicerMemPool(alloc, useThreadedDeslicer ? 150000 : 0)
 	, m_dropAggressiveness(lwmDROPAGGRESSIVENESS_None)
 	, m_allowBFrames(allowBFrames)
 	, m_isMPEG2(isMPEG2)
+	, m_canAcceptPCE(false)
 {
 	m_alloc = alloc;
 
@@ -321,6 +365,8 @@ lwmovie::m1v::CVidStream::CVidStream(lwmSAllocator *alloc, lwmUInt32 width, lwmU
 	/* Initialize non intra quantization matrix. */
 	for(int i = 0; i < 64; i++)
 		m_sequence.m_non_intra_quant_matrix[i] = constants::DEFAULT_NON_INTRA_MATRIX[i];
+
+	m_sequence.m_isMPEG2 = isMPEG2;
 
 	m_h_size = width;
 	m_v_size = height;
@@ -471,6 +517,8 @@ bool lwmovie::m1v::CVidStream::DigestDataPacket(const void *bytes, lwmUInt32 pac
 		WaitForDigestFinish();
 		m_recon->WaitForFinish();
 
+		m_canAcceptPCE = false;
+
 		CBitstream bitstream;
 		bitstream.Initialize(bytes, packetSize);
 
@@ -479,6 +527,7 @@ bool lwmovie::m1v::CVidStream::DigestDataPacket(const void *bytes, lwmUInt32 pac
 
 		m_recon->StartNewFrame(m_current, m_future, m_past, m_picture.code_type == constants::MPEG_B_TYPE);
 		*outResult = lwmDIGEST_Worked;
+		m_canAcceptPCE = m_isMPEG2;
 		return true;
 	}
 
@@ -502,6 +551,17 @@ bool lwmovie::m1v::CVidStream::DigestDataPacket(const void *bytes, lwmUInt32 pac
 
 			m_stDeslicerJob.Digest(&m_sequence, m_stBlockCursor, &m_picture, bytes, packetSize, m_recon);
 		}
+		return true;
+	}
+
+	if (packetTypeCode == constants::MPEG_EXT_START_CODE)
+	{
+		CBitstream bitstream;
+		bitstream.Initialize(bytes, packetSize);
+
+		if (ParseExtension(&bitstream) != constants::PARSE_OK)
+			return false;
+
 		return true;
 	}
 

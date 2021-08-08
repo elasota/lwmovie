@@ -238,7 +238,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 			else if(m_picture->code_type == constants::MPEG_B_TYPE)
 				blockCursor->SetMBlockInfo(true, m_mblock.bpict_past_forw, m_mblock.bpict_past_back, m_mblock.recon_right_for_prev, m_mblock.recon_down_for_prev, m_picture->full_pel_forw_vector, m_mblock.recon_right_back_prev, m_mblock.recon_down_back_prev, m_picture->full_pel_back_vector);
 			else
+			{
+				blockCursor->CloseMB();
 				return constants::PARSE_SKIP_TO_START_CODE;
+			}
 			blockCursor->CloseMB();
 
 			if(i == row_end_mb)
@@ -438,7 +441,6 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 	blockCursor->OpenMB(m_mblock.mb_address);
 	blockCursor->SetMBlockInfo(false, mb_motion_forw, mb_motion_back, recon_right_for, recon_down_for, m_picture->full_pel_forw_vector, recon_right_back, recon_down_back, m_picture->full_pel_back_vector);
 
-
 	for (lwmUInt8 mask = 32, i = 0; i < 6; mask >>= 1, i++)
 	{
 		bool zero_block_flag = false;
@@ -446,7 +448,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 		if ((m_mblock.mb_intra) || ((m_mblock.cbp & mask) != 0))
 		{
 			if (!ParseReconBlock(bitstream, blockCursor, i, recon, profileTags))
+			{
+				blockCursor->CloseMB();
 				return lwmovie::m1v::constants::PARSE_SKIP_TO_START_CODE;
+			}
 		}
 		else
 			zero_block_flag = true;

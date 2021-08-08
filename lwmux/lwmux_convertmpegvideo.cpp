@@ -398,7 +398,7 @@ void ConvertMPEGVideo(lwmOSFile *mpegFile, lwmOSFile *outFile, bool isExpandedRa
 			if ((extType & 0xf0) == 0x80)
 			{
 				// Picture coding extension
-				ConvertPacket(lwmEPT_Video_InlinePacket, false, scanLink, mpegFile, outFile);
+				ConvertPacket(lwmEPT_Video_InlinePacket, true, scanLink, mpegFile, outFile);
 			}
 		}
 		else if(scanLink->code == MPEG_PICTURE_START_CODE)

@@ -64,6 +64,8 @@ namespace lwmovie
 													intracoded frames.      */
 			lwmUInt8 m_non_intra_quant_matrix[64];	/* Quanitization matrix for
 													non intracoded frames.  */
+
+			bool m_isMPEG2;
 		};
 
 		struct mpegPict
@@ -358,6 +360,7 @@ namespace lwmovie
 			lwmEDropAggressiveness m_dropAggressiveness;
 			bool m_useThreadedDeslicer;
 			bool m_isMPEG2;
+			bool m_canAcceptPCE;
 
 		private:
 			void DispatchDeslicerJob(const void *bytes, lwmUInt32 packetSize, IM1VReconstructor *recon);
@@ -367,7 +370,7 @@ namespace lwmovie
 
 			lwmovie::m1v::constants::lwmEParseState ParseSeqHead_MPEG(CBitstream *bitstream);
 			lwmovie::m1v::constants::lwmEParseState ParsePicture(CBitstream *bitstream);
-			lwmovie::m1v::constants::lwmEParseState ParseMacroBlock(lwmSInt32 max_mb_addr, IM1VReconstructor *recon);
+			lwmovie::m1v::constants::lwmEParseState ParseExtension(CBitstream *bitstream);
 
 			bool SetupPictImages(lwmUInt32 w, lwmUInt32 h);
 			void ComputeForwVector(lwmSInt32 *recon_right_for, lwmSInt32 *recon_down_for);
