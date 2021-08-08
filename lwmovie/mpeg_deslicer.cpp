@@ -300,10 +300,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If horiz. forward r data exists, parse off. */
-		if ((m_picture->forw_f != 1) &&
+		if ((m_picture->forw_h_size != 0) &&
 			(m_mblock.motion_h_forw_code != 0))
 		{
-			lwmUInt32 data = bitstream->get_bitsn(m_picture->forw_r_size);
+			lwmUInt32 data = bitstream->get_bitsn(m_picture->forw_h_size);
 			m_mblock.motion_h_forw_r = data;
 		}
 		/* Parse off and decode vertical forward motion vector. */
@@ -313,10 +313,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If vert. forw. r data exists, parse off. */
-		if ((m_picture->forw_f != 1) &&
+		if ((m_picture->forw_v_size != 0) &&
 			(m_mblock.motion_v_forw_code != 0))
 		{
-			lwmUInt32 data = bitstream->get_bitsn(m_picture->forw_r_size);
+			lwmUInt32 data = bitstream->get_bitsn(m_picture->forw_v_size);
 			m_mblock.motion_v_forw_r = data;
 		}
 	}
@@ -330,10 +330,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If horiz. back r data exists, parse off. */
-		if ((m_picture->back_f != 1) &&
+		if ((m_picture->back_h_size != 0) &&
 			(m_mblock.motion_h_back_code != 0))
 		{
-			lwmUInt32 data = bitstream->get_bitsn(m_picture->back_r_size);
+			lwmUInt32 data = bitstream->get_bitsn(m_picture->back_h_size);
 			m_mblock.motion_h_back_r = data;
 		}
 		/* Parse off and decode vert. back motion vector. */
@@ -343,10 +343,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 			return constants::PARSE_SKIP_TO_START_CODE;
 
 		/* If vert. back r data exists, parse off. */
-		if ((m_picture->back_f != 1) &&
+		if ((m_picture->back_v_size != 0) &&
 			(m_mblock.motion_v_back_code != 0))
 		{
-			lwmUInt32 data = bitstream->get_bitsn(m_picture->back_r_size);
+			lwmUInt32 data = bitstream->get_bitsn(m_picture->back_v_size);
 			m_mblock.motion_v_back_r = data;
 		}
 	}

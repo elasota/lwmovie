@@ -73,12 +73,12 @@ namespace lwmovie
 			lwmUInt32 temp_ref;				/* Temporal reference.             */
 			lwmUInt32 code_type;			/* Frame type: P, B, I             */
 			lwmUInt32 vbv_delay;			/* Buffer delay.                   */
+			lwmUInt8 back_h_size;			/* Used for vector decoding.       */
+			lwmUInt8 back_v_size;			/* Used for vector decoding.       */
+			lwmUInt8 forw_h_size;			/* Used for vector decoding.       */
+			lwmUInt8 forw_v_size;			/* Used for vector decoding.       */
 			bool full_pel_forw_vector;		/* Forw. vectors specified in full pixel values flag.              */
-			lwmUInt32 forw_r_size;			/* Used for vector decoding.       */
-			lwmUInt8 forw_f;				/* Used for vector decoding.       */
 			bool full_pel_back_vector;		/* Back vectors specified in full pixel values flag.              */
-			lwmUInt32 back_r_size;			/* Used in decoding.               */
-			lwmUInt8 back_f;				/* Used in decoding.               */
 		};
 
 		struct mpegSlice

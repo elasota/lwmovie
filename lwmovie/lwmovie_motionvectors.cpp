@@ -64,107 +64,43 @@
 #include "lwmovie_videotypes.hpp"
 #include "lwmovie_recon_m1v.hpp"
 
-inline void ComputeVector(lwmSInt32 *recon_right_ptr, lwmSInt32 *recon_down_ptr, lwmSInt32 *recon_right_prev, lwmSInt32 *recon_down_prev,
-			lwmUInt8 f, bool full_pel_vector, lwmSInt32 motion_h_code, lwmSInt32 motion_v_code, lwmUInt8 motion_h_r, lwmUInt8 motion_v_r)
+inline void ComputeVector(lwmSInt32 *recon_ptr, lwmSInt32 *recon_prev, lwmUInt8 f_pow, bool full_pel_vector, lwmSInt32 motion_code, lwmUInt8 motion_r)
 {
-	/* The following procedure for the reconstruction of motion vectors        
-	   is a direct and simple implementation of the instructions given  
-	   in the mpeg December 1991 standard draft.                                
-	*/
-
-	lwmSInt32 comp_h_r;
-	if (f == 1 || motion_h_code == 0)
-		comp_h_r = 0;
-	else
-		comp_h_r = static_cast<lwmSInt32>(f) - 1 - motion_h_r;
-
-	lwmSInt32 comp_v_r;
-	if (f == 1 || motion_v_code == 0)
-		comp_v_r = 0;
-	else
-		comp_v_r = f - 1 - motion_v_r;
-
-	lwmSInt32 right_little = motion_h_code * f;
-	lwmSInt32 right_big;
-	if (right_little == 0)
-		right_big = 0;
+	lwmSInt32 delta;
+	if (f_pow == 0 || motion_code == 0)
+		delta = motion_code;
 	else
 	{
-		if (right_little > 0)
-		{
-			right_little = right_little - comp_h_r;
-			right_big = right_little - 32 * f;
-		}
+		if (motion_code < 0)
+			delta = -((((-motion_code) - 1) * (1 << f_pow)) + static_cast<lwmSInt32>(motion_r) + 1);
 		else
-		{
-			right_little = right_little + comp_h_r;
-			right_big = right_little + 32 * f;
-		}
+			delta = ((motion_code - 1) * (1 << f_pow)) + static_cast<lwmSInt32>(motion_r) + 1;
 	}
 
-	lwmSInt32 down_little = motion_v_code * f;
-	lwmSInt32 down_big;
-	if (down_little == 0)
-		down_big = 0;
-	else
-	{
-		if (down_little > 0)
-		{
-			down_little = down_little - comp_v_r;
-			down_big = down_little - 32 * f;
-		}
-		else
-		{
-			down_little = down_little + comp_v_r;
-			down_big = down_little + 32 * f;
-		}
-	}
+	lwmSInt32 high = (16 << f_pow) - 1;
+	lwmSInt32 low = -16 * (1 << f_pow);
+	lwmSInt32 range = 32 << f_pow;
 
-	lwmSInt32 max = 16 * f - 1;
-	lwmSInt32 min = -16 * f;
+	lwmSInt32 new_vector = (*recon_prev) + delta;
 
-	lwmSInt32 new_vector = (*recon_right_prev) + right_little;
+	if (new_vector < low)
+		new_vector += range;
+	if (new_vector > high)
+		new_vector -= range;
 
-	if (new_vector <= max && new_vector >= min)
-		*recon_right_ptr = (*recon_right_prev) + right_little;
-	/* just new_vector */
-	else
-		*recon_right_ptr = (*recon_right_prev) + right_big;
-	*recon_right_prev = *recon_right_ptr;
-	if (full_pel_vector)
-		*recon_right_ptr = (*recon_right_ptr) << 1;
-
-	new_vector = (*recon_down_prev) + down_little;
-	if (new_vector <= max && new_vector >= min)
-		*recon_down_ptr = (*recon_down_prev) + down_little;
-	/* just new_vector */
-	else
-		*recon_down_ptr = (*recon_down_prev) + down_big;
-	*recon_down_prev = *recon_down_ptr;
-	if (full_pel_vector)
-		*recon_down_ptr = (*recon_down_ptr) << 1;
+	(*recon_ptr) = (*recon_prev) = new_vector;
 }
 
 void lwmovie::m1v::CDeslicerJob::ComputeForwVector( lwmSInt32 *recon_right_for_ptr, lwmSInt32 *recon_down_for_ptr )
 {
-	ComputeVector(recon_right_for_ptr, recon_down_for_ptr,
-		&m_mblock.recon_right_for_prev,
-		&m_mblock.recon_down_for_prev,
-		m_picture->forw_f,
-		m_picture->full_pel_forw_vector,
-		m_mblock.motion_h_forw_code, m_mblock.motion_v_forw_code,
-		m_mblock.motion_h_forw_r, m_mblock.motion_v_forw_r);
+	ComputeVector(recon_right_for_ptr, &m_mblock.recon_right_for_prev, m_picture->forw_h_size, m_picture->full_pel_forw_vector, m_mblock.motion_h_forw_code, m_mblock.motion_h_forw_r);
+	ComputeVector(recon_down_for_ptr, &m_mblock.recon_down_for_prev, m_picture->forw_v_size, m_picture->full_pel_forw_vector, m_mblock.motion_v_forw_code, m_mblock.motion_v_forw_r);
 }
 
 void lwmovie::m1v::CDeslicerJob::ComputeBackVector(lwmSInt32 *recon_right_back_ptr, lwmSInt32 *recon_down_back_ptr)
 {
-	ComputeVector(recon_right_back_ptr, recon_down_back_ptr,
-				&m_mblock.recon_right_back_prev,
-				&m_mblock.recon_down_back_prev,
-				m_picture->back_f,
-				m_picture->full_pel_back_vector,
-				m_mblock.motion_h_back_code, m_mblock.motion_v_back_code,
-				m_mblock.motion_h_back_r, m_mblock.motion_v_back_r);
+	ComputeVector(recon_right_back_ptr, &m_mblock.recon_right_back_prev, m_picture->back_h_size, m_picture->full_pel_back_vector, m_mblock.motion_h_back_code, m_mblock.motion_h_back_r);
+	ComputeVector(recon_down_back_ptr, &m_mblock.recon_down_back_prev, m_picture->back_v_size, m_picture->full_pel_back_vector, m_mblock.motion_v_back_code, m_mblock.motion_v_back_r);
 }
 
 lwmovie::m1v::CVidStream::SDeslicerJobStackNode::SDeslicerJobStackNode(lwmSAllocator *alloc, lwmUInt32 mbWidth, lwmUInt32 mbHeight)

@@ -206,8 +206,8 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParsePicture(C
 		data = bitstream->get_bits3();
 
 		/* Decode forw_r_code into forw_r_size and forw_f. */
-		m_picture.forw_r_size = (data != 0) ? (data - 1) : 0;
-		m_picture.forw_f = 1 << m_picture.forw_r_size;
+		m_picture.forw_h_size = (data != 0) ? (data - 1) : 0;
+		m_picture.forw_v_size = m_picture.forw_h_size;
 	}
 
 	/* If B type frame... */
@@ -221,8 +221,8 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParsePicture(C
 		data = bitstream->get_bits3();
 
 		/* Decode back_r_code into back_r_size and back_f. */
-		m_picture.back_r_size = (data != 0) ? (data - 1) : 0;
-		m_picture.back_f = 1 << m_picture.back_r_size;
+		m_picture.back_h_size = (data != 0) ? (data - 1) : 0;
+		m_picture.back_v_size = m_picture.back_h_size;
 	}
 
 	if(m_picture.code_type == constants::MPEG_B_TYPE)
@@ -314,10 +314,14 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParseExtension
 			return constants::PARSE_SKIP_PICTURE;
 
 		lwmUInt8 fCode[2][2];
-		for (int y = 0; y < 2; y++)
+		for (int s = 0; s < 2; s++)
 		{
-			for (int x = 0; x < 2; x++)
-				fCode[y][x] = static_cast<lwmUInt8>((pceFirstDWORD >> (24 - x * 8 - y * 4)) & 0xf);
+			for (int t = 0; t < 2; t++)
+			{
+				fCode[s][t] = static_cast<lwmUInt8>((pceFirstDWORD >> (24 - s * 8 - t * 4)) & 0xf);
+				if (fCode[s][t] > 0)
+					fCode[s][t]--;
+			}
 		}
 
 		const lwmUInt8 intraDCPrecision = static_cast<lwmUInt8>((pceFirstDWORD >> 10) & 0x3);
@@ -333,7 +337,10 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParseExtension
 		const bool chroma420Type = ((pceFirstDWORD >> 0) & 1) != 0;
 
 		// We ignore the next 3 bytes since this should always be progressive scan and we don't care about composite info.
-		int n = 0;
+		m_picture.forw_h_size = fCode[0][0];
+		m_picture.forw_v_size = fCode[0][1];
+		m_picture.back_h_size = fCode[1][0];
+		m_picture.back_v_size = fCode[1][1];
 
 		m_canAcceptPCE = false;
 
