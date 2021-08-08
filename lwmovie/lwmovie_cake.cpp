@@ -381,6 +381,17 @@ lwmECakeResult lwmCake::Decode(lwmCakeDecodeOutput *decodeOutput)
 				{
 					m_playbackStartTime = currentTime;
 					m_firstFrame = false;
+
+					if (digestResult == lwmDIGEST_VideoSync_Dropped)
+					{
+						HandleVideoSync(decodeOutput, true);
+						return lwmCAKE_RESULT_Waiting;
+					}
+					else
+					{
+						HandleVideoSync(decodeOutput, false);
+						return lwmCAKE_RESULT_NewVideoFrame;
+					}
 				}
 				else
 				{
