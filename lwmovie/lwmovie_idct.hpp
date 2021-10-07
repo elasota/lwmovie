@@ -26,6 +26,8 @@ namespace lwmovie
 {
 	namespace idct
 	{
+		static const unsigned int kIDCTParityBit = 64;
+
 		struct DCTBLOCK
 		{
 			lwmSInt16 data[64];
@@ -36,7 +38,7 @@ namespace lwmovie
 		void Initialize();
 		void IDCT( lwmSInt16 data[64] );
 		void IDCT_SparseDC( lwmSInt16 data[64], lwmSInt16 value );
-		void IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value );
+		void IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPosAndParity, lwmSInt16 value );
 	}
 }
 

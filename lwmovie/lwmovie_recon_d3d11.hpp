@@ -145,7 +145,7 @@ namespace lwmovie
 			virtual idct::DCTBLOCK *StartReconBlock(lwmSInt32 subBlockIndex);
 
 			virtual void CommitZero();
-			virtual void CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff);
+			virtual void CommitSparse(lwmUInt8 lastCoeffPosAndParity, lwmSInt16 lastCoeff);
 			virtual void CommitFull();
 
 		private:

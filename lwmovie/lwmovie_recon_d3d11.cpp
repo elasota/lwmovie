@@ -655,10 +655,11 @@ void lwmovie::d3d11::CM1VBlockCursor::CommitZero()
 	memset(m_activeDCTBlock, 0, sizeof(idct::DCTBLOCK));
 }
 
-void lwmovie::d3d11::CM1VBlockCursor::CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff)
+void lwmovie::d3d11::CM1VBlockCursor::CommitSparse(lwmUInt8 lastCoeffPosAndParity, lwmSInt16 lastCoeff)
 {
 	m_activeDCTBlock->FastZeroFill();
-	m_activeDCTBlock->data[lastCoeffPos] = lastCoeff;
+	m_activeDCTBlock->data[63] = lastCoeffPosAndParity >> 6;
+	m_activeDCTBlock->data[lastCoeffPosAndParity & 63] = lastCoeff;
 }
 
 void lwmovie::d3d11::CM1VBlockCursor::CommitFull()

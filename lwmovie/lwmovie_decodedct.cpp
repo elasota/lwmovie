@@ -100,6 +100,8 @@ void lwmovie::m1v::CDeslicerJob::DecodeDCTCoeff(CBitstream *bitstream, const lwm
 		}
 		else
 		{
+			/* NOTE: 0 level is forbidden by the spec here but we allow it. */
+
 			/* num_bits = (value & NUM_MASK) + 1; */
 			/* flush_bits(num_bits); */
 			lwmUInt8 flushed = static_cast<lwmUInt8>(hrlc.num + 1);

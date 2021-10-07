@@ -79,12 +79,17 @@ namespace lwmovie
 			lwmUInt8 forw_v_size;			/* Used for vector decoding.       */
 			bool full_pel_forw_vector;		/* Forw. vectors specified in full pixel values flag.              */
 			bool full_pel_back_vector;		/* Back vectors specified in full pixel values flag.              */
+
+			constants::lwmEQScaleType m_qScaleType;
+			constants::lwmEIntraVLCFormat m_intraVLCFormat;
+			constants::lwmEIntraDCPrecision m_intraDCPrecision;
+			constants::lwmEZigZagScanOrder m_zigZagScanOrder;
 		};
 
 		struct mpegSlice
 		{
 			lwmUInt32 vert_pos;				/* Vertical position of slice. */
-			lwmUInt8 quant_scale;			/* Quantization scale.         */
+			lwmUInt8 quant_scale_code;		/* Quantization scale.         */
 		};
 
 		struct mpegBlock
@@ -205,7 +210,7 @@ namespace lwmovie
 		{
 			bool needs_idct;
 			bool sparse_idct;
-			lwmUInt8 sparse_idct_index;
+			lwmUInt8 sparse_idct_index_and_parity;
 			lwmSInt16 sparse_idct_coef;
 
 			bool zero_block_flag;
@@ -232,7 +237,7 @@ namespace lwmovie
 		{
 		public:
 			CDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight);
-			bool Digest(const mpegSequence *sequenceData, IM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, IM1VReconstructor *recon);
+			bool Digest(const mpegSequence *sequenceData, const mpegPict *pict, IM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, IM1VReconstructor *recon);
 #ifdef LWMOVIE_PROFILE
 			inline lwmCProfileTagSet *GetProfileTags() { return &m_profileTags; }
 #else
@@ -244,7 +249,7 @@ namespace lwmovie
 			lwmovie::m1v::constants::lwmEParseState ParseMacroBlock(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 max_mb_addr, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 			void ComputeForwVector(lwmSInt32 *recon_right_for_ptr, lwmSInt32 *recon_down_for_ptr);
 			void ComputeBackVector(lwmSInt32 *recon_right_back_ptr, lwmSInt32 *recon_down_back_ptr);
-			bool ParseReconBlock(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
+			bool ParseReconBlock(CBitstream *bitstream, bool isMPEG2, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 			void DecodeDCTCoeffFirst(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 			void DecodeDCTCoeffNext(CBitstream *bitstream, lwmUInt8 *outRun, lwmSInt16 *outLevel);
 			void DecodeDCTCoeff(CBitstream *bitstream, const lwmovie::m1v::vlc::lwmHRLC *dct_coeff_tbl, lwmUInt8 *outRun, lwmSInt16 *outLevel);
@@ -256,6 +261,9 @@ namespace lwmovie
 			void DecodeMBTypeB(CBitstream *bitstream, constants::lwmEMBQuantType *mb_quant, bool *mb_motion_forw, bool *mb_motion_back, bool *mb_pattern, bool *mb_intra);
 			lwmSInt32 DecodeMotionVectors(CBitstream *bitstream);
 			lwmUInt8 DecodeCBP(CBitstream *bitstream);
+
+			template<int TMPEGLevel>
+			bool ParseReconBlockByLevel(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags);
 
 			void CommitQScale();
 
@@ -270,8 +278,7 @@ namespace lwmovie
 			const mpegPict		*m_picture;
 			const mpegSequence	*m_sequence;
 
-			lwmUInt16			m_iqmatrix[64];		/* Intra matrix prescaled */
-			lwmUInt16			m_niqmatrix[64];	/* Non-intra matrix prescaled */
+			lwmUInt16			m_qmatrix[4][64];
 		};
 
 		class CVidStream

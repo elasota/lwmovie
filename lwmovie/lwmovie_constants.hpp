@@ -57,6 +57,31 @@ namespace lwmovie
 				MB_QUANT_TYPE_ERROR,
 			};
 
+			enum lwmEQScaleType
+			{
+				Q_SCALE_TYPE_MPEG1,
+				Q_SCALE_TYPE_MPEG2,
+			};
+
+			enum lwmEIntraVLCFormat
+			{
+				INTRA_VLC_FORMAT_MPEG1,
+				INTRA_VLC_FORMAT_MPEG2,
+			};
+
+			enum lwmEIntraDCPrecision
+			{
+				INTRA_DC_PRECISION_8,
+				INTRA_DC_PRECISION_9,
+				INTRA_DC_PRECISION_10,
+				INTRA_DC_PRECISION_11,
+			};
+
+			enum lwmEZigZagScanOrder
+			{
+				ZIGZAG_SCAN_ORDER_MPEG1,
+				ZIGZAG_SCAN_ORDER_MPEG2_ALTERNATE,
+			};
 
 			const lwmSInt32 MPEG_I_TYPE = 1;
 			const lwmSInt32 MPEG_P_TYPE = 2;
@@ -95,6 +120,8 @@ namespace lwmovie
 			extern lwmUInt8 DEFAULT_INTRA_MATRIX[64];
 			extern lwmUInt8 DEFAULT_NON_INTRA_MATRIX[64];
 			extern lwmUInt8 ZIGZAG_DIRECT[64];
+
+			extern lwmUInt8 Q_SCALE_MPEG2[32];
 		}
 	}
 }

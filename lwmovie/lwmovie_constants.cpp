@@ -53,6 +53,13 @@ lwmUInt8 lwmovie::m1v::constants::ZIGZAG_DIRECT[64] =
 	58, 59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63
 };
 
+lwmUInt8 lwmovie::m1v::constants::Q_SCALE_MPEG2[32] =
+{
+	0, 1, 2, 3, 4, 5, 6, 7,
+	8, 10, 12, 14, 16, 18, 20, 22,
+	24, 28, 32, 36, 40, 44, 48, 52,
+	56, 64, 72, 80, 88, 96, 104, 112,
+};
 
 lwmUInt8 lwmovie::m1v::constants::ZIGZAG[] =
 {

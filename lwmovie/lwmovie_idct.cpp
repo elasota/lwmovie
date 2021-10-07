@@ -45,12 +45,20 @@ namespace lwmovie
 				sbData -= (diff & 0xf);
 				m_sparseBlocks = reinterpret_cast<DCTBLOCK*>(sbData);
 
-				for(int i=0;i<64;i++)
+				lwmUInt8 *fbData = m_sparseBlock63_32_Data + 15;
+				lwmLargeSInt fbDiff = fbData - static_cast<const lwmUInt8 *>(NULL);
+				fbData -= (fbDiff & 0xf);
+				m_sparseBlock63_32 = reinterpret_cast<lwmSInt32 *>(fbData);
+
+				for (int i = 0; i < 64; i++)
 				{
 					m_sparseBlocks[i].FastZeroFill();
 					m_sparseBlocks[i].data[i] = 256;
 					IDCT(m_sparseBlocks[i].data);
 				}
+
+				for (int i = 0; i < 64; i++)
+					m_sparseBlock63_32[i] = static_cast<lwmSInt32>(m_sparseBlocks[63].data[i]);
 			}
 
 			inline DCTBLOCK *GetSparseBlock(lwmFastUInt8 index)
@@ -58,11 +66,19 @@ namespace lwmovie
 				return m_sparseBlocks + index;
 			}
 
+			inline lwmSInt32 *GetSparseBlock63()
+			{
+				return m_sparseBlock63_32;
+			}
+
 			static SparseIDCTContainer staticInstance;
 
 		private:
 			lwmUInt8 m_sparseBlockData[sizeof(DCTBLOCK) * 64 + 15];
 			DCTBLOCK *m_sparseBlocks;
+
+			lwmUInt8 m_sparseBlock63_32_Data[sizeof(lwmSInt32) * 64 + 15];
+			lwmSInt32 *m_sparseBlock63_32;
 		};
 	}
 }
@@ -102,41 +118,80 @@ void lwmovie::idct::IDCT_SparseDC( lwmSInt16 data[64], lwmSInt16 value )
 #endif
 }
 
-void lwmovie::idct::IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPos, lwmSInt16 value )
+void lwmovie::idct::IDCT_SparseAC( lwmSInt16 data[64], lwmFastUInt8 coeffPosAndParity, lwmSInt16 value )
 {
 #ifdef LWMOVIE_SSE2
-	__m128i fill = _mm_setzero_si128();
-	fill = _mm_insert_epi16(fill, static_cast<int>(value), 0);
-	fill = _mm_unpacklo_epi16(fill, fill);
-	fill = _mm_unpacklo_epi32(fill, fill);
-	fill = _mm_unpacklo_epi64(fill, fill);
+	__m128i fill = _mm_set1_epi16(value);
 
 	int rows = 8;
 	lwmSInt16 *dataPtr = data;
-	const lwmSInt16 *sparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock(coeffPos)->data;
-	while(rows--)
+	const lwmSInt16 *sparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock(coeffPosAndParity % 64)->data;
+
+	if (coeffPosAndParity & kIDCTParityBit)
 	{
-		__m128i sparseInputRow = _mm_load_si128(reinterpret_cast<const __m128i*>(sparseMat));
-		__m128i mullo = _mm_mullo_epi16(sparseInputRow, fill);
-		__m128i mulhi = _mm_mulhi_epi16(sparseInputRow, fill);
-		__m128i mullos = _mm_srli_epi16(mullo, 8);
-		__m128i mulhis = _mm_slli_epi16(mulhi, 8);
-		__m128i merged = _mm_or_si128(mullos, mulhis);
-		_mm_store_si128(reinterpret_cast<__m128i*>(dataPtr), merged);
-		dataPtr += 8;
-		sparseMat += 8;
+		const lwmSInt32 *lastCoeffSparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock63();
+		while (rows--)
+		{
+			__m128i sparseInputRow = _mm_load_si128(reinterpret_cast<const __m128i *>(sparseMat));
+			__m128i lastCoeffSparseRowLo = _mm_load_si128(reinterpret_cast<const __m128i *>(lastCoeffSparseMat));
+			__m128i lastCoeffSparseRowHi = _mm_load_si128(reinterpret_cast<const __m128i *>(lastCoeffSparseMat + 4));
+
+			__m128i mullo = _mm_mullo_epi16(sparseInputRow, fill);
+			__m128i mulhi = _mm_mulhi_epi16(sparseInputRow, fill);
+			__m128i mullo32 = _mm_unpacklo_epi16(mullo, mulhi);
+			__m128i mulhi32 = _mm_unpackhi_epi16(mullo, mulhi);
+			__m128i low32 = _mm_srai_epi32(_mm_add_epi32(mullo32, lastCoeffSparseRowLo), 8);
+			__m128i high32 = _mm_srai_epi32(_mm_add_epi32(mulhi32, lastCoeffSparseRowHi), 8);
+			__m128i merged = _mm_packs_epi32(low32, high32);
+			_mm_store_si128(reinterpret_cast<__m128i *>(dataPtr), merged);
+			dataPtr += 8;
+			sparseMat += 8;
+			lastCoeffSparseMat += 8;
+		}
+	}
+	else
+	{
+		while (rows--)
+		{
+			__m128i sparseInputRow = _mm_load_si128(reinterpret_cast<const __m128i *>(sparseMat));
+			__m128i mullo = _mm_mullo_epi16(sparseInputRow, fill);
+			__m128i mulhi = _mm_mulhi_epi16(sparseInputRow, fill);
+			__m128i mullos = _mm_srli_epi16(mullo, 8);
+			__m128i mulhis = _mm_slli_epi16(mulhi, 8);
+			__m128i merged = _mm_or_si128(mullos, mulhis);
+			_mm_store_si128(reinterpret_cast<__m128i *>(dataPtr), merged);
+			dataPtr += 8;
+			sparseMat += 8;
+		}
 	}
 #else
 	int rows = 8;
 	lwmSInt16 *dataPtr = data;
 	const lwmSInt16 *sparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock(coeffPos)->data;
-	while(rows--)
+	if (coeffPosAndParity & kIDCTParityBit)
 	{
-		const lwmSInt16 *sparseInputRow = sparseMat;
-		for(int i=0;i<8;i++)
-			dataPtr[i] = static_cast<lwmSInt16>((static_cast<lwmSInt32>(sparseInputRow[i]) * value) >> 8);
-		dataPtr += 8;
-		sparseMat += 8;
+		const lwmSInt16 *lastCoeffSparseMat = lwmovie::idct::SparseIDCTContainer::staticInstance.GetSparseBlock(63)->data;
+		while(rows--)
+		{
+			const lwmSInt16 *sparseInputRow = sparseMat;
+			const lwmSInt16 *lastCoeffSparseRow = lastCoeffSparseMat;
+			for (int i = 0; i < 8; i++)
+				dataPtr[i] = static_cast<lwmSInt16>((static_cast<lwmSInt32>(sparseInputRow[i]) * value + lastCoeffSparseRow[i]) >> 8);
+			dataPtr += 8;
+			sparseMat += 8;
+			lastCoeffSparseMat += 8;
+		}
+	}
+	else
+	{
+		while (rows--)
+		{
+			const lwmSInt16 *sparseInputRow = sparseMat;
+			for (int i = 0; i < 8; i++)
+				dataPtr[i] = static_cast<lwmSInt16>((static_cast<lwmSInt32>(sparseInputRow[i]) * value) >> 8);
+			dataPtr += 8;
+			sparseMat += 8;
+		}
 	}
 #endif
 }

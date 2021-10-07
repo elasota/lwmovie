@@ -42,7 +42,7 @@ namespace lwmovie
 			virtual idct::DCTBLOCK *StartReconBlock(lwmSInt32 blockIndex) = 0;
 
 			virtual void CommitZero() = 0;
-			virtual void CommitSparse(lwmUInt8 coeffPos, lwmSInt16 coeff) = 0;
+			virtual void CommitSparse(lwmUInt8 lastCoeffPosAndParity, lwmSInt16 coeff) = 0;
 			virtual void CommitFull() = 0;
 
 			inline void SetMBlockInfo(bool skipped, bool mb_motion_forw, bool mb_motion_back,

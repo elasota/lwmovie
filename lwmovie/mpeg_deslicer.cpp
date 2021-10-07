@@ -72,7 +72,7 @@ lwmovie::m1v::CDeslicerJob::CDeslicerJob(lwmUInt32 mbWidth, lwmUInt32 mbHeight)
 	m_mb_height = mbHeight;
 }
 
-bool lwmovie::m1v::CDeslicerJob::Digest(const mpegSequence *sequenceData, IM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, IM1VReconstructor *recon)
+bool lwmovie::m1v::CDeslicerJob::Digest(const mpegSequence *sequenceData, const mpegPict *pict, IM1VBlockCursor *blockCursor, const mpegPict *pictData, const void *sliceData, lwmUInt32 sliceSize, IM1VReconstructor *recon)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(&m_profileTags, lwmEPROFILETAG_Deslice);
@@ -132,7 +132,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseSliceHeader(CBitstream *bitstream)
 
 	/* Parse off quantization scale. */
 	data = bitstream->get_bits5();
-	m_slice.quant_scale = data;
+	m_slice.quant_scale_code = data;
 
 	/* Parse off extra bit slice info. */
 	CVidStream::SkipExtraBitInfo(bitstream);
@@ -287,7 +287,7 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 	if (mb_quant == constants::MB_QUANT_TYPE_TRUE)
 	{
 		lwmUInt32 data = bitstream->get_bits5();
-		m_slice.quant_scale = data;
+		m_slice.quant_scale_code = data;
 		this->CommitQScale();
 	}
 	/* If forward motion vectors exist... */
@@ -447,7 +447,7 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CDeslicerJob::ParseMacroBl
 		/* If block exists... */
 		if ((m_mblock.mb_intra) || ((m_mblock.cbp & mask) != 0))
 		{
-			if (!ParseReconBlock(bitstream, blockCursor, i, recon, profileTags))
+			if (!ParseReconBlock(bitstream, m_sequence->m_isMPEG2, blockCursor, i, recon, profileTags))
 			{
 				blockCursor->CloseMB();
 				return lwmovie::m1v::constants::PARSE_SKIP_TO_START_CODE;
@@ -478,13 +478,20 @@ void lwmovie::m1v::CDeslicerJob::CommitQScale()
 {
 	const lwmUInt8 *iqSource = m_sequence->m_intra_quant_matrix;
 	const lwmUInt8 *niqSource = m_sequence->m_non_intra_quant_matrix;
-	lwmUInt8 qscale = m_slice.quant_scale;
+	lwmUInt8 qscale = m_slice.quant_scale_code;
+
+	if (m_sequence->m_isMPEG2)
+	{
+		if (m_picture->m_qScaleType == constants::Q_SCALE_TYPE_MPEG2)
+			qscale = constants::Q_SCALE_MPEG2[qscale];
+		else
+			qscale *= 2;
+	}
 
 	for (int i = 0; i < 64; i++)
-		this->m_iqmatrix[i] = iqSource[i] * m_slice.quant_scale;
+		this->m_qmatrix[0][i] = iqSource[i] * qscale;
 
 	if (m_picture->code_type != constants::MPEG_I_TYPE)
 		for (int i = 0; i < 64; i++)
-			this->m_niqmatrix[i] = niqSource[i] * m_slice.quant_scale;
+			this->m_qmatrix[1][i] = niqSource[i] * qscale;
 }
-

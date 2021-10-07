@@ -70,7 +70,17 @@
 #include "lwmovie_recon_m1v.hpp"
 #include "lwmovie_profile.hpp"
 
-bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
+
+bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, bool isMPEG2, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
+{
+	if (isMPEG2)
+		return ParseReconBlockByLevel<2>(bitstream, blockCursor, n, recon, profileTags);
+	else
+		return ParseReconBlockByLevel<1>(bitstream, blockCursor, n, recon, profileTags);
+}
+
+template<int TMPEGLevel>
+bool lwmovie::m1v::CDeslicerJob::ParseReconBlockByLevel(CBitstream *bitstream, IM1VBlockCursor *blockCursor, lwmSInt32 n, IM1VReconstructor *recon, lwmCProfileTagSet *profileTags)
 {
 #ifdef LWMOVIE_DEEP_PROFILE
 	lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffs);
@@ -81,6 +91,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 
 	idct::DCTBLOCK *recondata = blockCursor->StartReconBlock(n);
 
+	lwmFastSInt16 parity = 0;
 	if(m_mblock.mb_intra)
 	{
 		//lwmCAutoProfile _(profileTags, lwmEPROFILETAG_ParseCoeffsIntra);
@@ -226,8 +237,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 
 		if(m_picture->code_type != constants::MPEG_D_TYPE)
 		{
-			lwmFastUInt8 qscale = m_slice.quant_scale;
-			const lwmUInt16 *iqmatrix = this->m_iqmatrix;
+			const lwmUInt16 *iqmatrix = this->m_qmatrix[0];
 
 			lwmFastUInt8 i = 0;
 			while(true)
@@ -246,7 +256,16 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 				pos = constants::ZIGZAG_DIRECT[i];
 
 				/* quantizes and oddifies each coefficient */
-				coeff = ((level * static_cast<lwmFastSInt32>(iqmatrix[pos]) + ((level < 0) ? 7 : -8)) >> 3) | 1;
+				if (TMPEGLevel == 1)
+				{
+					const lwmFastSInt16 levelSign = (level >> 15) | 1;
+					coeff = ((level * static_cast<lwmFastSInt32>(iqmatrix[pos]) / 8) - levelSign) | 1;
+				}
+				else
+				{
+					coeff = (level * static_cast<lwmFastSInt32>(iqmatrix[pos]) / 16);
+					parity ^= coeff;
+				}
 
 				coeffCount++;
 
@@ -275,8 +294,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 #endif
 
 		/* non-intra-coded macroblock */
-		const lwmUInt16 *niqmatrix = m_niqmatrix;
-		lwmFastUInt8 qscale = m_slice.quant_scale;
+		const lwmUInt16 *niqmatrix = m_qmatrix[1];
 		lwmUInt8 run;
 		lwmSInt16 level;
 
@@ -287,11 +305,15 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 		lwmFastUInt8 pos = constants::ZIGZAG_DIRECT[i];
 
 		/* dequantize and oddify towards zero */
-		lwmFastSInt32 coeff;
-		if (level < 0)
-			coeff = ((((level << 1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) + 15) >> 4) | 1; 
+		lwmFastSInt32 coeff = 0;
+		lwmSInt16 levelSign = (level >> 15) | 1;
+		if (TMPEGLevel == 1)
+			coeff = (((level * 2) + levelSign) * static_cast<lwmFastSInt32>(niqmatrix[pos]) / 16 - levelSign) | 1;
 		else
-			coeff = ((((level << 1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) - 16) >> 4) | 1;
+		{
+			coeff = ((level * 2) + levelSign) * static_cast<lwmFastSInt32>(niqmatrix[pos]) / 32;
+			parity ^= coeff;
+		}
 
 		firstCoeffPos = pos;
 		firstCoeff = static_cast<lwmFastSInt16>(coeff);
@@ -313,10 +335,14 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
 				pos = constants::ZIGZAG_DIRECT[i];
 
 				/* dequantize and oddify towards zero */
-				if (level < 0)
-					coeff = ((((level<<1) - 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) + 15) >> 4) | 1;
+				lwmSInt16 levelSign = (level >> 15) | 1;
+				if (TMPEGLevel == 1)
+					coeff = (((level * 2) + levelSign) * static_cast<lwmFastSInt32>(niqmatrix[pos]) / 16 - levelSign) | 1;
 				else
-					coeff = ((((level<<1) + 1) * static_cast<lwmFastSInt32>(niqmatrix[pos]) - 16) >> 4) | 1; 
+				{
+					coeff = ((level * 2) + levelSign) * static_cast<lwmFastSInt32>(niqmatrix[pos]) / 32;
+					parity ^= coeff;
+				}
 
 				coeffCount++;
 				if(coeffCount == 2)
@@ -352,7 +378,7 @@ bool lwmovie::m1v::CDeslicerJob::ParseReconBlock(CBitstream *bitstream, IM1VBloc
             58, 59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63
         };
 
-		blockCursor->CommitSparse(zigzagOrder[firstCoeffPos], firstCoeff);
+		blockCursor->CommitSparse(zigzagOrder[firstCoeffPos] | ((parity & 1) * idct::kIDCTParityBit), firstCoeff);
 	}
 	else
 	{

@@ -782,13 +782,13 @@ void lwmovie::m1v::CBaseBlockCursor::CommitZero()
 	m_openedReconBlock->needs_idct = false;
 }
 
-void lwmovie::m1v::CBaseBlockCursor::CommitSparse(lwmUInt8 lastCoeffPos, lwmSInt16 lastCoeff)
+void lwmovie::m1v::CBaseBlockCursor::CommitSparse(lwmUInt8 lastCoeffPosAndParity, lwmSInt16 lastCoeff)
 {
 	lwmBlockInfo *blockInfo = m_openedReconBlock;
 	blockInfo->needs_idct = true;
 	blockInfo->sparse_idct = true;
 	blockInfo->sparse_idct_coef = lastCoeff;
-	blockInfo->sparse_idct_index = lastCoeffPos;
+	blockInfo->sparse_idct_index_and_parity = lastCoeffPosAndParity;
 }
 
 void lwmovie::m1v::CBaseBlockCursor::CommitFull()

@@ -28,10 +28,10 @@ void lwmovie::m1v::lwmBlockInfo::IDCT(idct::DCTBLOCK *block) const
 	{
 		if (sparse_idct)
 		{
-			if (sparse_idct_index == 0)
+			if (sparse_idct_index_and_parity == 0)
 				lwmovie::idct::IDCT_SparseDC(block->data, sparse_idct_coef);
 			else
-				lwmovie::idct::IDCT_SparseAC(block->data, sparse_idct_index, sparse_idct_coef);
+				lwmovie::idct::IDCT_SparseAC(block->data, sparse_idct_index_and_parity, sparse_idct_coef);
 		}
 		else
 			lwmovie::idct::IDCT(block->data);

@@ -176,6 +176,11 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParsePicture(C
 	data = bitstream->get_bits3();
 	m_picture.code_type = data;
 
+	m_picture.m_qScaleType = constants::Q_SCALE_TYPE_MPEG1;
+	m_picture.m_intraVLCFormat = constants::INTRA_VLC_FORMAT_MPEG1;
+	m_picture.m_intraDCPrecision = constants::INTRA_DC_PRECISION_8;
+	m_picture.m_zigZagScanOrder = constants::ZIGZAG_SCAN_ORDER_MPEG1;
+
 	if(m_picture.code_type != constants::MPEG_B_TYPE &&
 		m_picture.code_type != constants::MPEG_I_TYPE &&
 		m_picture.code_type != constants::MPEG_P_TYPE)
@@ -343,6 +348,12 @@ lwmovie::m1v::constants::lwmEParseState lwmovie::m1v::CVidStream::ParseExtension
 		m_picture.back_v_size = fCode[1][1];
 
 		m_canAcceptPCE = false;
+		m_picture.m_qScaleType = (qScaleType) ? constants::Q_SCALE_TYPE_MPEG2 : constants::Q_SCALE_TYPE_MPEG1;
+		m_picture.m_intraVLCFormat = (intraVLCFormat) ? constants::INTRA_VLC_FORMAT_MPEG2 : constants::INTRA_VLC_FORMAT_MPEG1;
+		m_picture.m_intraDCPrecision = static_cast<constants::lwmEIntraDCPrecision>(intraDCPrecision);
+		m_picture.m_zigZagScanOrder = (alternateScan) ? constants::ZIGZAG_SCAN_ORDER_MPEG2_ALTERNATE : constants::ZIGZAG_SCAN_ORDER_MPEG1;
+
+		// TODO: Implement these additional flags!  qScaleType, intraVLCFormat, and chroma420Type in particular are required.
 
 		return constants::PARSE_OK;
 	}
@@ -459,7 +470,7 @@ void lwmovie::m1v::CVidStream::DispatchDeslicerJob(const void *bytes, lwmUInt32 
 	
 	if(memBuf == NULL)
 	{
-		m_stDeslicerJob.Digest(&m_sequence, blockCursor, &m_picture, bytes, packetSize, recon);
+		m_stDeslicerJob.Digest(&m_sequence, &m_picture, blockCursor, &m_picture, bytes, packetSize, recon);
 		blockCursor->~IM1VBlockCursor();
 		m_alloc->Free(blockCursor);
 		return;
@@ -556,7 +567,7 @@ bool lwmovie::m1v::CVidStream::DigestDataPacket(const void *bytes, lwmUInt32 pac
 					return false;
 			}
 
-			m_stDeslicerJob.Digest(&m_sequence, m_stBlockCursor, &m_picture, bytes, packetSize, m_recon);
+			m_stDeslicerJob.Digest(&m_sequence, &m_picture, m_stBlockCursor, &m_picture, bytes, packetSize, m_recon);
 		}
 		return true;
 	}
@@ -589,7 +600,7 @@ void lwmovie::m1v::CVidStream::Participate()
 		if(lwmAtomicIncrement(&dsJob->m_accessFlag) == 1)
 		{
 			// Can consume this job
-			dsJob->m_deslicerJob.Digest(&m_sequence, dsJob->m_blockCursor, &m_picture, dsJob->m_dataBytes, dsJob->m_dataSize, m_recon);
+			dsJob->m_deslicerJob.Digest(&m_sequence, &m_picture, dsJob->m_blockCursor, &m_picture, dsJob->m_dataBytes, dsJob->m_dataSize, m_recon);
 			return;
 		}
 		dsJob = dsJob->m_next;
