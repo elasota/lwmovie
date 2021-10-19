@@ -35,12 +35,17 @@ using namespace lwmovie::riff;
 
 static const unsigned int FRAME_SIZE = 1024;
 
-static void EncodeADPCM(lwmUInt8 *output, const lwmSInt16 *samples, lwmUInt32 numSamples, lwmovie::adpcm::SPredictorState *predictorStates, lwmSInt32 stride, lwmUInt32 numChannels)
+static void EncodeADPCM(lwmUInt8 *output, const lwmSInt16 *samples, lwmUInt32 numSamples, lwmovie::adpcm::SPredictorState *predictorStates, lwmSInt32 stride, lwmUInt32 numChannels, bool backwards)
 {
 	while(numSamples)
 	{
-		for(lwmUInt32 i=0;i<numChannels;i++)
-			output[i] = predictorStates[i].EncodeSamples(samples[i], samples[i + numChannels]);
+		for (lwmUInt32 i = 0; i < numChannels; i++)
+		{
+			if (backwards)
+				output[i] = predictorStates[i].EncodeSamples(samples[i + numChannels], samples[i]);
+			else
+				output[i] = predictorStates[i].EncodeSamples(samples[i], samples[i + numChannels]);
+		}
 		numSamples -= 2;
 		samples += stride * 2;
 		output += numChannels;
@@ -123,7 +128,7 @@ void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile, const char *metaID)
 		{
 			// In the first frame, prime the predictor stepping by encoding backwards up to the first sample.
 			firstFrame = false;
-			EncodeADPCM(encodedBytes, samples + thisFrameSizeSamples - 2, thisFrameSizeSamples, predictorStates, -static_cast<lwmSInt16>(wavFormat.numChannels), wavFormat.numChannels);
+			EncodeADPCM(encodedBytes, samples + (static_cast<lwmLargeUInt>(thisFrameSizeSamples) - 2) * wavFormat.numChannels, thisFrameSizeSamples, predictorStates, -static_cast<lwmSInt16>(wavFormat.numChannels), wavFormat.numChannels, true);
 		}
 
 		// Write predictor states
@@ -140,7 +145,7 @@ void ConvertWAV_ADPCM(lwmOSFile *inFile, lwmOSFile *outFile, const char *metaID)
 		}
 
 		// Encode Samples
-		EncodeADPCM(encodedBytes + headerSize, samples, thisFrameSizeSamples, predictorStates, static_cast<lwmSInt16>(wavFormat.numChannels), wavFormat.numChannels);
+		EncodeADPCM(encodedBytes + headerSize, samples, thisFrameSizeSamples, predictorStates, static_cast<lwmSInt16>(wavFormat.numChannels), wavFormat.numChannels, false);
 
 		// Write out
 		writtenSamples += thisFrameSizeSamples;
