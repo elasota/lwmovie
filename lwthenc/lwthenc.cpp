@@ -288,6 +288,7 @@ FILE *g_metricsFile = NULL;
 char g_metricsData[1000];
 size_t g_metricsDataStart = 0;
 size_t g_metricsDataEnd = 0;
+long g_metricsStartFPos = 0;
 
 CPacketCluster g_currentCluster;
 
@@ -316,23 +317,36 @@ void PushMetrics(th_enc_ctx *ctx, FILE *outFile)
 
 void PullMetrics(th_enc_ctx *ctx)
 {
-	size_t available = sizeof(g_metricsData) - g_metricsDataEnd;
-	size_t numRead = (available == 0) ? 0 : fread(g_metricsData + g_metricsDataEnd, 1, available, g_metricsFile);
-	g_metricsDataEnd += numRead;
-
-	size_t numBytesBuffered = g_metricsDataEnd - g_metricsDataStart;
-
 	while (true)
 	{
-		int numConsumed = th_encode_ctl(ctx, TH_ENCCTL_2PASS_IN, g_metricsData + g_metricsDataStart, numBytesBuffered);
-		if (numConsumed > 0)
+		size_t available = sizeof(g_metricsData) - g_metricsDataEnd;
+		size_t numRead = (available == 0) ? 0 : fread(g_metricsData + g_metricsDataEnd, 1, available, g_metricsFile);
+		g_metricsDataEnd += numRead;
+
+		size_t numBytesBuffered = g_metricsDataEnd - g_metricsDataStart;
+
+		while (true)
 		{
-			g_metricsDataStart += numConsumed;
-			if (g_metricsDataStart == g_metricsDataEnd)
-				g_metricsDataStart = g_metricsDataEnd = 0;
+			int numConsumed = th_encode_ctl(ctx, TH_ENCCTL_2PASS_IN, g_metricsData + g_metricsDataStart, numBytesBuffered);
+			if (numConsumed > 0)
+			{
+				g_metricsDataStart += numConsumed;
+				numBytesBuffered -= numConsumed;
+				if (g_metricsDataStart == g_metricsDataEnd)
+				{
+					g_metricsStartFPos += g_metricsDataEnd;
+					g_metricsDataStart = g_metricsDataEnd = 0;
+					break;
+				}
+			}
+			else if (numConsumed == 0)
+				return;
+			else
+			{
+				fprintf(stderr, "PullMetrics: Error %i\n", numConsumed);
+				exit(-1);
+			}
 		}
-		else
-			break;
 	}
 }
 
@@ -365,7 +379,6 @@ void PushFrame(th_enc_ctx *ctx, th_ycbcr_buffer buffer, int isEOF, FILE *outFile
 		}
 	}
 }
-
 
 int main(int argc, const char **argv)
 {
